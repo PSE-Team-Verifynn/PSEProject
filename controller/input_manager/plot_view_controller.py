@@ -1,0 +1,23 @@
+from model.data.diagram_config import DiagramConfig
+from model.data.plot import Plot
+from view.plot_view.plot_view import PlotView
+
+class PlotViewController:
+    current_plot_view: PlotView
+    current_tab: int
+
+    def __init__(self, current_plot_view: PlotView):
+        self.current_plot_view = current_plot_view
+        self.current_tab = 0
+
+    def change_plot(self, plot_index: int, add: bool, pair_index: int):
+        pass
+
+    def start_computation(self, config: DiagramConfig):
+        pass
+
+    def change_tab(self, index: int):
+        pass
+
+    def export_plot(self, plot: Plot):
+        pass
