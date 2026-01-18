@@ -1,8 +1,13 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from model.data.input_bounds import InputBounds
+from model.data.network_verification_config import NetworkVerificationConfig
 from model.data.neural_network import NeuralNetwork
-from view.network_view.network_view import NetworkView
+from model.data.storage import Storage
+from model.data_loader.neural_network_loader import NeuralNetworkLoader
+
+if TYPE_CHECKING:
+    from view.network_view.network_view import NetworkView
 
 
 class NetworkViewController:
@@ -17,7 +22,21 @@ class NetworkViewController:
         pass
 
     def load_new_network(self):
-        pass
+        path = self.current_network_view.open_network_file_picker()
+        if path is None:
+            return
+
+        result = NeuralNetworkLoader().load_neural_network(path)
+        if not result.is_success:
+            return
+
+        storage = Storage()
+        storage.networks.append(NetworkVerificationConfig(result.data))
+
+        print("Model was successfully loaded")
+
+        self.current_tab = len(storage.networks)
+
 
     def run_samples(self) -> List[int]:
         pass

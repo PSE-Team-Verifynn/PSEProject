@@ -1,6 +1,10 @@
+from typing import TYPE_CHECKING
+
 from model.data.diagram_config import DiagramConfig
 from model.data.plot import Plot
-from view.plot_view.plot_view import PlotView
+
+if TYPE_CHECKING:
+    from view.plot_view.plot_view import PlotView
 
 class PlotViewController:
     current_plot_view: PlotView

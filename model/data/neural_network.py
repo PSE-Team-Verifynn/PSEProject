@@ -6,6 +6,6 @@ class NeuralNetwork:
     path: str
     model: ModelProto
 
-    def __init__(self, name: str, model: ModelProto):
+    def __init__(self, name: str, path: str, model: ModelProto):
         self.name = name
         self.model = model

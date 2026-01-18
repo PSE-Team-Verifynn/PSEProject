@@ -8,3 +8,6 @@ class NetworkVerificationConfig:
     network: NeuralNetwork
     bounds: InputBounds
     activation_values: List[int]
+
+    def __init__(self, network: NeuralNetwork):
+        self.network = network
