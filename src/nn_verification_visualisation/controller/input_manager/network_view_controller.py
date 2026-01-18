@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, TYPE_CHECKING
+
 from model.data.input_bounds import InputBounds
 from model.data.network_verification_config import NetworkVerificationConfig
 from model.data.neural_network import NeuralNetwork

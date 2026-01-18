@@ -1,5 +1,5 @@
 [project]
-name = "my-project"
+name = "nn_verification_visualisation"
 
 dynamic = ["version"]
 
@@ -10,7 +10,8 @@ dependencies = [
   "matplotlib >= 3.10.8"
 ]
 
-requires-python = ">=3.9"
+requires-python = ">=3.13"
+
 
 description = ""
 readme = "README.md"
@@ -21,3 +22,6 @@ authors = [
   {name = "Another person"},
   {email = "different.person@example.com"},
 ]
+
+[project.scripts]
+nn_verification_visualisation = "nn_verification_visualisation.main:main"
