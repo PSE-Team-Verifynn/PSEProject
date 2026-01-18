@@ -24,14 +24,16 @@ class NetworkViewController:
     def load_new_network(self):
         path = self.current_network_view.open_network_file_picker()
         if path is None:
-            pass
+            return
 
         result = NeuralNetworkLoader().load_neural_network(path)
         if not result.is_success:
-            pass
+            return
 
         storage = Storage()
         storage.networks.append(NetworkVerificationConfig(result.data))
+
+        print("Model was successfully loaded")
 
         self.current_tab = len(storage.networks)
 
