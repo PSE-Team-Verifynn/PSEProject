@@ -25,7 +25,9 @@ class BaseView(QWidget):
         change_button = QPushButton("Change")
         change_button.clicked.connect(self.change_active_view)
 
-        self.setLayout(QVBoxLayout())
+        self.box_layout = QVBoxLayout()
+        self.box_layout.setContentsMargins(0,0,0,0)
+        self.setLayout(self.box_layout)
         self.layout().addWidget(change_button)
         self.layout().addWidget(container)
 

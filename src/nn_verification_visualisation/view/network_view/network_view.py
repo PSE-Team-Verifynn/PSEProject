@@ -12,7 +12,7 @@ class NetworkView(InsertView):
     controller: NetworkViewController
 
     def __init__(self):
-        super().__init__()
+        super().__init__(False)
         self.controller = NetworkViewController(self)
         # self.layout.addWidget(QLabel("Network"))
 

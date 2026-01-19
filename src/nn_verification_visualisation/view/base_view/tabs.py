@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QWidget, QTabWidget, QVBoxLayout
 from view.base_view.tab import Tab
 
 class Tabs(QTabWidget):
-    def __init__(self):
+    def __init__(self, tabs_closable: bool = False):
         super().__init__()
         tab1 = QWidget()
         tab2 = QWidget()
@@ -14,7 +14,7 @@ class Tabs(QTabWidget):
         self.addTab(tab2, "Tab 2")
         self.addTab(tab3, "Tab 3")
 
-        self.setTabsClosable(True)
+        self.setTabsClosable(tabs_closable)
         self.tabCloseRequested.connect(self.close_tab)
 
     def add_tab(self, tab: Tab):

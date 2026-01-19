@@ -1,6 +1,7 @@
 from typing import List
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QDialog, QPushButton, QLabel
+from PySide6.QtCore import Qt
 
 from view.base_view.action_menu import ActionMenu
 from view.base_view.tabs import Tabs
@@ -13,31 +14,45 @@ class InsertView(QWidget):
 
     __dialog_stack: List[DialogBase]
 
-    def __init__(self, /):
+    def __init__(self, tabs_closable: bool):
         super().__init__()
 
-        self.tabs = Tabs()
+        self.tabs = Tabs(tabs_closable)
 
-        self.outer_layout = QStackedLayout()
+        self.container_layout = QStackedLayout()
 
         self.page_layout = QVBoxLayout()
         self.page_layout.addWidget(self.tabs)
+        self.page_layout.setContentsMargins(0,0,0,0)
 
-        self.base_page = QWidget()
-        self.base_page.setLayout(self.page_layout)
+        self.container = QWidget()
+        self.container.setLayout(self.page_layout)
 
-        self.setLayout(self.outer_layout)
-        self.outer_layout.addWidget(self.base_page)
+        self.container.setGeometry(self.rect())
+
+        self.setLayout(self.container_layout)
+        self.container_layout.addWidget(self.container)
 
         self.__dialog_stack = []
 
     def open_dialog(self, dialog: DialogBase):
         self.__dialog_stack.append(dialog)
-        self.outer_layout.addWidget(dialog)
+
+        dialog.setParent(self)
+        dialog.show()
+        dialog.setGeometry(self.rect())
+
+        print("dialog added")
 
     def close_dialog(self) -> bool:
         if len(self.__dialog_stack) <= 0:
             return False
 
-        self.outer_layout.removeWidget(self.__dialog_stack.pop())
+        self.__dialog_stack.pop().setParent(None)
         return True
+
+    def resizeEvent(self, event):
+        print("resize event")
+        super().resizeEvent(event)
+        for dialog in self.__dialog_stack:
+            dialog.setGeometry(self.rect())
