@@ -18,7 +18,9 @@ class NetworkManagementDialog(ListDialogBase[NetworkVerificationConfig]):
         return item.network.name
 
     def on_add_clicked(self) -> NetworkVerificationConfig | None:
-        return self.controller.load_new_network()
+        item = self.controller.load_new_network()
+        if item is not None:
+            self.add_item(item)
 
     def on_remove_clicked(self, item: T, index: int) -> bool:
         return self.controller.remove_neural_network(item)

@@ -1,7 +1,6 @@
 from typing import List
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QDialog, QPushButton, QLabel
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout
 
 from view.base_view.action_menu import ActionMenu
 from view.base_view.tabs import Tabs
@@ -23,7 +22,7 @@ class InsertView(QWidget):
 
         self.page_layout = QVBoxLayout()
         self.page_layout.addWidget(self.tabs)
-        self.page_layout.setContentsMargins(0,0,0,0)
+        self.page_layout.setContentsMargins(0, 0, 0, 0)
 
         self.container = QWidget()
         self.container.setLayout(self.page_layout)
@@ -41,8 +40,6 @@ class InsertView(QWidget):
         dialog.setParent(self)
         dialog.show()
         dialog.setGeometry(self.rect())
-
-        print("dialog added")
 
     def close_dialog(self) -> bool:
         if len(self.__dialog_stack) <= 0:

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from model.data.diagram_config import DiagramConfig
 from model.data.plot import Plot
+from view.dialogs.plot_config_dialog import PlotConfigDialog
 
 if TYPE_CHECKING:
     from view.plot_view.plot_view import PlotView
@@ -27,3 +28,7 @@ class PlotViewController:
 
     def export_plot(self, plot: Plot):
         pass
+
+    def open_plot_generation_dialog(self):
+        dialog = PlotConfigDialog(self)
+        self.current_plot_view.open_dialog(dialog)

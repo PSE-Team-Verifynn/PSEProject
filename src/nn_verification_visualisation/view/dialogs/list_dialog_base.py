@@ -20,7 +20,7 @@ class ListDialogBase(Generic[T], DialogBase):
         pass
 
     # abstract
-    def on_add_clicked(self) -> T | None:
+    def on_add_clicked(self) -> None:
         pass
 
     # abstract
@@ -52,7 +52,7 @@ class ListDialogBase(Generic[T], DialogBase):
         button_bar_layout = QHBoxLayout()
 
         add_button = QPushButton("Add")
-        add_button.clicked.connect(self.__internal_on_add_clicked)
+        add_button.clicked.connect(self.on_add_clicked)
         button_bar_layout.addWidget(add_button)
 
         if self.has_edit:
@@ -71,10 +71,7 @@ class ListDialogBase(Generic[T], DialogBase):
         content_layout.addLayout(button_bar_layout)
         return content
 
-    def __internal_on_add_clicked(self):
-        item = self.on_add_clicked()
-        if item is None:
-            return
+    def add_item(self, item: T):
         self.data.append(item)
         self.list_widget.addItem(self.get_title(item))
         self.list_widget.show()

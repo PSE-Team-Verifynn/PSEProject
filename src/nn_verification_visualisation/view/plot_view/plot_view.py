@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QVBoxLayout, QLabel
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton
 
 from controller.input_manager.plot_view_controller import PlotViewController
 from view.base_view.insert_view import InsertView
@@ -15,4 +15,9 @@ class PlotView(InsertView):
         layout = QVBoxLayout()
         self.setLayout(layout)
         layout.addWidget(QLabel("Plot"))
-        # dialog = FullscreenPlotDialog(None)
+
+        self.button = QPushButton("Create New Diagram", self)
+        self.button.move(100, 80)
+        self.button.clicked.connect(self.controller.open_plot_generation_dialog)
+
+        self.page_layout.addWidget(self.button)

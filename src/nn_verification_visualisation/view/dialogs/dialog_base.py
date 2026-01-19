@@ -38,7 +38,6 @@ class DialogBase(QWidget):
             self.dialog.setFixedWidth(size[0])
             self.dialog.setFixedHeight(size[1])
 
-
     def get_title_bar(self) -> QWidget:
         bar = QWidget()
 
