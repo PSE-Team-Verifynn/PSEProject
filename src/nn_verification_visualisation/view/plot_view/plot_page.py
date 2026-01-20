@@ -12,8 +12,17 @@ class PlotPage(Tab):
     locked: List[PlotWidget]
 
     def __init__(self, configuration: DiagramConfig):
-        super().__init__("Comparison")
-        self.configuration = configuration
+        super().__init__("Example Tab")
+        # configuration is currently not implemented
+        # self.configuration = configuration
+
+    def get_content(self) -> QWidget:
+        # add content here
+        return QWidget()
+
+    def get_side_bar(self) -> QWidget:
+        # add sidebar here
+        return QWidget()
 
     def change_lock(self, widget: PlotWidget):
         pass
