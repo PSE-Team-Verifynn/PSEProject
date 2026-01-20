@@ -1,0 +1,22 @@
+simple_onnx_example:ü
+/
+input
+W1
+B1fc1_outFullyConnected1"Gemm
+ 
+fc1_outrelu_outRelu1"Relu
+1
+relu_out
+W2
+B2outputFullyConnected2"GemmSimple3LayerNet*"€E?Né>‡€_¿
+gÑ?äW?7S(=QÂ¨?Tòë¾WîÀ¾…ê¿'û,?Øš?Ÿ•Õ=žûÁ>]ñÜ¼4Òì>Ô9¾n¢ú>E¥þ¾š±ÀùZ?¾^–­¿ ‘˜¿<–]?Ò¼^•¸?D”¿+CŽ¿iž¼?æéÃ>°Û?	O®¾BW1**" kÁ½q˜>œ»V¿:?í¿`ú<Ï8÷?Pk¿#¿ˆ<BB1*L"@‰–Ö¾¹'f½	b@ëG“?_’½–1¿|…?·4>Ïjd?¼+Ÿ¿7Ù†¿<·½»°Ì>gj=ä*/¿²?‡?BW2*"@NÍ¾BB2Z!
+input
+
+
+batch_size
+b"
+output
+
+
+batch_size
+B
