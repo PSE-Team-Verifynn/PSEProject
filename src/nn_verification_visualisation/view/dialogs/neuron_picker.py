@@ -2,6 +2,7 @@ from typing import List, Callable
 
 from PySide6.QtWidgets import QWidget
 
+from model.data.plot_generation_config import PlotGenerationConfig
 from view.dialogs.dialog_base import DialogBase
 
 class NeuronPicker(DialogBase):
@@ -22,3 +23,6 @@ class NeuronPicker(DialogBase):
 
     def get_content(self) -> QWidget:
         return QWidget()
+
+    def get_current_config(self) -> PlotGenerationConfig:
+        pass

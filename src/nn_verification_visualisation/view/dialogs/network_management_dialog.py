@@ -1,4 +1,4 @@
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from model.data.network_verification_config import NetworkVerificationConfig
 from model.data.storage import Storage

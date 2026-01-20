@@ -23,7 +23,7 @@ class DialogBase(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)  # important!
 
         self.dialog = QWidget()
-        self.dialog.setStyleSheet("background-color: #333; border-radius: 10px;")
+        self.dialog.setStyleSheet("background-color: #fff; border-radius: 10px;")
 
         outer_layout = QVBoxLayout()
         outer_layout.addWidget(self.dialog, alignment=Qt.AlignmentFlag.AlignCenter)
