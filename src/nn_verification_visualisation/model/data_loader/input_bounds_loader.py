@@ -1,5 +1,6 @@
 from typing import Dict, List, Iterable
 
+from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from utils.result import Result, Failure, Success
 
 import csv
@@ -10,7 +11,7 @@ from nn_verification_visualisation.model.data.neural_network import NeuralNetwor
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 
 class InputBoundsLoader(metaclass=SingletonMeta):
-    def load_input_bounds(self, file_path: str, network: NeuralNetwork) -> Result[InputBounds]:
+    def load_input_bounds(self, file_path: str, network_config: NetworkVerificationConfig) -> Result[InputBounds]:
         ending = file_path.split('.')[-1]
         is_csv = (ending == 'csv')
         is_vnnlib = (ending == 'vnnlib')
@@ -18,7 +19,10 @@ class InputBoundsLoader(metaclass=SingletonMeta):
         if not (is_csv or is_vnnlib):
             return Failure(ValueError(ending + ' is not supported. Please use a .csv or a .vnnlib file.'))
 
-        input_count = self.__get_input_count(network)
+        if network_config is None or len(network_config.activation_values) < 1:
+            return Failure(ValueError("Invalid network passed"))
+
+        input_count = network_config.activation_values[0]
 
         if is_csv:
             try:
@@ -28,8 +32,8 @@ class InputBoundsLoader(metaclass=SingletonMeta):
         elif is_vnnlib:
             return Failure(NotImplementedError("vnnlib is not yet supported."))
 
-    def __get_input_count(self, network: NeuralNetwork) -> int:
-        return 0
+    def __get_input_count(self, network_config: NetworkVerificationConfig) -> int:
+        return network_config.bounds[0]
 
     def __parse_csv(self, file_path: str, input_count: int) -> Result[InputBounds]:
         rows = []
@@ -85,7 +89,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
             try:
                 lower_bound, upper_bound = (float(row[0]), float(row[1]))
             except ValueError:
-                return Failure(ValueError(f"Value {i} is not an integer."))
+                return Failure(ValueError(f"Item at value {i} contains an argument that is not an integer."))
 
             if lower_bound > upper_bound:
                 return Failure(ValueError(f"Lower bound {lower_bound} is greater than upper bound {upper_bound} for item {i}"))
