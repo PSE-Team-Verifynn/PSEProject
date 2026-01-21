@@ -34,10 +34,13 @@ class NetworkViewController:
             return None
 
         result = NeuralNetworkLoader().load_neural_network(path)
+        layer_dimensions = []   #list of the number of nodes per Layer
+        for layer in result.data.model.graph.initializer:
+            layer_dimensions.append(layer.dims[0])
         if not result.is_success:
             return None
 
-        network = NetworkVerificationConfig(result.data)
+        network = NetworkVerificationConfig(result.data,layer_dimensions)   #layer_dimensions is used for visualization of the network
 
         storage = Storage()
         storage.networks.append(network)
