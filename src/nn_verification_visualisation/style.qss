@@ -7,6 +7,11 @@ QTabBar {
     border: 0px;
 }
 
+QTabWidget::pane {
+    background-color: transparent;
+    border: none;
+}
+
 
 QTabBar::tab {
     background-color: @bg1;
@@ -72,6 +77,11 @@ QAbstractButton:hover {
     border-top-right-radius: 15px;
 }
 
+#title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
 #subtitle {
     font-size: 16px;
     font-weight: bold;
@@ -85,11 +95,27 @@ QLabel,  #label, #popup-content {
     padding: 10px;
 }
 
+#background-button {
+    color: @bgt;
+    background-color: @bg2;
+}
+
+#background-button:hover {
+    background-color: @bg1;
+}
+
 #icon-button, #close-button {
     background-color: transparent;
     icon-size: 20px;
 }
 #close-button {
-
     margin: 5px;
+}
+
+#tab-sidebar {
+    background-color: @bg1;
+}
+
+#tab-content {
+    background-color: @bg0;
 }

@@ -14,7 +14,6 @@ class PlotView(InsertView):
         super().__init__(True)
         self.controller = PlotViewController(self)
 
-
         self.tabs.add_tab(PlotPage(None))
 
         self.set_bar_icon_button(lambda: None, ":assets/icons/menu_icon.svg", Qt.Corner.TopLeftCorner)

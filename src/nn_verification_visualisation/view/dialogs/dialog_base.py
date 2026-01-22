@@ -52,6 +52,11 @@ class DialogBase(QWidget):
     def get_title_bar(self) -> QWidget:
         bar = QWidget()
 
+        button_size = 35
+
+        left_padding = QWidget()
+        left_padding.setFixedWidth(button_size)
+
         bar_layout = QHBoxLayout(bar)
         bar_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -60,10 +65,13 @@ class DialogBase(QWidget):
         title.setAlignment(Qt.AlignCenter)
 
         close_btn = QPushButton() # tmp
+        close_btn.setFixedWidth(button_size)
+        close_btn.setFixedHeight(button_size)
         close_btn.setObjectName("close-button")
         close_btn.setIcon(QIcon(":assets/icons/close_icon.svg"))
         close_btn.clicked.connect(self.on_close)
 
+        bar_layout.addWidget(left_padding)
         bar_layout.addStretch()
         bar_layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignCenter)
         bar_layout.addStretch()
