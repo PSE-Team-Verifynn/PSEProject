@@ -1,6 +1,7 @@
 import sys
+from pathlib import Path
 
-import resources_rc
+from nn_verification_visualisation import resources_rc
 
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
@@ -26,7 +27,8 @@ colors = {
 def main():
     app = QApplication(sys.argv)
 
-    with open("style.qss", "r") as f:
+    style_path = Path(__file__).with_name("style.qss")
+    with style_path.open("r") as f:
         stylesheet = f.read()
 
         for (key, val) in colors.items():
