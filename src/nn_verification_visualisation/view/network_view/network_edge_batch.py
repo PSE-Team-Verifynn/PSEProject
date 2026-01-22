@@ -59,7 +59,7 @@ class NetworkEdgeBatch(QGraphicsItem):
         else:
             # Traditional line rendering
             pen = QPen(QColor(150, 150, 150, 100))
-            pen.setWidth(20)
+            pen.setWidth(1)
             pen.setCosmetic(True)
             painter.setPen(pen)
             painter.drawLines(self.lines)

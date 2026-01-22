@@ -22,15 +22,18 @@ class NetworkNode(QGraphicsEllipseItem):
         self.index = index
         self.layer_index = layer_index
         self.on_click = on_click
+        self.selectable = selectable
 
         self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
 
         # Visual setup
         self.setBrush(QBrush(self.color_unselected))
-        self.setPen(QPen(self.color_node_outline, self.outline_pen_thickness))
+        pen = QPen(self.color_node_outline, self.outline_pen_thickness)
+        pen.setCosmetic(True)
+        self.setPen(pen)
 
         # Selection flags
-        if selectable:
+        if self.selectable:
             self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
             self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
 

@@ -1,9 +1,10 @@
+import random
 from typing import List, Callable
 
-from PySide6.QtGui import QColor, QPainter, QPen, QWheelEvent
+from PySide6.QtGui import QColor, QPainter, QPen, QWheelEvent, QKeyEvent, QTransform
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QGraphicsView, QGraphicsLineItem, QGraphicsScene
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QVariantAnimation, QEasingCurve, QParallelAnimationGroup
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.network_view.network_edge_batch import NetworkEdgeBatch
@@ -19,12 +20,14 @@ class NetworkWidget(QGraphicsView):
     on_selection_changed: Callable[[List[NetworkNode]], None]
 
     background_color: QColor = QColor("#F0F0F0")
-    min_size_x, min_size_y = (600, 400)
-    padding_x, padding_y = (1000, 400)
+
     height_to_width_ration: float = 1.0
     node_spacing = 90
     radius = 18.0
     performance_mode_edge_threshold: int = 25000
+    zoom_in_factor = 1.15
+    zoom_out_factor = 1 / 1.15
+    padding_percentage = 0.5
 
     def __init__(self, configuration: NetworkVerificationConfig, nodes_selectable: bool = False, on_selection_changed: Callable[[List[NetworkNode]], None] = None):
         super().__init__()
@@ -33,7 +36,16 @@ class NetworkWidget(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
 
+        self.setBackgroundBrush(self.background_color)
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.viewport().setMouseTracking(True)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+        self.scene.setItemIndexMethod(QGraphicsScene.ItemIndexMethod.NoIndex)
+        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.node_layers = []
 
@@ -41,21 +53,10 @@ class NetworkWidget(QGraphicsView):
         self.__build_network()
         self.setUpdatesEnabled(True)
 
-        self.setBackgroundBrush(self.background_color)
-        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-        self.viewport().setMouseTracking(True)
-        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setMinimumSize(self.min_size_x, self.min_size_y)
-        self.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
-        self.scene.setItemIndexMethod(QGraphicsScene.ItemIndexMethod.NoIndex)
-        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.SmartViewportUpdate)
+        self.__update_view_constraints()
 
-        content_rect = self.scene.itemsBoundingRect()
-
-        # Allows panning past the actual nodes.
-        padded_rect = content_rect.adjusted(-self.padding_x, -self.padding_y, self.padding_x, self.padding_y)
-        self.scene.setSceneRect(padded_rect)
-        self.centerOn(content_rect.center())
+        # Initial View
+        self.fitInView(self.scene.itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
     def __build_network(self):
         layers = self.configuration.layers_dimensions
@@ -122,29 +123,84 @@ class NetworkWidget(QGraphicsView):
         print(f"Clicked Node: Layer {layer}, Index {index}")
         # You can emit a signal here or update a side panel
 
-    def wheelEvent(self, event: QWheelEvent):
-        """
-        Handles mouse wheel scrolling to zoom in and out.
-        """
-        # 1. Define zoom settings
-        zoom_in_factor = 1.15
-        zoom_out_factor = 1 / zoom_in_factor
+    def __update_view_constraints(self):
+        content_rect = self.scene.itemsBoundingRect()
 
-        # 2. Set anchor so we zoom relative to the mouse cursor position
-        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        if content_rect.isEmpty():
+            return
 
-        # 3. Determine zoom direction
-        if event.angleDelta().y() > 0:
-            zoom_factor = zoom_in_factor
+        self.padding_x = content_rect.width() * self.padding_percentage
+        self.padding_y = content_rect.height() * self.padding_percentage
+
+        padded_rect = content_rect.adjusted(
+            -self.padding_x, -self.padding_y,
+            self.padding_x, self.padding_y
+        )
+        self.scene.setSceneRect(padded_rect)
+
+        viewport_width = self.viewport().width() or 800
+        self.min_scale = (viewport_width / padded_rect.width()) * 0.8
+        self.max_scale = 300 / self.radius
+
+    def go_to_node(self, layer_index: int, node_index: int):
+        if not self.node_layers or not self.node_layers[layer_index]:
+            return
+
+        node = self.node_layers[layer_index][node_index]
+        target_scene_pos = node.scenePos()
+
+        # 1. Determine Target Zoom Level
+        # We want the node to occupy a specific size on screen (e.g., 60px wide)
+        # Target Scale = Desired Pixel Size / Actual Item Radius
+        target_scale = 60.0 / self.radius
+        current_scale = self.transform().m11()
+
+        self.zoom_anim = QVariantAnimation()
+        self.zoom_anim.setDuration(600)
+        self.zoom_anim.setStartValue(current_scale)
+        self.zoom_anim.setEndValue(target_scale)
+        self.zoom_anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+
+        def apply_zoom(scale):
+            # Apply the new scale while maintaining the current transform's center
+            self.setTransform(QTransform.fromScale(scale, scale))
+            self.centerOn(target_scene_pos)
+
+
+        self.zoom_anim.valueChanged.connect(apply_zoom)
+
+        # 5. Run both together
+        self.anim_group = QParallelAnimationGroup()
+        self.anim_group.addAnimation(self.zoom_anim)
+
+        # Visual feedback: Highlight the node when reached
+        self.anim_group.finished.connect(lambda: node.setSelected(True))
+
+        self.centerOn(target_scene_pos)
+        self.anim_group.start()
+
+    def keyPressEvent(self, event: QKeyEvent):
+        """
+        Captured every time a key is pressed while the widget has focus.
+        """
+        # Example: Press 'R' to go to a random node
+        if event.key() == Qt.Key.Key_R:
+            print("R key pressed: Jumping to random node.")
+            layer = random.randint(0, len(self.node_layers) - 1)
+            node = random.randint(0, len(self.node_layers[layer]) - 1)
+            self.go_to_node(layer, node)
         else:
-            zoom_factor = zoom_out_factor
+            super().keyPressEvent(event)
 
-        # 4. Apply zoom with safety limits
-        # Check current total scale by looking at the transformation matrix
+    def wheelEvent(self, event: QWheelEvent):
+        zoom_factor = self.zoom_in_factor if event.angleDelta().y() > 0 else self.zoom_out_factor
+
+        # Check current scale (m11 is the horizontal scaling factor)
         current_scale = self.transform().m11()
         new_scale = current_scale * zoom_factor
 
-        #if 0.7 < new_scale < 10.0:
-        self.scale(zoom_factor, zoom_factor)
+        # Apply limits calculated in __update_view_constraints
+        if self.min_scale < new_scale < self.max_scale:
+            self.scale(zoom_factor, zoom_factor)
 
         event.accept()
