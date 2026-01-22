@@ -19,7 +19,7 @@ class AlgorithmLoader(metaclass=SingletonMeta):
 
             if not path.is_file():
                 raise FileNotFoundError(f"Algorithm is not found: {path}")
-            if path.suffix.lower() == ".py":
+            if path.suffix.lower() != ".py":
                 raise ValueError(f"Algorithm must be a .py file, got: {path.suffix}")
 
             module_name = "nnvv_alg_" + hashlib.md5(str(path.resolve()).encode("utf-8")).hexdigest()
@@ -38,7 +38,7 @@ class AlgorithmLoader(metaclass=SingletonMeta):
                     sys.path.pop(0)
 
             fn = getattr(module, "calculate_output_bounds", None)
-            if fn is None or callable(fn):
+            if fn is None or not callable(fn):
                 raise AttributeError(f"Algorithm {module_name} has no calculate_output_bounds(onnx_model, input_bounds) function")
 
             sig = inspect.signature(fn)

@@ -9,3 +9,4 @@ class NeuralNetwork:
     def __init__(self, name: str, path: str, model: ModelProto):
         self.name = name
         self.model = model
+        self.path = path
