@@ -22,6 +22,10 @@ class NetworkEdgeBatch(QGraphicsItem):
         self.setZValue(-1)
 
     def __init_block_geometry(self):
+        if not self.source_nodes or not self.target_nodes or len(self.source_nodes) == 0 or len(self.target_nodes) == 0:
+            self.polygon = QPolygonF()
+            self._bounding_rect = self.polygon.boundingRect()
+            return
         s_top = self.source_nodes[0].scenePos()
         s_bot = self.source_nodes[-1].scenePos()
         t_top = self.target_nodes[0].scenePos()
