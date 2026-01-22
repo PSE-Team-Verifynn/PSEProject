@@ -1,0 +1,144 @@
+QMainWindow {
+    background-color: @bg2;
+}
+
+QTabBar {
+    draw-control: none;
+    border: 0px;
+}
+
+QTabWidget::pane {
+    background-color: transparent;
+    border: none;
+}
+
+
+QTabBar::tab {
+    background-color: @bg1;
+    padding: 8px 16px;
+    margin: 5px 0px 5px 5px;
+    border-radius: 10px;
+    border: 0px;
+}
+
+QTabBar::close-button {
+    image: url(:assets/icons/close_icon.svg);
+}
+
+QTabBar::tab:selected {
+    background-color: @bg0;
+    border: 1px solid @fg1;
+}
+
+QAbstractButton {
+    background-color: @fg1;
+    color: @fgt;
+    height: 30;
+    border-radius: 10px;
+}
+
+QAbstractButton:hover {
+    background-color: #7895ab;
+
+    height: 30;
+    border-radius: 10px;
+}
+
+#faded-background {
+    background-color: rgba(0, 0, 0, 150);
+}
+
+#dialog-pane, #card {
+    background-color: @bg0;
+    border-radius: 15px;
+}
+
+#plot-card {
+    background-color: @bg1;
+    color : red;
+    border-radius: 15px;
+}
+
+
+#header-info {
+    background-color: @bg2;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#header-success {
+    background-color: @success;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#header-warning {
+    background-color: @warning;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#header-error {
+    background-color: @error;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#subtitle, #card::title{
+    font-size: 16px;
+    font-weight: bold;
+}
+
+QLabel, #label, #popup-content {
+    font-size: 14px;
+}
+
+#popup-content {
+    padding: 10px;
+}
+
+#background-button {
+    color: @bgt;
+    background-color: @bg2;
+}
+
+#transparent-button {
+    color: @bgt;
+    background-color: transparent;
+}
+
+QCheckBox {
+    spacing: 1px;
+}
+
+QCheckBox::indicator, QCheckBox::title {
+    border: 2px solid @bgt;
+    padding: 0;
+    margin: 0;
+    border-radius: 3px;
+}
+
+#background-button:hover {
+    background-color: @bg1;
+}
+
+#icon-button, #close-button {
+    background-color: transparent;
+    icon-size: 20px;
+}
+#close-button {
+    margin: 5px;
+}
+
+#tab-sidebar {
+    background-color: @bg1;
+}
+
+#tab-content {
+    background-color: @bg0;
+}

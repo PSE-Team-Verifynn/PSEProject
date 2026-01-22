@@ -1,5 +1,5 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING
-
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.dialogs.list_dialog_base import ListDialogBase, T

@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QLabel
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.base_view.tab import Tab
@@ -15,5 +15,18 @@ class NetworkPage(Tab):
         return NetworkWidget(self.configuration)
 
     def get_side_bar(self) -> QWidget:
-        right = QLabel("Right (80%)")
-        return right
+        base = QWidget()
+
+        title = QLabel("Input Layer Bounds")
+        title.setObjectName("title")
+
+        import_button = QPushButton("Import Bounds")
+        import_button.setObjectName("background-button")
+
+        layout = QVBoxLayout()
+        layout.addWidget(title)
+        layout.addStretch()
+        layout.addWidget(import_button)
+        base.setLayout(layout)
+
+        return base

@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QSplitter, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QSplitter, QHBoxLayout, QVBoxLayout
 from PySide6.QtCore import Qt
 
 class Tab(QWidget):
@@ -9,12 +9,30 @@ class Tab(QWidget):
         self.title = title
 
         layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setContentsMargins(0,0,0,0)
 
-        splitter.addWidget(self.get_side_bar())
-        splitter.addWidget(self.get_content())
+        sidebar_layout = QVBoxLayout()
+        sidebar_layout.setContentsMargins(0,0,0,0)
+        sidebar_layout.addWidget(self.get_side_bar())
+
+        sidebar_container = QWidget()
+        sidebar_container.setObjectName("tab-sidebar")
+        sidebar_container.setLayout(sidebar_layout)
+
+        content_layout = QVBoxLayout()
+        content_layout.setContentsMargins(0,0,0,0)
+        content_layout.addWidget(self.get_content())
+
+        content_container = QWidget()
+        content_container.setObjectName("tab-content")
+        content_container.setLayout(content_layout)
+
+        splitter.addWidget(sidebar_container)
+        splitter.addWidget(content_container)
 
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 4)

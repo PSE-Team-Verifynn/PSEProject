@@ -1,10 +1,13 @@
-from typing import List
+from typing import List, Callable
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 
 from nn_verification_visualisation.view.base_view.action_menu import ActionMenu
 from nn_verification_visualisation.view.base_view.tabs import Tabs
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
+from PySide6.QtCore import QSize
 
 class InsertView(QWidget):
     tabs: Tabs
@@ -19,10 +22,12 @@ class InsertView(QWidget):
         self.tabs = Tabs(tabs_closable)
 
         self.container_layout = QStackedLayout()
+        self.container_layout.setContentsMargins(0, 0, 0, 0)
 
         self.page_layout = QVBoxLayout()
         self.page_layout.addWidget(self.tabs)
         self.page_layout.setContentsMargins(0, 0, 0, 0)
+        self.page_layout.setSpacing(0)
 
         self.container = QWidget()
         self.container.setLayout(self.page_layout)
@@ -33,6 +38,26 @@ class InsertView(QWidget):
         self.container_layout.addWidget(self.container)
 
         self.__dialog_stack = []
+
+    def set_bar_icon_button(self, on_click: Callable[[], None],  icon: str, corner: Qt.Corner):
+        button = QPushButton()
+        button.setObjectName("icon-button")
+        button.clicked.connect(on_click)
+
+        button.setIcon(QIcon(icon))
+        button.setFixedWidth(40)
+        button.setFixedHeight(40)
+
+        container = QWidget()
+        container.sizeHint = lambda : QSize(button.width(), self.tabs.tabBar().height())
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addStretch()
+        layout.addWidget(button)
+        layout.addStretch()
+
+        self.tabs.setCornerWidget(container, corner)
+
 
     def open_dialog(self, dialog: DialogBase):
         self.__dialog_stack.append(dialog)

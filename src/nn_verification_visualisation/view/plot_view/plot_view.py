@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import Qt
 
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
@@ -13,14 +14,7 @@ class PlotView(InsertView):
         super().__init__(True)
         self.controller = PlotViewController(self)
 
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        layout.addWidget(QLabel("Plot"))
-
-        self.button = QPushButton("Create New Diagram", self)
-        self.button.move(100, 80)
-        self.button.clicked.connect(self.controller.open_plot_generation_dialog)
-
-        self.page_layout.addWidget(self.button)
-
         self.tabs.add_tab(PlotPage(None))
+
+        self.set_bar_icon_button(lambda: None, ":assets/icons/menu_icon.svg", Qt.Corner.TopLeftCorner)
+        self.set_bar_icon_button(self.controller.open_plot_generation_dialog, ":assets/icons/add_icon.svg", Qt.Corner.TopRightCorner)
