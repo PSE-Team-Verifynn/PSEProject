@@ -1,9 +1,8 @@
 import random
 from typing import List, Callable
 
-from PySide6.QtGui import QColor, QPainter, QPen, QWheelEvent, QKeyEvent, QTransform
-from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtWidgets import QGraphicsView, QGraphicsLineItem, QGraphicsScene
+from PySide6.QtGui import QColor, QPainter, QPen, QWheelEvent, QKeyEvent, QTransform, QPalette
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
 from PySide6.QtCore import Qt, QVariantAnimation, QEasingCurve, QParallelAnimationGroup
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
