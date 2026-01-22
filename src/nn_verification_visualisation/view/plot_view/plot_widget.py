@@ -1,4 +1,6 @@
 from __future__ import annotations
+from __future__ import annotations
+
 from typing import Callable
 
 from nn_verification_visualisation.model.data.plot import Plot
@@ -10,3 +12,9 @@ class PlotWidget(QWidget):
     on_fullscreen: Callable[[PlotWidget], None]
     on_lock_change: Callable[[PlotWidget], None]
     on_transform: Callable[[PlotWidget, tuple[float, float, float, float]], None]
+    figure: object | None
+    axes: object | None
+    canvas: object | None
+    locked: bool
+    toolbar: object | None
+    plot_layout: object | None
