@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from nn_verification_visualisation.view.dialogs.neuron_picker import NeuronPicker

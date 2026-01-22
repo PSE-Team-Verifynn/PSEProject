@@ -1,0 +1,961 @@
+Praxis der Softwareentwicklung
+Visualisierung von
+Verifikationsalgorithmen für Neuronale
+Netze
+Praxis der Softwareentwicklung (PSE)
+Wintersemester 2025/26
+
+Entwurfsheft
+Karlsruher Institut für Technologie (KIT)
+KASTEL-Institut für Informationssicherheit und Verlässlichkeit
+Anwendungsorientierte Formale Verifikation
+Prof. Dr. Bernhard Beckert
+Am Fasanengarten 5
+Gebäude 50.34
+76131 Karlsruhe
+Betreuer: Philipp Kern
+
+Projektteilnehmer:
+Name
+
+E-Mail-Adresse
+
+Alexander Mikhaylov
+
+uiqbn@student.kit.edu
+
+Cedric Linde
+
+unogx@student.kit.edu
+
+Elias Dörr
+
+uuxmf@student.kit.edu
+
+Enrique Lopez
+
+ukgyh@student.kit.edu
+
+Paul Schepperle
+
+ucnlo@student.kit.edu
+
+Karlsruhe, 16. Januar 2026
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Inhaltsverzeichnis
+1 Einführung
+
+4
+
+2 Komponentenstruktur
+
+5
+
+2.1
+
+Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+5
+
+2.2
+
+View . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+6
+
+2.3
+
+Controller . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+7
+
+2.4
+
+Utils . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+8
+
+2.5
+
+Begründung . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+9
+
+3 Klassenstruktur
+
+10
+
+3.1
+
+Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+10
+
+3.2
+
+View . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+13
+
+3.3
+
+Controller . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+19
+
+3.4
+
+Utils . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+21
+
+4 Interessante Prozesse
+
+22
+
+4.1
+
+Sequenzdiagramm für <TF2> . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+22
+
+4.2
+
+Sequenzdiagramm für <TF8> . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+23
+
+4.3
+
+Sequenzdiagramm für <TF10> . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+24
+
+5 Zustände und Übergänge
+
+25
+
+6 Benutzeroberfläche
+
+27
+
+6.1
+
+Konzept . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+27
+
+6.2
+
+Ansichten . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+28
+
+6.3
+
+Dialoge . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+29
+
+6.4
+
+Weitere Elemente . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+32
+
+7 Python-Algorithmus-Schnittstelle
+
+33
+
+7.1
+
+Grundidee . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+33
+
+7.2
+
+Funktionsschnittstelle . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+33
+
+7.3
+
+Semantik und Verantwortlichkeiten . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+34
+
+2
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+8 Weitere Informationen
+
+35
+
+8.1
+
+Zeitplan . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+35
+
+8.2
+
+Verwendete externe Bibliotheken . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+36
+
+Glossary
+
+37
+
+3
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+1 Einführung
+In dieser Phase der Projektentwicklung wurde die Struktur des Systems auf einer detaillierteren
+Ebene ausgearbeitet. Dazu entstand ein Modell auf Komponenten- und Klassenebene, das die
+grundlegende Architektur und das Zusammenspiel der einzelnen Systembestandteile beschreibt.
+Das dynamische Verhalten des Systems wurde mithilfe von Zustands- und Sequenzdiagrammen
+veranschaulicht, um typische Abläufe und Interaktionen nachvollziehbar darzustellen.
+Parallel dazu wurde das UI-Design weiter verfeinert, indem zusätzliche Details und Ansichten
+ergänzt wurden. Abschließend wurde die Schnittstelle zur Einbindung externer Algorithmen
+konzeptionell beschrieben, um eine klare Integration und zukünftige Erweiterbarkeit des Systems
+zu gewährleisten.
+Die grundsätzliche Idee des Programms ist es, mithilfe schon existierender Verfikationsalgorithmen die erreichbaren Wertemengen beliebiger Neuronenpaare eines Netzes zu visualisieren. Die
+bekannten Algorithmen können dies bereits für die Knoten des Ausgabelayers. Unser Programm
+besitzt nun die Möglichkeit, Netze so zu modifizieren, dass nur ausgewählte Knoten Auswirkungen auf die Ausgabeschicht haben. Somit berechnen die Algorithmen effektiv die erreichbaren
+Werte dieser ausgewählten Knoten. Fügt man nun zusätzliche Endknoten ein, welche mit ihren
+Kantengewichten neue Linearkombinationen der ausgewählten Neuronen repräsentieren, so lässt
+sich die erreichbare Wertemenge noch präziser bestimmen.
+
+4
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+2 Komponentenstruktur
+Für den Entwurf des Programms wurde die Model-View-Controller (MVC) Architektur gewählt.
+Durch die Entkopplung der einzelnen Komponenten wird die Wartbarkeit und Erweiterbarkeit
+der Software deutlich verbessert.
+
+Dabei ist die Architektur in drei Komponenten unterteilt, um eine saubere Trennung zwischen
+Datenmodell, Benutzeroberfläche und Steuerlogik zu gewährleisten.
+Im Folgenden werden die Aufgaben der einzelnen Komponenten näher beschrieben.
+
+2.1 Model
+Die Model-Komponente kapselt die Datenstrukturen und zur Laufzeit verwendeten Daten der
+Anwendung.
+Im Model bündelt Data die zentralen Domänenobjekte (siehe 3.1). Die Komponente ist für die
+Strukturierung und Zwischenspeicherung der Programmdaten verantwortlich, beinhaltet aber
+selbst keine Logik. DataLoader und DataExporter sind für den Import bzw. Export von Daten
+auf die Festplatte verantwortlich (z. B. ONNX, Projektdateien) und stellen ihre Funktionalitäten dem Controller über die Interfaces Load und Export zur Verfügung. Diese beiden Module
+
+5
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+unterscheiden sich stark von Data, da sie selbst keine Daten verwalten, sondern lediglich die
+Serialisierung von Datenobjekten übernehmen. Deshalb erscheinen sie als eigene Komponente
+sinnvoll.
+UpdateData ist die Schnittstelle, über die der DataLoader Daten in die Datenkomponente
+schreibt bzw. aktualisiert. ReadData ist die Schnittstelle, über die der DataExporter Daten
+aus der Datenkomponente zum Export liest. Die beiden Schnittstellen sind getrennt, um die
+Komponenten zu entkoppeln und die Berechtigungen klar zu definieren: Die eine darf schreiben,
+die andere nur lesen.
+
+2.2 View
+Die View-Komponente ist für die Darstellung und direkte UI-Interaktion zuständig. Sie visualisiert den aktuellen Zustand des Models und leitet Benutzereingaben über definierte Schnittstellen
+an den Controller weiter.
+BaseView stellt das zentrale Anwendungsfenster bereit. Es definiert die grundlegende Fensterund Layoutstruktur der Oberfläche (z. B. Titelleiste, Menü-/Toolbar-Bereich, zentraler Inhaltsbereich) und dient als gemeinsamer Container, in den die jeweils aktive Ansicht eingebettet
+bzw. ausgetauscht wird. NetworkView realisiert die Netzwerkansicht, in der Netze importiert
+und visualisiert werden und Neuronenpaare ausgewählt werden können. PlotView kapselt die
+Plot-Ansicht, in der u.a. Algorithmen ausgewählt, Diagramme angezeigt und Vergleiche erstellt
+werden. DialogManager beinhaltet das Grundsystem und die einzelnen Klassen aller Dialoge
+des Programms. Da Dialoge viele verschiedene Funktionen übernehmen und daher schwer zuordenbar sind, wurden sie vom restlichen UI abgetrennt. Die Einteilung in die vier Komponenten
+
+6
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+erschien uns sinnvoll, da die erstellten Klassen sehr genau die Struktur der tatsächlichen Benutzeroberfläche widerspiegeln und diese in die gleichen Teile unterteilt ist: Es gibt die beiden
+Ansichten für neuronale Netze und für Diagramme, zwischen denen man zu jeder Zeit wechseln
+kann, die ansonsten aber wenig miteinander verknüpft sind. Zusätzlich gibt es im Programm
+mehrere wiederkehrende UI-Elemente, die unabhängig von beiden Ansichten sind (bspw. Tabs,
+gleiche Buttons, etc.). Diese sind zwar teilweise ansichtsabhängig, nutzen aber ein sehr eng verknüpftes Grundsystem. Um starke Kopplung zwischen den Komponenten zu vermeiden lohnt es
+sich daher, alle Dialoge in eine eigene Komponente auszulagern.
+Über ChangeView kann der Controller die Darstellung verändern. UserGestures überträgt Nutzerinteraktionen (z. B. Klicks, Selektion, Navigation) an den Controller. StateQuery ermöglicht
+der View, benötigte Zustandsinformationen aus dem Model abzufragen, und ChangeNotification
+erlaubt dem Model, die View über relevante Änderungen zu informieren, sodass die Darstellung
+konsistent aktualisiert wird.
+
+2.3 Controller
+Der Controller vermittelt zwischen View und Model und steuert den Anwendungsablauf. Er
+verarbeitet Benutzereingaben, übersetzt diese in Aktionen (z. B. Laden von Daten, Starten von
+Berechnungen) und initiiert entsprechende Aktualisierungen der View bzw. Interaktionen mit
+der Disk über das Model.
+InputManager nimmt Eingaben aus der View entgegen und übersetzt sie in konkrete Operationen, etwa das Starten einer Berechnung. ProcessManager kümmert sich um die asynchrone Aus-
+
+7
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+führung von Verifikationsalgorithmen. Neue Algorithmen können über die AlgorithmManagementSchnittstelle aus dem InputManager gestartet werden. Da das Ausführen von Algorithmen eine
+stark gekapselte Funktion ist, welche im Programm nur an einer Stelle benötigt wird und sehr
+spezifische Logik enthält (Threads der Algorithmen verwalten, Netzwerke manipulieren), ist eine
+eigene Komponente dafür sehr sinnvoll.
+
+2.4 Utils
+
+Zusätzlich zu den MVC-Subsystemen enthält die Architektur die Komponente Utils, die allgemeine Hilfsklassen bündelt, die keiner einzelnen Schicht eindeutig zugeordnet werden. Utils
+wird insbesondere vom Model und vom Controller verwendet, um gemeinsam benötigte Funktionalitäten zentral bereitzustellen und Mehrfachimplementierungen zu vermeiden.
+
+8
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+2.5 Begründung
+MVC lässt sich besonders gut entlang der drei Komponenten erweitern: neue Verifikationsalgorithmen im Model, neue Visualisierungen in der View und neue Bedienabläufe im Controller
+- meist ohne große Änderungen an den anderen Teilen. Schlechter erweiterbar sind dagegen
+Änderungen, die quer durch alle Schichten gehen, z. B. ein grundlegender Umbau des Datenmodells oder des Ergebnisformats, weil dann Model, View, Controller gleichzeitig angepasst werden
+müssen. Dieser Trade-off ist für das vorliegende System vorteilhaft, da mögliche Erweiterungen
+primär in der Ergänzung weiterer Verifikationsalgorithmen und zusätzlicher Visualisierungen liegen. Fundamentale Querschnittsänderungen am System treten demgegenüber seltener auf, weil
+das Grundschema (Netzwerk und Eingabebounds → Überapproximation erreichbarer Mengen
+→ Visualisierung und Vergleich) konstant bleibt.
+
+9
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+3 Klassenstruktur
+Wie bereits im Komponentendiagramm beschrieben, nutzt die Software das Architekturmuster
+Model-View-Controller. Die drei Komponenten mit ihren Unterkomponenten finden sich auch
+im Klassendiagramm wieder und werden durch die einzelnen Klassen genauer definiert.
+
+3.1 Model
+Im Model wurde die Data-Komponente in einige Klassen unterteilt, um den State und die
+geladenen Daten der Software darzustellen. Folgende Klassen speichern lediglich Variablen und
+Konstanten, implementieren jedoch keine Methoden, die diese intern verändern (sie besitzen also
+keine Logik). Außerdem sind Variablen nach Möglichkeit als final definiert, um auch Änderungen
+von außen zu verhindern.
+• InputBounds speichert die Zuordnung von Ganzzahlen zu einem Intervall, um den gültigen
+Bereich für Eingaben des ersten Layers eines neuronalen Netzes zu definieren. Die Ganzzahl
+gibt dabei die Position des jeweiligen Neurons innerhalb des ersten Layers an.
+• NeuralNetwork beinhaltet alle Informationen zu einem von der Festplatte geladenen Netzwerk. Dazu gehören der Name und Pfad der Datei, sowie das geladene Netzwerk selbst
+(von der externen onnx-Bibliothek).
+• Algorithm verweist auf einen ausführbaren Algorithmus auf der Festplatte, indem dessen
+Pfad gespeichert wird. Ebenfalls werden der Name und die Information, ob der Algorithmus
+deterministisch ist, definiert.
+• Plot beinhaltet die Informationen eines einzelnen MatPlotLib-Plots. Die Klasse speichert
+die komplette Geometrie der einzelnen Graphen sowie dessen Namen und ist daher unabhängig von NeuralNetwork und Algorithm.
+• NetworkVerificationConfig speichert ein NeuralNetwork mit InputBounds. Sie enthält
+genau den State eines im View geöffneten Netzwerk-Tabs.
+• PlotGenerationConfig beinhaltet alle Informationen, die zur Generierung eines Graphen
+durch das Ausführen eines Algorithm benötigt werden. Die Klasse speichert als Basis
+eine NetworkVerificationConfig, außerdem den Algorithm, eine Liste an ausgewählten
+
+10
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Neuronen (als Ganzzahl-Tupel) und eine Liste an Parametern zum Übergeben an den
+Algorithmus.
+• DiagramConfig enthält genau die Informationen, die zum Anzeigen eines Diagramm-Tabs
+in der View benötigt werden. Dazu gehören die Zuordnung von verwendeten
+PlotGenerationConfigs zu dem jeweils daraus generierten Graphen (eine Figure der
+Bibliothek MatPlotLib) und eine Zuordnung von angezeigten Plots zu einer Liste der im
+jeweiligen Plot verwendeten PlotGenerationConfig.
+• SaveState beinhaltet Variablen um den gesamten State der Software zu speichern. Die
+Klasse wird genutzt, um diese Informationen auf die Festplatte zu schreiben und beim
+erneuten Öffnen den alten State vollständig zu rekonstruieren. Dafür wird bei Bedarf ein
+SaveState-Objekt erstellt und nach dem Schreiben auf die Festplatte wieder gelöscht.
+Gespeichert werden eine Liste von Listen an NetworkVerificationConfigs (für jeden
+Netzwerk-Tab eine) und eine Liste an DiagramConfigs (für jeden Diagramm-Tab eine).
+Da über die DiagramConfigs auch alle Plot-Objekte gespeichert werden, müssen die Algorithmen beim Laden nicht erneut ausgeführt werden um die alten Diagramme anzuzeigen.
+Außerdem beinhaltet die Data-Komponente die Klasse Storage, welche alle im Programm geladene Daten speichert. Sie ist als Singleton designt und daher nicht von außerhalb instanziierbar.
+Dazu haben wir uns entschieden, da die Daten von vielen Stellen im Code einfach erreichbar
+sein müssen und niemals mehrere Datensätze gleichzeitig gebraucht werden. Außerdem sind geladenen Daten alle in einer zentralen Storage-Klasse und nicht auf mehrere Klassen verteilt,
+da zum Erstellen einer DiagramConfig alle geladenen Datentypen (Algorithmen, NetworkVerificationConfig, DiagramConfig) gebraucht werden und somit nicht unabhängig voneinander
+im Speicher verwaltet werden sollten. Um die Liste an Algorithmen aktuell zu halten, fungiert die Storage-Klasse als Observer, der vom FileSystem bei neuen Dateien benachrichtigt
+wird. Programmintern ist sie ebenfalls eine Observable im Observer-Pattern, da andere Objekte
+zu ihr subscriben können, um von Algorithmenklassen zu erfahren. Insbesondere tut dies der
+NeuronPicker im View. Wenn eine neue Datei erkannt wird, wird diese also in das Storage
+geladen und dann notifyListeners() ausgeführt, um das Update weiterzuleiten.
+Für die Interaktion mit der Festplatte gibt es einige Klassen in den Komponenten DataLoader
+und DataExporter.
+Die Klassen InputBounds, NeuralNetwork, Algorithm, Plot, SaveState haben jeweils eine korrespondierende Loader-Klasse, die für das Laden des jeweiligen Datentypen von der Festplatte
+verantwortlich ist. Jede Loader-Klasse ist gleich aufgebaut. Dennoch haben wir uns gegen eine
+gemeinsame Parent-Klasse entschieden, da an keiner Stelle im Programm Daten eines beim Kompilieren unbekannten Types geladen werden müssen. Ebenfalls werden an keiner einzelnen Stelle
+mehrere verschiedene Loader verwendet. Die Verwendung von Objektorientierung ist hier also
+überflüssig. Jeder Loader ist ein Singleton, speichert also selbst eine statische Instanz von sich
+
+11
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+selbst und kann außerhalb der eigenen Klasse nicht instanziiert werden. Da ein Loader-Objekt
+keine Variablen sondern lediglich globale Hilfsfunktionen beinhaltet, ergibt es keinen Sinn mehrere Instanzen eines Loaders zu erstellen. Um die statische Instanz von außen zu bekommen,
+enthält jeder Loader eine öffentliche, statische getInstance-Methode. Wird die Methode aufgerufen und die in der Klasse gespeicherte Instanz ist null, wird diese neu erstellt, gesetzt und dann
+zurückgegeben. Geladen werden können folgende verbreitete Dateiformate:
+• InputBounds: .csv, .vnnlib
+• NeuralNetwork: .onnx
+• Algorithm: .py (eigene Schnittstelle, siehe Kapitel 7)
+SaveState und Plot nutzen ein programminternes Format.
+Es gibt drei verschiedene Fälle, in denen Daten vom Programm auf die Festplatte geschrieben
+werden. Hierfür gibt es drei Exporter-Klassen, die alle sehr ähnlich aufgebaut sind und aus den
+gleichen Gründen wie die Loader ebenfalls Singletons sind. Zum einen wird der SaveState in
+regelmäßigen Abständen vom Controller automatisch gespeichert, damit der User beim erneuten
+Öffnen des Programms die letzten Status wiederherstellen kann. Dafür ist der SaveStateExporter
+zuständig, welcher eine export-Methode enthält, die einen SaveState serialisiert und speichert.
+Er benutzt den PlotExporter, welcher mit seiner eigenen export-Methode einen einzelnen Plot
+an einen als Eingabe übergebenen Ort auf die Festplatte schreibt. Obwohl der PlotExporter nur
+vom SaveStateExporter benutzt wird, haben wir uns der Übersicht halber dagegen entschieden
+beide Exporter zu vereinigen, da das Exportieren beider Datentypen getrennte Aufgaben sind.
+
+12
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Der andere Fall ist der ImageExporter, welcher Plots als png-Bild exportieren kann. Auch dieser hat eine export-Methode, welche einen Plot und einen Pfad entgegennimmt und ein Result
+zurückgibt.
+
+3.2 View
+Wie bereits im Komponentendiagramm (Sektion 2.2) beschrieben, besteht die View aus vier
+Komponenten. Auf der höchsten Ebene der View befindet sich die MainWindow-Klasse in der
+BaseView-Komponente. Sie erbt von der PySide6-QMainWindow-Klasse und stellt das grundlegende Fenster dar, in dem die UI angezeigt wird. Außerdem ist sie verantwortlich für das
+Verhalten des Fensters z. B. bei Größenänderung. Sie existiert als Ebene, um die Steuerung
+des Programmfensters von dem tatsächlichen Aufbau der UI zu trennen. Eine Ebene darunter
+gibt es in der gleichnamigen Komponente die Klasse BaseView, die hauptsächlich den Wechsel zwischen den beiden Hauptansichten (Network- und PlotView) durchführt. Dabei speichert
+sie jeweils eine Instanz der NetworkView- und PlotView-Klassen. Die restlichen Klassen der
+BaseView-Komponente sind einzelne UI-Elemente, die in mehreren Ansichten und/oder Dia-
+
+13
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+logen vorkommen und mittels der PySide6 nativen Klasse QWidget implementiert werden. Sie
+interagieren nicht direkt mit Controllern und Datentypen und sind daher von den eigentlichen
+Programmfunktionen entkoppelt. Die meisten von ihnen werden direkt von den abgeleiteten
+Klassen der InsertView genutzt. Hierzu gehören:
+• Tabs speichert und verwaltet die Tabs, die eine View enthält. Sie beinhaltet eine Liste
+an Tab-Instanzen und kann mit Methoden zwischen diesen wechseln oder einzelne Tabs
+öffnen/schließen.
+• Tab repräsentiert eine einzelne Seite einer Tab-Ansicht. Ein Tab kann eine Sidebar haben
+und besitzt ein PySide6-QWidget als Inhalt.
+• SideBar zeigt ihren Inhalt als Seitenleiste in einem Tab an.
+• ActionMenu erstellt ein Aktionsmenü mit konfigurierbaren Items. In unserem Programm
+ist es immer über die obere Leiste aufrufbar.
+• ActionMenuItem ist ein einzelnes Item in einem ActionMenu.
+• TutorialSpeechBubble ist eine Sprechblase, die dem Nutzer die ersten Schritte mit dem
+Programm nahelegt.
+• ZoomPanel stellt zwei Buttons mit Lupen-Symbolen zum herein und heraus zoomen einer Ansicht dar. Bei einer Zoomänderung wird die übergebene Funktion onZoomChange()
+aufgerufen.
+
+14
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+15
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Die PlotView- und NetworkView-Klassen existiert jeweils in ihrer eigenen gleichnamigen Komponente. Beide Klassen haben einen zugehörigen Controller und übernehmen daher einen großen
+Teil der Kommunikation zwischen den Komponenten View und Controller.
+Die NetworkView-Komponente enthält einige weitere Klassen zur Darstellung von Netzwerken. Das NetworkWidget repräsentiert den Inhalt eines einzelnen Network-Tabs. Es stellt eine NetworkVerificationConfig dar, indem es mithilfe der NetworkNode-Klasse das Netzwerk
+interagierbar anzeigt. Außerdem verwaltet es eine Liste von Ganzzahlen, die die aktuell ausgewählten Nodes speichert. Die NetworkNode-Klasse erbt von PySide6-QGraphicsEllipseItem,
+damit sie als Kreis gerendert werden kann. (QGraphicsLineItem wird verwendet, um Linien
+zwischen den Nodes zu zeichnen).
+
+Ähnlich zur NetworkView braucht auch die PlotView-Komponente einige Klassen, um Diagramme und Plots anzeigen zu können. Eine PlotPage ist der Inhalt eines einzelnen Diagramm-Tabs.
+Sie beinhaltet eine Liste an PlotWidgets, welche die einzelnen Plots (Model) einer Seite anzeigen. Außerdem kümmert sie sich um die Synchronisierung der Ansichten einzelner Plots.
+
+16
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+PlotWidget enthält neben dem eigentlichen Plot (von MatPlotLib gezeichnet) drei OptionsButtons: das Synchronisieren der Ansicht, das Anzeigen im Fullscreen und das Exportieren des
+Plots als Bild. Während die Algorithmen die Plots generieren, wird in dem Tab der Fortschritt
+über das ComparisonLoadingWidget angezeigt. Jeder Algorithmus hat dabei ein zugehöriges
+PairLoadingWidget, welche untereinander in einer Liste angezeigt werden. Darin ist jeweils der
+Name und Status des Algorithmus gespeichert. Außerdem kann über einen Button der Algorithmus abgebrochen oder ggf. der aufgetretene Fehler angezeigt werden. Die Enumeration Status
+hat drei Zustände: Ongoing, Done, Failed. Sie beschreibt, an welchem Punkt der Ausführung
+sich der Algorithmus befindet.
+
+17
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Eine wichtige geteilte Komponente des Programms ist der DialogManager mit diversen Dialogen,
+die vom Programm angezeigt werden sollen. Alle Dialoge erben von der Klasse DialogBase.
+Diese stellt das allgemeine Dialog-Fenster dar, verdunkelt also zum Beispiel beim Aufruf den
+Hintergrund. Außerdem bietet sie eine Methode, die aufgerufen wird, falls der Dialog vorzeitig
+geschlossen wird und hat eine Instanz von CloseDialogButton, um dies zu ermöglichen. Es gibt
+mehrere Arten an grundlegenden Dialogen, die von dieser Basisklasse erben:
+1. Die Fenster, die für das Importieren von neuronalen Netzen und das Erstellen von Vergleichen verwendet werden. Diese sind sehr ähnlich, weshalb der Großteil ihrer Eigenschaften
+in ListDialogBase abstrahiert werden kann. Das konkrete Laden der einzelnen Listenoptionen und die Reaktion bei Bestätigung der Eingabe befinden sich jeweils in den Klassen
+NetworkManagementDialog und PlotConfigDialog. Da der PlotConfigDialog viele Informationen selbst verwalten muss, hat er eine eigene Controller-Klasse.
+2. Der NeuronPicker. Im Prozess der Erstellung eines Vergleichs müssen nach dem simplen
+Hinzufügen eines Neuronenpaars alle weiteren benötigten Parameter (welche Neuronen Teil
+des Paars sind, welcher Algorithmus verwendet werden soll, usw.) eingestellt werden. Dafür
+öffnet PlotConfigDialog für jedes Paar einen NeuronPicker-Dialog. Diese Aufteilung
+ermöglicht es, die Prozesse des Hinzufügens und des Konfigurierens eines Paars klar zu
+trennen.
+3. Der SettingsDialog, der das Einstellungsmenü des Programms darstellt. Dafür besteht
+er aus einzelnen SettingsOptions, die für jeweils eine konkrete Einstellung verantwortlich
+sind.
+4. InfoPopup stellt ein Pop-up da, welches dem Nutzer diverse Informationen vermittelt.
+Die angezeigten Pop-ups werden verwaltet durch die Klasse InfoPopupQueue. Es gibt
+vier Typen an Pop-ups, die durch die Enumeration InfoType dargestellt werden und im
+UI jeweils eine eigene Farbe besitzen (Sektion 6.1). Diese sind: Information (neutral),
+Confirmation (grün), Warning (gelb), Error (rot).
+5. Die letzte Klasse, die von DialogBase erbt, ist FullscreenPlotDialog. Diese Klasse stellt
+die Ansicht eines vom Programm generierten Graphen im Vollbild-Modus dar.
+
+18
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+3.3 Controller
+Die Controller-Komponente ist in zwei Hauptbestandteile gegliedert: den InputManager für die
+Verarbeitung von Benutzereingaben und die View-spezifische Steuerung, sowie den ProcessManager
+für die Berechnung von Verifikationsalgorithmen und netzbezogenen Vorverarbeitungsschritten.
+InputManager stellt die zentrale Logikschicht des Controllers für alle Benutzerinteraktionen
+dar. Damit ist er diejenige Controller-Komponente, die Benutzeraktionen aus der View entgegennimmt und als sinnvolle Operationen ausführt. Er beinhaltet folgende Klassen:
+• NetworkViewController ist für die Steuerung der Netzansicht zuständig. Er verarbeitet
+alle Interaktionen, die das Laden, Anzeigen und Untersuchen neuronaler Netze betreffen.
+• PlotViewController ist für die Steuerung der Diagrammansicht zuständig. Er verwaltet
+die Konfiguration von Plots und Diagrammen und stößt die Berechnungen an, die zur
+Generierung und Visualisierung der Reachable Sets notwendig sind.
+• PlotConfigDialogController beinhaltet die Informationen für den PlotConfigDialog.
+Er speichert die Liste von aktuell ausgewählten PlotGenerationConfigs und existiert
+immer so lange, wie der Dialog angezeigt wird.
+ProcessManager kapselt die Ausführung von Berechnungen und die dafür notwendige Vorbereitung von Netzwerken. Er wird vom InputManager genutzt, sobald aus einer Benutzeraktion ein
+rechenintensiver Prozess entsteht (z.B. Generierung eines Plots über einen Verifikationsalgorithmus).
+Innerhalb des ProcessManagers ist der NetworkModifier für die gezielte, temporäre Anpassung
+eines neuronalen Netzes verantwortlich. Diese Anpassung ist notwendig, um die Reachable-Set-
+
+19
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Berechnung für vom Nutzer ausgewählte Neuronen korrekt durchführen zu können. Hierzu erzeugt der NetworkModifier eine lokale Kopie des Netzwerks,
+Zunächst wählt der Nutzer zwei Zielneuronen mit Aktivierungen x1 und x2 aus. Der
+NetworkModifier erzeugt daraus eine lokale Kopie des Netzes, deren Ausgabe so definiert ist,
+dass sie nicht mehr die ursprünglichen Netzausgaben liefert, sondern Projektionen des Punktes
+(x1 , x2 ) auf eine Menge vordefinierter Richtungen.
+Dazu wird eine Menge von Richtungsvektoren D = {d(1) , . . . , d(k) } festgelegt, wobei die Richtungen gleichmäßig über den Einheitskreis verteilt werden (z. B. bei k = 4 die vier Hauptachsen).
+Für jede Richtung d(i) = (a(i) , b(i) ) wird ein zusätzlicher Skalar-Ausgang
+yi = a(i) · x1 + b(i) · x2
+definiert. Die konkrete Anzahl k sowie die genaue Wahl der Richtungen ist dabei konfigurierbar
+und wird so gewählt, dass eine geeignete Approximation der erreichbaren Menge im (x1 , x2 )Raum ermöglicht wird.
+Die Modifikation betrifft ausschließlich diese lokale Netzwerkkopie; das ursprünglich geladene
+Netzwerk im Model bleibt unverändert und wird nicht permanent überschrieben.
+Die eigentliche Verifikation wird vom AlgorithmExecutor durchgeführt. Dieser führt auf Basis
+der vorgegebenen Input-Bounds und des vom NetworkModifier angepassten Netzwerks einen
+
+20
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+vom Nutzer ausgewählten Verifikationsalgorithmus aus. Der Algorithmus berechnet für jedes
+Output-Neuron des modifizierten Netzes Schranken (Output-Bounds), die eine sichere Überapproximation aller möglichen Ausgaben innerhalb der gegebenen Eingabebeschränkungen darstellen. Die berechneten Output-Bounds werden als Ergebnisdaten für die Diagrammansicht
+bereitgestellt und dort visualisiert.
+
+3.4 Utils
+Es gibt Utility-Klassen, die von mehreren Komponenten benötigt werden und allgemeine, vom
+spezifischen Projekt unabhängige Funktionen implementieren.
+Um einen sicheren Umgang mit Fehlern zu ermöglichen haben wir uns dazu entschieden die
+von der Programmiersprache Rust inspirierte Klasse Result<T> einzuführen. Ein Result<T>
+speichert das Ergebnis einer Operation und wird beispielsweise von den Loadern und Exportern
+im Model verwendet, um die geladenen Objekte aus Festplattenoperationen zurückzugeben.
+Unterschieden wird zwischen den Unterklassen Success<T> und Failure<T>. Bei Erfolg wird
+im Success<T> eine Instanz des generischen Typs T zurückgegeben, bei einem Misserfolg eine
+BaseException im Failure<T>. Der Result<T> enthält außerdem einen Boolean success, damit
+auch ohne Type-Checks leicht erkennbar ist, ob er ein Erfolg ist oder nicht. Dieser wird im
+Konstruktor der Unterklassen auf true oder false gesetzt.
+
+21
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+4 Interessante Prozesse
+Es wurden 3 Sequenzdiagramme angefertigt, um den Programmablauf verständlicher zu machen.
+Jedes Sequenzdiagramm stellt den gewünschten Ablauf eines spezifischen Testfalls dar.
+Die Nebenläufigkeit der Nutzeroberfläche ist darüber dargestellt, dass die Lebenslinien von UIElementen aktiv bleiben, solange der Nutzer mit diesen interagieren kann. Es wurden die Methodenaufrufe innerhalb der View und die Interaktion des Nutzers mit der View aus Gründen
+der Übersichtlichkeit nicht komplett dargestellt.
+
+4.1 Sequenzdiagramm für <TF2>
+
+Dieser Testfall testet die Funktion zum Wechseln zwischen verschiedenen Netzwerkansichten und
+zum Hinzufügen neuer Netzwerke. Der Nutzer übergibt Inputs an die Klasse
+NetworkViewController. In diesem spezifischen Testfall lädt der User ein neues Netzwerk. Zuerst öffnet der User die aktuelle Netzwerkansicht und lädt danach das Netzwerk welches sich
+
+22
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+am Speicherort ”filepath1” befindet. Hierfür ruft NetworkViewController den NetworkLoader
+mit dem Dateipfad als Parameter auf. Dieser speichert das Netzwerk in Storage. Nun schließt
+der NetworkViewController die momentane Netzwerkansicht, indem er openNetworkView()
+mit dem neuen Netzwerk als Parameter an die momentane Netzwerkansicht schickt. Danach
+öffnet er mit dem gleichen Befehl die neue Netzwerkansicht und wartet auf weitere Inputs des
+Users. Als letztes wird von der dann geladenen Netzwerkansicht zur vorherigen Ansicht gewechselt. Dieser Prozess funktioniert analog für Plotansichten, mit den zugehörigen Klassen
+PlotViewController, PlotView und PlotViewLoader
+
+4.2 Sequenzdiagramm für <TF8>
+
+Dieser Testfall testet, ob die Visualisierung korrekt ausgeführt wird. Der User übergibt die
+Inputs an den PlotViewController.Zuerst wird die aktuelle PlotView geöffnet, indem der
+PlotViewController openPlotView aufruft. Der User gibt nun ein, welches Neuronenpaar und
+welcher Algorithmus verwendet werden soll, diese Information wird analog auch an currentPlotView
+
+23
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+weitergegeben. Nun startet der PlotViewController den AlgorithmExecutor mit den vorher
+eingegebenen Parametern. Dieser ruft nun den NetworkModifier auf, um das Netzwerk zu modifizieren. Nachdem das Netz modifiziert zurück an den AlgorithmExecutor gegeben wurde, ruft
+dieser die Algorithmusdatei ,mit dem modifizierten Netz als Parameter, auf. Währenddessen
+ist die Ansicht weiterhin sichtbar. Als Rückgabe bekommt der AlgorithmExecutor eine Liste an Intervallen, welche dann über den PlotViewController zum currentPlotView gegeben
+werden. Dieser erstellt nun einen Graphen basierend auf diesen Bounds.
+
+4.3 Sequenzdiagramm für <TF10>
+
+Dieser Testfall testet das korrekte Exportieren von Diagrammen im png-Format. Dafür öffnet zuerst PlotViewController currentPlotView. Danach gibt der User den Befehl currentPlotView
+als png zu exportieren und den Speicherort an. Dann ruft PlotViewController den ImageExporter
+auf, welche mit dem PlotView und dem Pfad das Exportieren ausführt. Dieser Prozess funktioniert auch analog für svg wobei hier statt ImageExporter PlotExporter verwendet wird.
+Wir haben diese spezifischen funktionalen Testfälle ausgewählt, da sie die Kernfunktionen unseres Programms abdecken, nämlich Netzwerkupload, Algorithmenanwendung und Diagrammexport. Somit veranschaulichen diese drei Diagramme die Kernfunktionalität der Anwendung.
+
+24
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+5 Zustände und Übergänge
+Das Zustandsdiagramm beschreibt das Verhalten einer GUI-Anwendung, welche Fenster aktuell
+aktiv sind und in welchem Zustand sich das Programm befindet.
+Zustände der obersten Ebene
+• Start – der anfängliche UML-Pseudozustand
+• Programm läuft – die Anwendung wird gestartet und ausgeführt
+• End – der letzte UML-Pseudozustand
+Übergänge auf oberster Ebene:
+• Start → Programm läuft beim Ereignis „Programm starten“
+• Programm läuft → Ende beim Ereignis „Programm beenden“
+Die App verfügt über zwei Hauptansichten: Neuronales Netzwerk und Diagramm/Vergleiche.
+Diese Ansichten schließen sich gegenseitig aus: Der Nutzer befindet sich entweder im einen oder
+im anderen Bereich der App. Das Programm startet immer mit der Netzansicht. Man kann das
+Programm aus den beiden Ansichten jederzeit schließen. Der Übergang zwischen den Ansichten
+erfolgt über den Switch-Trigger.
+In den weißen Rechtecken stehen die Zustände/Programmfenster. Die Pfeile zeigen die Richtung
+der Zustandsänderung (vorheriger Zustand → neuer Zustand) an und der Text beschreibt den
+Übergangstrigger.
+Das Programm startet mit der MainWindow -Klasse. Die beiden Ansichten (Neuronale Netze
+und Diagramme/Vergleiche) im Zustandsdiagramm sind mit Hilfe der Klassen NetworkView und
+PlotView veranschaulicht. Beide Ansichten beinhalten eine bestimmte Anzahl von Tabs, diese
+sind mit der Klasse Tab repräsentiert und von der Klasse Tabs gesteuert (geöffnet/geschlossen).
+Damit wechselt man zwischen den “Hauptfenster“-Zustand und den “Tab-Ansicht“-Zustand. Von
+den Klassen DialogBase und DialogManager sind die Zustände “Dialog zur Konfiguration“ und
+“Systemdialog: Datei auswählen“ repräsentiert. Der Zustand “Kontextmenü“ ist genau in den
+beiden Ansichten mit der Klasse ActionMenu verknüpft.
+
+25
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+26
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+6 Benutzeroberfläche
+6.1 Konzept
+Das Programm nutzt für die Benutzeroberfläche ein einheitliches Design-Schema. In diesem werden verschiedene Farben, Schriftvorlagen und Komponenten definiert. Dazu gehören insbesondere Farben, um Erfolge, Warnungen und Fehler darzustellen, sodass der Nutzer den aktuellen
+Status des Programms visuell einfach erkennen kann. Die Schriftvorlagen ermöglichen ein einheitliches Aussehen des Programms, beispielsweise bei Dialogtiteln.
+
+Ein wichtiger Bestandteil unseres Programms ist die Aufteilung in zwei verschiedene Ansichten,
+welche in 5.2 genauer erläutert werden. Damit für Nutzer immer erkennbar ist, in welchem Modus sich das Programm befindet, ist das restliche Farbschema in zwei Versionen erstellt worden:
+
+27
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+6.2 Ansichten
+Das Programm ist in zwei verschiedene Ansichten unterteilt: Die Ansicht für neuronale Netze
+(grün) und die Ansicht für Diagramme und Vergleiche (blau). Zwischen den Ansichten kann
+mit einem Schalter oben rechts in der Titelleiste jederzeit mit einem Klick gewechselt werden,
+solange kein Dialog geöffnet ist. Beide Ansichten stellen ihren Inhalt in Tabs dar.
+Neuronale Netze:
+Die NetworkView zeigt jedes geladene NeuralNetwork in einem Tab. Das geöffnete Netzwerk
+wird in einer Schichtenansicht dargestellt. Der Nutzer kann durch draggen und scrollen mit
+der Maus sowie mit dem Zoompanel durch das Netzwerk navigieren. Links gibt es außerdem
+eine SideBar, welche Einstellungsmöglichkeiten für das geladene Netz beinhaltet. Hier können
+die Bounds des Netzes eingestellt oder aus einer Datei importiert werden. Durch das Edit-Icon
+neben den Tabs kann der NetworkManagementDialog (Sektion 5.3) aufgerufen werden.
+
+Diagramme und Vergleiche
+In der PlotView lässt sich die Hauptfunktion des Programms steuern, das Erstellen von neuen Diagrammen und Vergleichen. Über den Plus-IconButton kann der PlotConfigDialog zum
+Erstellen neuer Vergleiche geöffnet werden (Sektion 5.3). Die Ansicht eines Vergleichs ist zweigeteilt.
+Die linke SideBar enthält Einstellungen für die Diagramme des Vergleichs. Hier können neue
+Diagramme erstellt, konfiguriert und wieder gelöscht werden. Außerdem kann über den EditButton (StandardTextButton) unten links der PlotConfigDialog erneut aufgerufen werden.
+Der rechte Teil stellt die Diagramme in einem Grid dar, indem zunächst der horizontale Platz
+einer Zeile gefüllt und bei Bedarf ein Umbruch in die nächste Zeile gemacht wird. Jedes Diagramm wird als PlotWidget angezeigt. Dadurch ist es eingerahmt und kann über die Icons als
+Bild exportiert oder in einer Vollbildansicht als FullscreenPlotDialog angezeigt werden. Das
+
+28
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Schloss unter jedem Diagramm kann per Mausklick geöffnet oder geschlossen werden. Von allen
+Ansichten mit geschlossenem Symbol wird der aktuell angezeigte Ausschnitt des Diagramms
+synchronisiert.
+
+Solange die Algorithmen die Diagramme generieren, wird auf einem Loading-Screen (ComparisonLoadingWidget
+der Fortschritt angezeigt. Auf diesem können außerdem Algorithmen abgebrochen und in den
+Algorithmen aufgetretene Fehler eingesehen werden. Dazu wird für jedes ausgewählte Neuronenpaar ein PairLoadingWidget in einer Liste angezeigt.
+
+6.3 Dialoge
+Konfigurationsdialog neuronale Netze
+Im NetworkManagementDialog können die geladenen Netzwerke verwaltet werden. Hier können
+neue Dateien geladen und Netze wieder entfernt werden. Der Plus-IconButton öffnet einen
+
+29
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Filepicker, in welchem eine neue Datei ausgewählt werden kann. Der Minus-IconButton entfernt
+das in der Liste aktuell ausgewählte Neuronale Netz (grau).
+
+Neuen Diagramm-Vergleich erstellen
+Um einen neuen Vergleich zu erstellen, müssen Neuronenpaare mit zugeordneten Algorithmen
+ausgewählt werden. Der PlotConfigDialog ermöglicht die schrittweise Auswahl dieser Paare.
+Außerdem können bereits ausgewählte Paare wieder entfernt oder editiert werden. Der Button
+“Next” schließt den Dialog und öffnet einen neuen Tab in der Vergleichs-Ansicht, wenn mindestens ein Neuronenpaar ausgewählt wurde.
+
+Beim Klick auf den Plus-IconButton öffnet sich die zweite Seite des Dialogs (der NeuronPicker),
+in der ein Neuronenpaar mit Algorithmus ausgewählt werden kann. Hierzu muss zunächst im
+oberen Dropdown das gewünschte NeuralNetwork selektiert werden. Über das untere Dropdown
+kann der gewünschte Algorithmus ausgewählt werden. In dem Netz können daraufhin hintereinander zwei Neuronen angeklickt werden, um diese als Paar zu markieren. Alternativ kann der
+
+30
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Layer- und Zeilenindex eines Neurons links in die Textfelder eingetragen werden.
+
+Benachrichtigungs- und Auswahldialoge
+Um den Nutzer über den Status und verschiedene Änderungen des Programms zu benachrichtigen gibt es einen einfachen schließbaren Textdialog mit Titel und Inhalt (das InfoPopup).
+Die Farbe der Titelleiste zeigt dabei die Art der Benachrichtigung (Erfolg, Warnung, Error,
+Neutral) an. Hierfür wird der Enum InfoType genutzt. Bei Bedarf kann der Dialog außerdem
+StandardTextButtons besitzen und so einfache Entscheidungsfragen an den Nutzer übergeben.
+In der folgenden Grafik sind einige Beispiele für Dialoge dargestellt:
+
+Einstellungen
+Im SettingsDialog sind globale Einstellungen untergebracht, die nicht mit den geladenen Da-
+
+31
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+ten und der genauen Funktionsweise des Programms zu tun haben. Beispiele hierfür sind die
+Änderung des Farbschemas oder der UI-Größe.
+
+6.4 Weitere Elemente
+Kontextmenü
+Durch Klicken auf die drei horizontalen Striche oben links in den Tab-Ansichten lässt sich ein
+ActionMenu öffnen. Hier sind weitere globale Optionen des Programms untergebracht, wie bspw.
+das Zurücksetzen des Programmstatus oder das Öffnen der Einstellungen.
+
+32
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+7 Python-Algorithmus-Schnittstelle
+Zur Erweiterung des Systems um unterschiedliche Verifikationsalgorithmen wird eine einheitliche
+Python-Schnittstelle definiert. Diese Schnittstelle ermöglicht es, neue Algorithmen unabhängig
+vom restlichen System zu implementieren und in die Anwendung zu integrieren.
+
+7.1 Grundidee
+Ein Verifikationsalgorithmus wird als einzelnes Python-Modul realisiert. Alle Algorithmus-Module
+werden in einem einheitlichen Verzeichnis algorithms abgelegt. Dieses Verzeichnis dient als
+zentraler Ablageort für alle verfügbaren Verifikationsalgorithmen und ermöglicht deren automatische Erkennung durch das System.
+Jedes Algorithmus-Modul stellt genau eine öffentliche Funktion calculate_output_bounds bereit. Sie berechnet auf Basis eines neuronalen Netzes und gegebener Eingabebeschränkungen
+eine Überapproximation der erreichbaren Ausgaben.
+
+7.2 Funktionsschnittstelle
+Jedes Algorithmus-Modul muss genau eine öffentliche Funktion mit dem Namen calculate_output_bounds
+implementieren. Diese Funktion besitzt folgende semantische Signatur:
+• Eingabe:
+1. Ein neuronales Netz, übergeben über den Funktionsparameter onnx_model mit Typ
+onnx.ModelProto Das Netz wurde zuvor durch den NetworkModifier basierend auf
+dem ausgewählten Neuronenpaar für die jeweilige Verifikationsanfrage vorbereitet.
+2. Eingabebeschränkungen (Input Bounds) für die Eingabeneuronen des Netzes, übergeben über den Funktionsparameter input_bounds mit Typ np.ndarray der Form
+(N, 2), wobei N der Anzahl der Eingabeneuronen entspricht.
+
+33
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Jede Zeile des Arrays repräsentiert genau ein Eingabeneuron. Die erste Spalte enthält
+die untere Schranke, die zweite Spalte die obere Schranke des jeweiligen Intervalls.
+Es wird vorausgesetzt, dass für jedes Intervall die untere Schranke kleiner oder gleich
+der oberen Schranke ist.
+Die Reihenfolge der Zeilen entspricht der Reihenfolge der Eingabeneuronen im ONNXModell.
+• Ausgabe:
+– Das Reachable Set der Ausgabeneuronen, zurückgegeben als NumPy-Array np.ndarray
+der Form (M, 2), wobei M der Anzahl der Ausgabeneuronen entspricht.
+Jede Zeile des Arrays repräsentiert genau ein Ausgabeneuron. Die erste Spalte enthält
+die untere Schranke, die zweite Spalte die obere Schranke des jeweiligen Intervalls.
+Es wird vorausgesetzt, dass für jedes Intervall die untere Schranke kleiner oder gleich
+der oberen Schranke ist.
+Die Reihenfolge der Zeilen entspricht der Reihenfolge der Ausgabeneuronen im durch
+den NetworkModifier vorbereiteten ONNX-Modell. Das Array stellt eine Überapproximation aller möglichen Ausgaben für die gegebenen Eingabebeschränkungen dar.
+
+7.3 Semantik und Verantwortlichkeiten
+Die Funktion calculate_output_bounds ist ausschließlich für die Berechnung des Reachable
+Sets verantwortlich.
+Innerhalb der Funktion calculate_output_bounds ist der Algorithmusentwickler frei in der
+Wahl der internen Berechnungsmethode der Output Bounds. Verbindlich ist lediglich, dass das
+Ergebnis in dem spezifizierten Ausgabeformat als NumPy-Array der Form (M, 2) mit der korrekten Neuronenreihenfolge zurückgegeben wird
+
+34
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+8 Weitere Informationen
+8.1 Zeitplan
+
+Dieses Gantt-diagramm dient zur genauen Planung der Implementierungsphase. Jeder funktionalen Anforderung aus dem Pflichtenheft wurde hier eine Zeitspanne zugeordnet, in welcher
+diese Anforderung implementiert werden soll.
+Zuerst sollen die funktionalen Anforderungen implementiert werden, welche als Grundstruktur
+für das Programm, und somit auch für weitere Anforderungen dienen. Zu diesen Anforderungen
+zählen zum Beispiel das Laden von Netzen (<F6>). Hierbei werden unter anderem die Klassen NetworkViewController, NetworkView oder NetworkLoader implementiert. Auch grundsätzliche Anforderungen wie das Wechseln von Tabs (<F16>) oder das Suchen von Neuronen
+mithilfe von Indizes (<F19>) gehören dazu. Die Implementierung davon betrifft Klassen wie
+NetworkNode oder NetworkWidget.
+Danach werden Anforderungen implementiert, die das Ausführen des Algorithmus und das Generieren der Diagramme (<F1>) ermöglichen. Dafür werden nun die Klassen AlgorithmExecuter
+und NetworkModifier implementiert.
+Für das Ende der Phase wurden Anforderungen geplant, welche nicht essenziell für das Funktionieren des Programms sind. Beispiele hierfür sind das Exportieren der Plots als svg-Dateien
+oder Klassen die für Settings verantwortlich sind. Das trifft auf Klassen wie SaveStateLoader,
+SettingsDialog und PlotExporter zu. Die letzten 2 Tage sind als Puffer eingeplant.
+
+35
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+8.2 Verwendete externe Bibliotheken
+• PySide6 (UI/UX)
+PySide ist eine Python-Anbindung an das Qt-Toolkit, das plattformübergreifende GUIEntwicklung ermöglicht. Es wird als Grundlage für die gesamte Nutzeroberfläche verwendet.
+• onnx (Neuronale Netze)
+Die onnx-Bibliothek ermöglicht das einfache Verarbeiten von .onnx-Dateien, die vom Nutzer als Repräsentation von neuronalen Netzen hochgeladen werden können.
+• vnnlib (Input Bounds)
+Das VNN-LIB Dateiformat erlaubt das Eingeben von Input-Beschränkungen für neuronale
+Netze. Um die dementsprechenden Daten aus einer gegebenen Datei zu extrahieren, wird
+die vnnlib-Bibliothek verwendet.
+• MatPlotLib (Diagramme)
+Die matplotlib-Bibliothek beinhaltet diverse Funktionalitäten zum Erstellen und Manipulieren von interaktiven Graphen, was das Visualisieren der Algorithmus-Ergebnisse stark
+vereinfacht.
+• NumPy (Datenverarbeitung)
+NumPy ist eine weit verbreitete Bibliothek, die generelle Berechnungen (besonders im Bereich KI) schneller und einheitlicher macht, indem sie z. B. Array-Objekte und schnelle
+Methoden zu deren Manipulation bereitstellt. Genutzt werden diese zur generellen Erhöhung der Programmgeschwindigkeit sowie zum Bieten einer Algorithmus-Schnittstelle, die
+den Erwartungen von Python-KI-Entwicklern entspricht.
+
+36
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+Glossar
+.csv Dateiformat zum Verwalten von Text- und Zahlenwerten in Form von Tabellen. Wird im
+Programm für den Import und Export der Bounds eines Netzes benutzt.
+.onnx Open Neural Network Exchange, quelloffenes Dateiformat zum Speichern von Neuronalen
+Netzen. Kann zum Auswerten importiert werden..
+.py Dateiformat eines Pythonskriptes. Kann genutzt werden, um eigene Algorithmen in die
+Software einzubinden.
+.svg Dateiformat für Vektorgrafiken. Bilder werden nicht als als einzelne Pixel gespeichert,
+sondern als mathematisch definierte Objekte wie Linien, Kreise und Kurven.
+.vnnlib Beinhaltet die Input- und Output Bounds eines Netzwerks, nicht aber das Netzwerk
+selbst.
+Bibliothek Ansammlung an Softwarecode anderer Entwickler, die diesen als Paket zur Einbindung in fremde Projekte zur Verfügung stellen..
+Binding Verbindung zwischen zwei Softwarekomponenten, bspw. zwischen dem Programm und
+einer in einer anderen Sprache geschriebene Bibliothek..
+Caching Die Speicherung zuvor geladener oder berechneter Daten im Zwischenspeicher, ermöglicht einen schnellen erneuten Zugriff auf diese.
+Code Coverage Tool Tool zur Erfassung davon, wie viel des Codes durch Tests abgedeckt ist.
+deterministischer Algorithmus Algorithmus, der bei gleicher Eingabe immer zum gleichen
+Ergebnis kommt.
+Diagramm Stellt den Zusammenhang eines Neuronenpaares mit einem Algorithmus dar. Kann
+entweder als einzelner Tab oder als Teil eines Vergleiches angezeigt werden.
+draggen Bewegen der Maus während ein Button gedrückt gehalten wird. Geste, um UI-Elemente
+zu verschieben oder im dreidimensionalen Raum zu drehen..
+Dropdown-Menü Ein UI-Element zum Auswählen eines Entrags aus einer vorgegebenen Liste
+an Optionen, wird zur Auswahl von Neuronalen Netzen und Algorithmen benutzt.
+einsatzbereites Netz Ein Netz, bei dem Eingabebounds schon geladen/eingestellt wurden.
+
+37
+
+Praxis der Softwareentwicklung
+Visualisierung von Verifikationsalgorithmen für Neuronale Netze
+
+großes Netz Ein Netz mit mindestens 100000 Knoten.
+GUI Graphical User Interface - Die Benutzeroberfläche des Programms.
+Layer Einzelne Schicht eines neuronalen Netzes. Es gibt einen Input- und einen Outputlayer
+für die Ein- und Ausgabe des Netzes.
+Log-Datei Datei zur Speicherung von Systemnachrichten.
+MemoryError Ein speicherbedingter Fehler.
+Neuron Ein einzelner Knoten eines Netzwerkes. Wird über gewichtete Kanten mit anderen
+Neuronen verbunden.
+Neuronales Netz Netz aus künstlichen Neuronen, an biologischen Gehirnen inspiriert. Besteht
+aus Nodes in Layern und gewichteten Verbindungen.
+Open-Source-Lizenz Eine Lizenz für quelloffene Software.
+pan Bewegen eines UI-Elements durch Draggen der Maus in zwei Dimensionen. Wird für die
+Navigation von Diagrammen und Neuronalen Netzen benutzt.
+PEP 8 Ein Style Guide für Python Code.
+Polytop Eine Verallgemeinerung von konvexen Vielecken in beliebiger Dimension.
+Session Engl. für Sitzung, beschreibt die Zeitperiode ab dem Öffnen des Programms durch
+einen Nutzer bis zum vollständigen Schließen..
+Standartnetz Ein Netz mit 2000 Neuronen, die auf 4 Layer verteilt sind.
+System Usability Scale Tool zur Erfassung der subjektiv empfundenen Usability.
+Tab Ein "karteikartenartiger" Reiter in einer Auflistung, wird zum Wechseln der Ansicht zwischen verschiedenen Neuronalen Netzen, Diagrammen und Vergleichen verwendet.
+Unit Test Test zur Überprüfung eines klar abgegrenzten Teils des Programms.
+Vergleich Ein Vergleich zeigt Diagramme mehrerer Neuronenpaare.
+Zonotop Ein Zonotop ist die Minkowski-Summe einer endlichen Anzahl an Vektoren. Die enstandene Fläche ist konvex. Es wird im Diagramm dargestellt und aus neuronalen Netzen
+generiert.
+zoom Ändern der Anzeigegröße eines UI-Elements. Wird für die Navigation von Diagrammen
+und Neuronalen Netzen benutzt.
+
+38
+
+

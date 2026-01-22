@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Callable
 
 from nn_verification_visualisation.model.data.plot import Plot
