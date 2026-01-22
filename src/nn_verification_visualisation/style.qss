@@ -1,0 +1,95 @@
+QMainWindow {
+    background-color: @bg2;
+}
+
+QTabBar {
+    draw-control: none;
+    border: 0px;
+}
+
+
+QTabBar::tab {
+    background-color: @bg1;
+    padding: 8px 16px;
+    margin: 5px 0px 5px 5px;
+    border-radius: 10px;
+    border: 0px;
+}
+
+QTabBar::close-button {
+    image: url(:assets/icons/close_icon.svg);
+}
+
+QTabBar::tab:selected {
+    background-color: @bg0;
+    border: 1px solid @fg1;
+}
+
+QAbstractButton {
+    background-color: @fg1;
+    color: @fgt;
+    height: 30;
+    border-radius: 10px;
+}
+
+QAbstractButton:hover {
+    background-color: #7895ab;
+
+    height: 30;
+    border-radius: 10px;
+}
+
+#faded-background {
+    background-color: rgba(0, 0, 0, 150);
+}
+
+#dialog-pane {
+    background-color: #fff;
+    border-radius: 15px;
+}
+
+#header-info {
+    background-color: @bg2;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#header-success {
+    background-color: @success;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#header-warning {
+    background-color: @warning;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#header-error {
+    background-color: @error;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+#subtitle {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+QLabel,  #label, #popup-content {
+    font-size: 14px;
+}
+
+#popup-content {
+    padding: 10px;
+}
+
+#icon-button, #close-button {
+    background-color: transparent;
+    icon-size: 20px;
+}
+#close-button {
+
+    margin: 5px;
+}

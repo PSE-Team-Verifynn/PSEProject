@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QStackedWidget, QStackedLayout
 
+
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
 from nn_verification_visualisation.view.network_view.network_view import NetworkView
 from nn_verification_visualisation.view.plot_view.plot_view import PlotView
@@ -27,6 +28,7 @@ class BaseView(QWidget):
 
         self.box_layout = QVBoxLayout()
         self.box_layout.setContentsMargins(0,0,0,0)
+        self.box_layout.setSpacing(0)
         self.setLayout(self.box_layout)
         self.layout().addWidget(change_button)
         self.layout().addWidget(container)
