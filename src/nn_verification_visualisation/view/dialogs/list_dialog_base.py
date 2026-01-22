@@ -1,11 +1,12 @@
-from typing import Generic, TypeVar, List, Callable
+from typing import Generic, TypeVar, List, Callable, Any
 
 from PySide6.QtWidgets import QWidget, QListWidget, QVBoxLayout, QHBoxLayout, QPushButton
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 
-T = TypeVar('T')
 
-class ListDialogBase(Generic[T], DialogBase):
+T = Any
+
+class ListDialogBase(DialogBase):
     data: List[T]
     list_widget: QListWidget
     has_edit: bool

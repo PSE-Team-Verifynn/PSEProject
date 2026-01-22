@@ -11,6 +11,9 @@ from nn_verification_visualisation.view.dialogs.network_management_dialog import
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.view.network_view.network_view import NetworkView
+else:
+    class NetworkView:
+        pass
 
 
 class NetworkViewController:

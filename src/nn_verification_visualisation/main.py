@@ -1,6 +1,6 @@
 import sys
 
-import resources_rc
+import nn_verification_visualisation.resources_rc
 
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication

@@ -1,8 +1,8 @@
-from typing import Generic, TypeVar, Union
+from typing import Generic, TypeVar, Union, Any
 
-T = TypeVar("T")
+T = Any
 
-class Result(Generic[T]):
+class Result():
     data: T
     error: BaseException
     is_success: bool
@@ -12,10 +12,10 @@ class Result(Generic[T]):
         self.error = error
         self.is_success = is_success
 
-class Success(Result[T]):
+class Success(Result):
     def __init__(self, data: T):
         super().__init__(data, None, True)
 
-class Failure(Result[T]):
+class Failure(Result):
     def __init__(self, error: BaseException):
         super().__init__(None, error, False)

@@ -7,8 +7,11 @@ from nn_verification_visualisation.view.dialogs.list_dialog_base import ListDial
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
+else:
+    class PlotViewController:
+        pass
 
-class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
+class PlotConfigDialog(ListDialogBase):
     parent_controller: PlotViewController
 
     def __init__(self, controller: PlotViewController):

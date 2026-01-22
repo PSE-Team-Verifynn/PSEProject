@@ -1,7 +1,7 @@
 from typing import Dict, List, Iterable
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
-from utils.result import Result, Failure, Success
+from nn_verification_visualisation.utils.result import Result, Failure, Success
 
 import csv
 from nn_verification_visualisation.utils.result import Result

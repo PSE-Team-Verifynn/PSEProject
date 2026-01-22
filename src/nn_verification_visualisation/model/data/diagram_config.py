@@ -8,5 +8,5 @@ from nn_verification_visualisation.utils.result import Result
 
 
 class DiagramConfig:
-    results: Dict[PlotGenerationConfig, Result[Figure]] = {}
+    results: Dict[PlotGenerationConfig, Result] = {}
     plots: Dict[int, Plot] = {}

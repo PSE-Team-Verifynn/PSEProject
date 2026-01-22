@@ -8,6 +8,9 @@ from nn_verification_visualisation.view.dialogs.plot_config_dialog import PlotCo
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.view.plot_view.plot_view import PlotView
+else:
+    class PlotView:
+        pass
 
 class PlotViewController:
     current_plot_view: PlotView

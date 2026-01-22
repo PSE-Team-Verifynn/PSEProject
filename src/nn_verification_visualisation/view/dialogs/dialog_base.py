@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QSizePolicy
@@ -9,13 +9,13 @@ import os
 class DialogBase(QWidget):
     size: tuple[int, int]
     title: str
-    on_close: Callable[[], None]
+    on_close: Callable[[], Any]
 
     # abstract
     def get_content(self) -> QWidget:
         pass
 
-    def __init__(self, on_close: Callable[[], None], title: str, size: tuple[int, int] | None = None):
+    def __init__(self, on_close: Callable[[], Any], title: str, size: tuple[int, int] | Any = Any):
         super().__init__()
         self.on_close = on_close
         self.size = size
@@ -42,7 +42,7 @@ class DialogBase(QWidget):
 
         layout.addWidget(self.get_content())
 
-        if size is not None:
+        if size is not Any:
             self.dialog.setSizePolicy(
                 QSizePolicy.Policy.Preferred,
                 QSizePolicy.Policy.Preferred

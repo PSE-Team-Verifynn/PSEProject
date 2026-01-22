@@ -1,5 +1,5 @@
 import random
-from typing import List, Callable
+from typing import List, Callable, Any
 
 from PySide6.QtGui import QColor, QPainter, QPen, QWheelEvent, QKeyEvent, QTransform, QPalette
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
@@ -17,7 +17,7 @@ class NetworkWidget(QGraphicsView):
     background_color: QColor
 
     nodes_selectable: bool
-    on_selection_changed: Callable[[List[NetworkNode]], None]
+    on_selection_changed: Callable[[List[NetworkNode]], Any]
 
     height_to_width_ration: float = 1.0
     node_spacing = 90
@@ -27,7 +27,7 @@ class NetworkWidget(QGraphicsView):
     zoom_out_factor = 1 / 1.15
     padding_percentage = 0.5
 
-    def __init__(self, configuration: NetworkVerificationConfig, nodes_selectable: bool = False, on_selection_changed: Callable[[List[NetworkNode]], None] = None):
+    def __init__(self, configuration: NetworkVerificationConfig, nodes_selectable: bool = False, on_selection_changed: Callable[[List[NetworkNode]], Any] = Any):
         super().__init__()
         self.background_color = self.palette().color(QPalette.Base)
         self.configuration = configuration
@@ -117,7 +117,7 @@ class NetworkWidget(QGraphicsView):
         selected_nodes: List[NetworkNode] = [item for item in self.scene.selectedItems() if isinstance(item, NetworkNode)]
         self.on_selection_changed(selected_nodes)
 
-    def _on_node_clicked(self, position: tuple[int, int]) -> None:
+    def _on_node_clicked(self, position: tuple[int, int]) -> Any:
         layer, index = position
         print(f"Clicked Node: Layer {layer}, Index {index}")
         # You can emit a signal here or update a side panel

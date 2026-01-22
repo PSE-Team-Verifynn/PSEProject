@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 
 from PySide6.QtGui import QBrush, QColor, QPen
 from PySide6.QtWidgets import QGraphicsEllipseItem, QGraphicsItem
@@ -9,7 +9,7 @@ class NetworkNode(QGraphicsEllipseItem):
     selectable: bool
     index: int
     layer_index: int
-    on_click: Callable[[tuple[int, int]], None]
+    on_click: Callable[[tuple[int, int]], Any]
 
     #temporary setup variables
     color_unselected: QColor = QColor("black")
@@ -17,7 +17,7 @@ class NetworkNode(QGraphicsEllipseItem):
     color_node_outline : QColor = QColor("black")
     outline_pen_thickness : int = 2
 
-    def __init__(self, index: int, layer_index: int, radius: float, on_click: Callable[[tuple[int, int]], None], selectable: bool):
+    def __init__(self, index: int, layer_index: int, radius: float, on_click: Callable[[tuple[int, int]], Any], selectable: bool):
         super().__init__(-radius, -radius, radius * 2, radius * 2)
         self.index = index
         self.layer_index = layer_index
@@ -44,7 +44,7 @@ class NetworkNode(QGraphicsEllipseItem):
             self.on_click((self.layer_index, self.index))
         event.accept()
 
-    def paint(self, painter, option, widget=None):
+    def paint(self, painter, option, widget=Any):
         # Override paint to customize appearance when selected
         painter.setRenderHint(painter.RenderHint.Antialiasing)
 

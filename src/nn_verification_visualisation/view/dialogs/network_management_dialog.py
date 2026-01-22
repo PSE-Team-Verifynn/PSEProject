@@ -6,8 +6,11 @@ from nn_verification_visualisation.view.dialogs.list_dialog_base import ListDial
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.controller.input_manager.network_view_controller import NetworkViewController
+else:
+    class NetworkViewController:
+        pass
 
-class NetworkManagementDialog(ListDialogBase[NetworkVerificationConfig]):
+class NetworkManagementDialog(ListDialogBase):
     controller: NetworkViewController
 
     def __init__(self, controller: NetworkViewController):
