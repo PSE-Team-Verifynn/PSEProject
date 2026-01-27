@@ -38,7 +38,7 @@ QAbstractButton {
 }
 
 QAbstractButton:hover {
-    background-color: #7895ab;
+    background-color: @hfg1;
 
     height: 30;
     border-radius: 10px;
