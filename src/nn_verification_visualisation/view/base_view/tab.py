@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QSplitter, QHBoxLayout, QVBoxLayout, QScrollArea, QFrame
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
+
 
 class Tab(QWidget):
     title: str
@@ -39,8 +40,10 @@ class Tab(QWidget):
         splitter.addWidget(sidebar_scroll)
         splitter.addWidget(content_container)
 
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 4)
+        # Set default splitter size
+        splitter.setStretchFactor(0, 0)
+        splitter.setStretchFactor(1, 1)
+        QTimer.singleShot(0, lambda: splitter.setSizes([250, 10000]))
 
         layout.addWidget(splitter)
         self.setLayout(layout)

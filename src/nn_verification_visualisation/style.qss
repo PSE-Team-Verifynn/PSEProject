@@ -34,6 +34,7 @@ QAbstractButton {
     background-color: @fg1;
     color: @fgt;
     height: 30;
+    padding: 0px 10px;
     border-radius: 10px;
 }
 
@@ -135,6 +136,54 @@ QDoubleSpinBox {
     border-color: @bg0;
 }
 
+QCheckBox {
+    spacing: 1px;
+    background-color: transparent;
+    color: @bgt;
+}
+
+QCheckBox:hover {
+    background-color: transparent;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 2px solid @bgt;
+    background: @bg0;
+    border-radius: 3px;
+}
+
+QCheckBox::indicator:checked {
+    background: @success;
+}
+
+QComboBox {
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    background-color: @component;
+    color: @bgt;
+}
+QComboBox::drop-down {
+    subcontrol-origin: border;
+    width: 24px;
+    background-color: @compoent;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+QComboBox QAbstractItemView {
+    border: none;
+    border-radius: 6px;
+    background-color: @bg0;
+    selection-background-color: @bg1;
+    selection-color: @bgt;
+    color: @bgt;
+    padding: 2px;
+    outline: 0;
+}
+
 #faded-background {
     background-color: rgba(0, 0, 0, 150);
 }
@@ -202,29 +251,8 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     color: @bgt;
     background-color: transparent;
 }
-
-
-
-QCheckBox {
-    spacing: 1px;
+#transparent {
     background-color: transparent;
-    color: @bgt;
-}
-
-QCheckBox:hover {
-    background-color: transparent;
-}
-
-QCheckBox::indicator {
-    width: 16px;
-    height: 16px;
-    border: 2px solid @bgt;
-    background: @bg0;
-    border-radius: 3px;
-}
-
-QCheckBox::indicator:checked {
-    background: @success;
 }
 
 #background-button:hover {
@@ -259,6 +287,8 @@ QCheckBox::indicator:checked {
 
 #tab-sidebar {
     background-color: @bg1;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
 }
 
 #tab-content {

@@ -26,7 +26,6 @@ class NeuronPicker(DialogBase):
     network_presentation: QVBoxLayout
     algorithm_selector: QComboBox
 
-
     def __init__(self, on_close: Callable[[], None], num_neurons: int = 2):
         self.num_neurons = num_neurons
         self.current_network = 0
@@ -44,7 +43,7 @@ class NeuronPicker(DialogBase):
         # Update the algorithm list on change
         Storage().algorithm_change_listeners.append(self.update_algorithms)
 
-        super().__init__(on_close, "Neuron Picker")
+        super().__init__(on_close, "Neuron Picker", has_title=False)
 
     def update_algorithms(self):
         index = self.algorithm_selector.currentIndex() if self.algorithm_selector.currentIndex() > -1 else 0
@@ -61,6 +60,7 @@ class NeuronPicker(DialogBase):
 
     def get_content(self) -> QWidget:
         network_picker_layout = QVBoxLayout()
+        network_picker_layout.setContentsMargins(0, 0, 0, 0)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setContentsMargins(0, 0, 0, 0)
@@ -89,14 +89,24 @@ class NeuronPicker(DialogBase):
         else:
             self.current_algorithm = Storage().algorithms[0].name
 
+        self.network_presentation.addLayout(self.__get_button_row()) # Buttons
+
         splitter.setMinimumHeight(500)
         splitter.addWidget(side_bar)
         splitter.addWidget(network_widget_container)
+        splitter.setObjectName("transparent")
 
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 4)
 
-        # 4. Buttons
+        network_picker_layout.addWidget(splitter)
+
+        widget = QWidget()
+        widget.setLayout(network_picker_layout)
+
+        return widget
+
+    def __get_button_row(self) -> QLayout:
         move_buttons = QHBoxLayout()
         back_button = QPushButton("Back")
         back_button.clicked.connect(self.close)
@@ -106,17 +116,11 @@ class NeuronPicker(DialogBase):
         move_buttons.addWidget(back_button)
         move_buttons.addWidget(continue_button)
         move_buttons.setAlignment(Qt.AlignmentFlag.AlignRight)
-
-        network_picker_layout.addWidget(splitter)
-        network_picker_layout.addLayout(move_buttons)
-
-        widget = QWidget()
-        widget.setLayout(network_picker_layout)
-
-        return widget
+        return move_buttons
 
     def construct_config(self) -> PlotGenerationConfig:
-        if len(Storage().networks) < self.current_network - 1 or len(Storage().networks) == 0 or self.current_algorithm == "":
+        if len(Storage().networks) < self.current_network - 1 or len(
+                Storage().networks) == 0 or self.current_algorithm == "":
             return None
         network = Storage().networks[self.current_network]
         matching_algorithms = [alg for alg in Storage().algorithms if alg.name == self.current_algorithm]
@@ -203,6 +207,11 @@ class NeuronPicker(DialogBase):
     def __get_side_bar_content(self) -> QVBoxLayout:
         layout = QVBoxLayout()
 
+        title = QLabel("Neuron Picker")
+        title.setObjectName("title")
+
+        layout.addWidget(title)
+
         # --- Network Selector ---
         network_group = QHBoxLayout()
         network_group.addWidget(QLabel("Network:"))
@@ -264,6 +273,7 @@ class NeuronPicker(DialogBase):
             node_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
 
             eye_button = QPushButton("👀")
+            eye_button.setObjectName("transparent-button")
             eye_button.clicked.connect(lambda _, idx=i: self.__jump_to_neuron(idx))
 
             layer_box = QVBoxLayout()

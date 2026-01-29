@@ -15,7 +15,7 @@ class DialogBase(QWidget):
     def get_content(self) -> QWidget:
         pass
 
-    def __init__(self, on_close: Callable[[], None], title: str, size: tuple[int, int] | None = None):
+    def __init__(self, on_close: Callable[[], None], title: str, size: tuple[int, int] | None = None, has_title: bool = True):
         super().__init__()
         self.on_close = on_close
         self.size = size
@@ -37,7 +37,8 @@ class DialogBase(QWidget):
 
         layout = QVBoxLayout(self.dialog)
         layout.setContentsMargins(0,0,0,0)
-        layout.addWidget(self.header)
+        if has_title:
+            layout.addWidget(self.header)
         layout.addStretch()
 
         layout.addWidget(self.get_content())

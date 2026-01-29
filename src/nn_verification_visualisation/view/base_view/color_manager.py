@@ -25,6 +25,7 @@ class ColorManager:
         "warning": "#E5BE6B",
         "error": "#E56B6F",
         "herror": "#f57d81",
+        "component": "#CFCFD1"
     }
 
     DIAGRAM_COLORS = {
@@ -43,6 +44,7 @@ class ColorManager:
         "warning": "#E5BE6B",
         "error": "#E56B6F",
         "herror": "#f57d81",
+        "component": "#CFCFD1"
     }
 
     def load_raw(self, path_str: str):
