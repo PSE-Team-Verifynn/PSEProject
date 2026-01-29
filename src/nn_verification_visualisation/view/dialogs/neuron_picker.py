@@ -68,7 +68,7 @@ class NeuronPicker(DialogBase):
 
         # 1. Setup Side Bar (This creates the spinboxes)
         side_bar = QWidget()
-        side_bar.setObjectName("tab-sidebar")
+        side_bar.setObjectName("dialog-sidebar")
         side_bar.setMinimumWidth(250)
         side_bar.setLayout(self.__get_side_bar_content())
 

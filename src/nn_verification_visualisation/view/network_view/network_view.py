@@ -12,7 +12,6 @@ from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.network_view.network_page import NetworkPage
 
-
 class NetworkView(InsertView):
     # pages: List[NetworkWidget]
     controller: NetworkViewController

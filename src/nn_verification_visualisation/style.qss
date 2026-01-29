@@ -8,7 +8,7 @@ QTabBar {
 }
 
 QTabWidget::pane {
-    background-color: transparent;
+    background-color: @bg1;
     border: none;
 }
 
@@ -285,10 +285,13 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     background-color: @herror;
 }
 
-#tab-sidebar {
-    background-color: @bg1;
+#dialog-sidebar {
     border-top-left-radius: 20px;
     border-bottom-left-radius: 20px;
+}
+
+#tab-sidebar, #dialog-sidebar {
+    background-color: @bg1;
 }
 
 #tab-content {

@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QStackedWidget, QStackedLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QStackedWidget, QStackedLayout, QHBoxLayout
 
 from nn_verification_visualisation.view.base_view.color_manager import ColorManager
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
@@ -26,14 +26,24 @@ class BaseView(QWidget):
         container = QWidget()
         container.setLayout(self.stack)
 
+        button_bar_layout = QHBoxLayout()
+        button_bar_layout.setContentsMargins(0,0,0,0)
+
         change_button = QPushButton("Change")
+        change_button.setObjectName("transparent-button")
         change_button.clicked.connect(self.change_active_view)
+
+        button_bar_layout.addStretch()
+        button_bar_layout.addWidget(change_button)
+
+        button_bar = QWidget()
+        button_bar.setLayout(button_bar_layout)
 
         self.box_layout = QVBoxLayout()
         self.box_layout.setContentsMargins(0,0,0,0)
         self.box_layout.setSpacing(0)
         self.setLayout(self.box_layout)
-        self.layout().addWidget(change_button)
+        self.layout().addWidget(button_bar)
         self.layout().addWidget(container)
 
     def change_active_view(self):
