@@ -8,6 +8,7 @@ from nn_verification_visualisation.view.base_view.main_window import MainWindow
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
 
     color_manager = ColorManager(app)
     color_manager.load_raw("../../../style.qss")

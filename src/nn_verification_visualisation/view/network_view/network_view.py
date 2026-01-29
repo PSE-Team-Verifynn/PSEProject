@@ -12,35 +12,45 @@ from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.network_view.network_page import NetworkPage
 
+
 class NetworkView(InsertView):
     # pages: List[NetworkWidget]
     controller: NetworkViewController
 
     def __init__(self):
-        super().__init__(False)
+        super().__init__()
         self.controller = NetworkViewController(self)
 
-        self.dialog_button = QPushButton("Example Dialog Button", self)
-        self.dialog_button.clicked.connect(self.tmp_open_example_dialog)
-
-        self.page_layout.addWidget(self.dialog_button)
-
-        self.set_bar_icon_button(lambda: None, ":assets/icons/menu_icon.svg", Qt.Corner.TopLeftCorner)
-        self.set_bar_icon_button(self.controller.open_network_management_dialog, ":assets/icons/edit_icon.svg", Qt.Corner.TopRightCorner)
+        self.set_bar_icon_button(self.controller.open_network_management_dialog, ":assets/icons/edit_icon.svg",
+                                 Qt.Corner.TopRightCorner)
 
         for network in Storage().networks:
             self.add_network_tab(network)
 
-    def tmp_open_example_dialog(self):
-        dialog = InfoPopup( self.close_dialog,"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam Verifick. At vero eos et accusam et justo duo dolores et ea rebum.", InfoType.ERROR, [])
-        self.open_dialog(dialog)
-
-    def add_network_tab(self, network: NetworkVerificationConfig) :
+    def add_network_tab(self, network: NetworkVerificationConfig):
         self.tabs.add_tab(NetworkPage(self.controller, network))
 
     def close_network_tab(self, index: int):
         self.tabs.close_tab(index)
 
-    def open_network_file_picker(self, file_filter: str) -> str:
+    def open_network_file_picker(self, file_filter: str) -> str | None:
         file_path, _ = QFileDialog.getOpenFileName(self, "Open File", ".", file_filter)
+        if file_path == "":
+            return None
         return file_path
+
+    def close_tab(self, index: int):
+        if not index in range(0, len(Storage().networks)):
+            return
+
+        cancel_button = QPushButton("Cancel")
+        cancel_button.setObjectName("light-button")
+        confirm_button = QPushButton("Continue")
+        confirm_button.setObjectName("error-button")
+        confirm_button.clicked.connect(lambda: self.controller.remove_neural_network(Storage().networks[index]))
+
+        buttons = [cancel_button, confirm_button]
+        text = "Closing the tab will unload the network '{}'".format(Storage().networks[index].network.name)
+        dialog = InfoPopup(self.close_dialog, format(text), InfoType.WARNING, buttons)
+
+        self.open_dialog(dialog)

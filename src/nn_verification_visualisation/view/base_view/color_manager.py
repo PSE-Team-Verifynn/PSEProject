@@ -15,14 +15,16 @@ class ColorManager:
         "fgt": "#ffffff",
         "bg0": "#ffffff",
         "bg1": "#E5F0D2",
+        "hbg1": "#f0f7e4",
         "bg2": "#C3D6A1",
         "fg0": "#5E7A2D",
         "fg1": "#7C964D",
         "hfg1": "#87a353",
         "c0": "#CFCFD1",
         "success": "#89C4A3",
-        "warning": "#E58E6B",
+        "warning": "#E5BE6B",
         "error": "#E56B6F",
+        "herror": "#f57d81",
     }
 
     DIAGRAM_COLORS = {
@@ -31,14 +33,16 @@ class ColorManager:
         "fgt": "#ffffff",
         "bg0": "#ffffff",
         "bg1": "#E8EAED",
+        "hbg1": "#f2f4f7",
         "bg2": "#CDD6DD",
         "fg0": "#436680",
         "fg1": "#6C879B",
         "hfg1": "#7895ab",
         "c0": "#CFCFD1",
         "success": "#89C4A3",
-        "warning": "#E58E6B",
+        "warning": "#E5BE6B",
         "error": "#E56B6F",
+        "herror": "#f57d81",
     }
 
     def load_raw(self, path_str: str):

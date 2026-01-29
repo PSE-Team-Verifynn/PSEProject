@@ -1,7 +1,7 @@
 from typing import List, Callable
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QLabel
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
 
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
@@ -9,7 +9,7 @@ from nn_verification_visualisation.view.dialogs.info_type import InfoType
 class InfoPopup(DialogBase):
     text: str
     info_type: InfoType
-    buttons: List[QWidget]
+    buttons: List[QPushButton]
 
     styles = {
         InfoType.INFORMATION: "header-info",
@@ -25,7 +25,7 @@ class InfoPopup(DialogBase):
         InfoType.ERROR: "Error!"
     }
 
-    def __init__(self, on_close: Callable[[], None], text: str, info_type: InfoType, buttons=None):
+    def __init__(self, on_close: Callable[[], None], text: str, info_type: InfoType, buttons: List[QPushButton]=None):
         if buttons is None:
             buttons = []
         self.info_type = info_type
@@ -37,8 +37,21 @@ class InfoPopup(DialogBase):
 
 
     def get_content(self) -> QWidget:
+        container = QWidget()
+        container_layout = QVBoxLayout(container)
+        container.setLayout(container_layout)
+
         label = QLabel(self.text)
         label.setWordWrap(True)
         label.setObjectName("popup-content")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        return label
+        container_layout.addWidget(label)
+
+        if len(self.buttons) > 0:
+            button_bar = QHBoxLayout()
+            for button in self.buttons:
+                button.clicked.connect(self.on_close)
+                button_bar.addWidget(button)
+            container_layout.addLayout(button_bar)
+
+        return container

@@ -1,8 +1,9 @@
 from typing import List, Callable
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout, QMenu, \
+    QGraphicsDropShadowEffect
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QColor
 
 from nn_verification_visualisation.view.base_view.action_menu import ActionMenu
 from nn_verification_visualisation.view.base_view.tabs import Tabs
@@ -16,10 +17,12 @@ class InsertView(QWidget):
 
     __dialog_stack: List[DialogBase]
 
-    def __init__(self, tabs_closable: bool):
+    def __init__(self):
         super().__init__()
 
-        self.tabs = Tabs(tabs_closable)
+
+
+        self.tabs = Tabs(self.close_tab)
 
         self.container_layout = QStackedLayout()
         self.container_layout.setContentsMargins(0, 0, 0, 0)
@@ -39,7 +42,27 @@ class InsertView(QWidget):
 
         self.__dialog_stack = []
 
-    def set_bar_icon_button(self, on_click: Callable[[], None],  icon: str, corner: Qt.Corner):
+        menu_button = self.set_bar_icon_button(lambda: self.show_menu(menu_button), ":assets/icons/menu_icon.svg", Qt.Corner.TopLeftCorner)
+
+    def show_menu(self, menu_button: QPushButton):
+        menu = QMenu()
+        menu.setWindowFlags(
+            Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint
+        )
+        menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        menu.addAction("Settings")
+        menu.addAction("Exit")
+
+        shadow = QGraphicsDropShadowEffect(menu)
+        shadow.setBlurRadius(10)
+        shadow.setOffset(0, 4)
+        shadow.setColor(QColor(0, 0, 0, 60))
+
+        menu.setGraphicsEffect(shadow)
+
+        menu.exec(menu_button.mapToGlobal(menu_button.rect().bottomLeft()))
+
+    def set_bar_icon_button(self, on_click: Callable[[], None],  icon: str, corner: Qt.Corner) -> QPushButton:
         button = QPushButton()
         button.setObjectName("icon-button")
         button.clicked.connect(on_click)
@@ -57,7 +80,10 @@ class InsertView(QWidget):
         layout.addStretch()
 
         self.tabs.setCornerWidget(container, corner)
+        return button
 
+    def close_tab(self, index: int):
+        self.tabs.close_tab(index)
 
     def open_dialog(self, dialog: DialogBase):
         self.__dialog_stack.append(dialog)

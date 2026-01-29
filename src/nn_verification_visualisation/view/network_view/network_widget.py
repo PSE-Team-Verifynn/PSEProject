@@ -29,6 +29,7 @@ class NetworkWidget(QGraphicsView):
 
     def __init__(self, configuration: NetworkVerificationConfig, nodes_selectable: bool = False, on_selection_changed: Callable[[List[NetworkNode]], None] = None):
         super().__init__()
+        self.setFrameStyle(0)
         self.background_color = self.palette().color(QPalette.Base)
         self.configuration = configuration
 

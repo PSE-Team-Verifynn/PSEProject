@@ -44,6 +44,97 @@ QAbstractButton:hover {
     border-radius: 10px;
 }
 
+QMenu {
+    background-color: @bg0;
+    border-radius: 10px;
+    margin: 10px;
+    padding: 5px;
+}
+
+QMenu::item {
+    padding: 6px 24px;
+    width: 100px;
+    border-radius: 8px;
+}
+
+QMenu::item:selected {
+    background-color: @bg1;
+    color: @bgt;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #c4c4c4;
+    min-height: 30px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #a8a8a8;
+}
+
+QScrollBar::handle:vertical:pressed {
+    background: #8c8c8c;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical,
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    height: 0px;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical,
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+/* Horizontal */
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #c4c4c4;
+    min-width: 30px;
+    border-radius: 5px;
+}
+
+QListWidget {
+    border: none;
+}
+
+QListWidget::item {
+    padding: 10px 5px;
+    border-radius: 10px;
+}
+
+QListWidget::item:selected {
+    background-color: @bg1;
+    color: @bgt;
+    border: none;
+    outline: 0;
+}
+QListWidget::item::text {
+    border: none;
+}
+
+QSplitter {
+    background-color: @bg0;
+}
+
+QDoubleSpinBox {
+    border-color: @bg0;
+}
+
 #faded-background {
     background-color: rgba(0, 0, 0, 150);
 }
@@ -94,7 +185,7 @@ QAbstractButton:hover {
     font-weight: bold;
 }
 
-QLabel, #label, #popup-content {
+QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     font-size: 14px;
 }
 
@@ -111,6 +202,8 @@ QLabel, #label, #popup-content {
     color: @bgt;
     background-color: transparent;
 }
+
+
 
 QCheckBox {
     spacing: 1px;
@@ -144,6 +237,24 @@ QCheckBox::indicator:checked {
 }
 #close-button {
     margin: 5px;
+}
+
+#light-button {
+    background-color: @bg1;
+    color: @bgt;
+}
+
+#light-button:hover {
+    background-color: @hbg1;
+}
+
+#error-button {
+    background-color: @error;
+    color: @fgt;
+}
+
+#error-button:hover {
+    background-color: @herror;
 }
 
 #tab-sidebar {
