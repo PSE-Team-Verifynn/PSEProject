@@ -29,6 +29,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
+from nn_verification_visualisation.view.plot_view.comparison_loading_widget import ComparisonLoadingWidget
 from nn_verification_visualisation.view.plot_view.plot_widget import PlotWidget
 from nn_verification_visualisation.view.base_view.tab import Tab
 
@@ -54,6 +55,8 @@ class PlotPage(Tab):
     __node_pairs_layout: QVBoxLayout | None
 
     def __init__(self, configuration: DiagramConfig):
+
+
         self.__syncing = False
         self.__card_size = 420
         self.__scroll_area = None
@@ -119,6 +122,7 @@ class PlotPage(Tab):
         scroll_area.viewport().installEventFilter(self)
         self.__relayout_plots()
         return container
+        # return ComparisonLoadingWidget()
 
     def get_side_bar(self) -> QWidget:
         container = QWidget()
