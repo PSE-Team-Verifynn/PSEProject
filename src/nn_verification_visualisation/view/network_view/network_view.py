@@ -36,11 +36,11 @@ class NetworkView(InsertView):
         self.open_dialog(dialog)
 
     def add_network_tab(self, network: NetworkVerificationConfig) :
-        self.tabs.add_tab(NetworkPage(network))
+        self.tabs.add_tab(NetworkPage(self.controller, network))
 
     def close_network_tab(self, index: int):
         self.tabs.close_tab(index)
 
-    def open_network_file_picker(self) -> str:
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open File", ".", "ONNX-Files (*.onnx);; All Files (*)")
+    def open_network_file_picker(self, file_filter: str) -> str:
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open File", ".", file_filter)
         return file_path

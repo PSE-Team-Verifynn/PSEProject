@@ -13,3 +13,4 @@ class NetworkVerificationConfig:
     def __init__(self, network: NeuralNetwork, layers_dimensions: List[int]):
         self.network = network
         self.layers_dimensions = layers_dimensions
+        self.bounds = InputBounds(layers_dimensions[0])

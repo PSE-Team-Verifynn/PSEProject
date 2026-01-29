@@ -3,17 +3,14 @@ from pathlib import Path
 from typing import Dict, List, Iterable, Any, Tuple
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
-from utils.result import Result, Failure, Success
+from nn_verification_visualisation.utils.result import Failure, Success
 
 import csv
 from nn_verification_visualisation.utils.result import Result
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
-from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
-from nn_verification_visualisation.model.data.input_bounds import InputBounds
-
 class InputBoundsLoader(metaclass=SingletonMeta):
-    def load_input_bounds(self, file_path: str, network_config: NetworkVerificationConfig) -> Result[InputBounds]:
+    def load_input_bounds(self, file_path: str, network_config: NetworkVerificationConfig) -> Result[Dict[int, tuple[float, float]]]:
         ending = file_path.split('.')[-1]
         is_csv = (ending == 'csv')
         is_vnnlib = (ending == 'vnnlib')
@@ -21,10 +18,10 @@ class InputBoundsLoader(metaclass=SingletonMeta):
         if not (is_csv or is_vnnlib):
             return Failure(ValueError(ending + ' is not supported. Please use a .csv or a .vnnlib file.'))
 
-        if network_config is None or len(network_config.activation_values) < 1:
+        if network_config is None or len(network_config.layers_dimensions) < 1:
             return Failure(ValueError("Invalid network passed"))
 
-        input_count = network_config.activation_values[0]
+        input_count = network_config.layers_dimensions[0]
 
         try:
             if is_csv:
@@ -36,7 +33,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
     def __get_input_count(self, network_config: NetworkVerificationConfig) -> int:
         return network_config.bounds[0]
 
-    def __parse_csv(self, file_path: str, input_count: int) -> Result[InputBounds]:
+    def __parse_csv(self, file_path: str, input_count: int) -> Result[Dict[int, tuple[float, float]]]:
         rows = []
         try:
             with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -97,9 +94,8 @@ class InputBoundsLoader(metaclass=SingletonMeta):
 
             bounds[i] = (lower_bound, upper_bound)
 
-        input_bounds = InputBounds(bounds)
 
-        return Success(input_bounds)
+        return Success(bounds)
 
     """
     Extract only input bounds (X_i) from vnnlib
@@ -108,10 +104,10 @@ class InputBoundsLoader(metaclass=SingletonMeta):
         - assert with (and...) / (or...) / atoms (<= X_0 0.5), (>= X_1 -0.2), (= X_2 0.0)
         - if OR gives multiple regions, return bounding box (min lo, max hi), cause InputBounds can save only one rectangle
     """
-    def __parse_vnnlib(self, file_path: str, input_count: int) -> Result[InputBounds]:
+    def __parse_vnnlib(self, file_path: str, input_count: int) -> Result[Dict[int, tuple[float, float]]]:
         text = Path(file_path).read_text(encoding="utf-8", errors="replace")
         bounds_dict = self.__extract_input_bounds_from_vnnlib(text, input_count)
-        return Success(InputBounds(bounds_dict))
+        return Success(bounds_dict)
 
     """
     Parser:
