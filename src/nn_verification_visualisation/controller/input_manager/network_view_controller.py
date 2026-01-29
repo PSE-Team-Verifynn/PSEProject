@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import List, TYPE_CHECKING
 
+import onnx
+
+from nn_verification_visualisation.controller.process_manager.network_modifier import NetworkModifier
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
