@@ -25,7 +25,9 @@ class InfoPopup(DialogBase):
         InfoType.ERROR: "Error!"
     }
 
-    def __init__(self, on_close: Callable[[], None], text: str, info_type: InfoType, buttons: List[QWidget]):
+    def __init__(self, on_close: Callable[[], None], text: str, info_type: InfoType, buttons=None):
+        if buttons is None:
+            buttons = []
         self.info_type = info_type
         self.buttons = buttons
         self.text = text

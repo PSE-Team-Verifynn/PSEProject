@@ -6,7 +6,10 @@ from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
 from nn_verification_visualisation.model.data.storage import Storage
+from nn_verification_visualisation.model.data_loader.input_bounds_loader import InputBoundsLoader
 from nn_verification_visualisation.model.data_loader.neural_network_loader import NeuralNetworkLoader
+from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
+from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.dialogs.network_management_dialog import NetworkManagementDialog
 
 if TYPE_CHECKING:
@@ -28,18 +31,36 @@ class NetworkViewController:
         dialog = NetworkManagementDialog(self)
         self.current_network_view.open_dialog(dialog)
 
+    def load_bounds(self, config: NetworkVerificationConfig) -> bool:
+        path = self.current_network_view.open_network_file_picker("Bound-Files (*.csv, *.vnnlib);; All Files (*)")
+        if path is None:
+            return False
+        result = InputBoundsLoader().load_input_bounds(path, config)
+        if result.is_success:
+            config.bounds.load_bounds(result.data)
+
+        if result.is_success:
+            dialog_type = InfoType.CONFIRMATION
+            text = "Bounds were loaded successfully!"
+        else:
+            dialog_type = InfoType.ERROR
+            text = repr(result.error)
+
+        self.current_network_view.open_dialog(InfoPopup(self.current_network_view.close_dialog, text, dialog_type))
+        return result.is_success
+
     def load_new_network(self) -> NetworkVerificationConfig | None:
-        path = self.current_network_view.open_network_file_picker()
+        path = self.current_network_view.open_network_file_picker("ONNX-Files (*.onnx);; All Files (*)")
         if path is None:
             return None
         result = NeuralNetworkLoader().load_neural_network(path)
+        if not result.is_success:
+            return None
         layer_dimensions = []   # list of the number of nodes per Layer
         for layer in result.data.model.graph.initializer: # adds the 1.dim of the matrix, dim of the 1. layer
             if len(layer.dims) == 2 :
                 layer_dimensions.append(layer.dims[0])
         layer_dimensions.append(result.data.model.graph.output[0].type.tensor_type.shape.dim[1].dim_value)# adds the output layer dim
-        if not result.is_success:
-            return None
 
         network = NetworkVerificationConfig(result.data,layer_dimensions)   #layer_dimensions is used for visualization of the network
 

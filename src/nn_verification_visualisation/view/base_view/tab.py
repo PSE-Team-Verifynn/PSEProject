@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QSplitter, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QSplitter, QHBoxLayout, QVBoxLayout, QScrollArea, QFrame
 from PySide6.QtCore import Qt
 
 class Tab(QWidget):
@@ -23,6 +23,11 @@ class Tab(QWidget):
         sidebar_container.setObjectName("tab-sidebar")
         sidebar_container.setLayout(sidebar_layout)
 
+        sidebar_scroll = QScrollArea()
+        sidebar_scroll.setWidgetResizable(True)
+        sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        sidebar_scroll.setWidget(sidebar_container)
+
         content_layout = QVBoxLayout()
         content_layout.setContentsMargins(0,0,0,0)
         content_layout.addWidget(self.get_content())
@@ -31,7 +36,7 @@ class Tab(QWidget):
         content_container.setObjectName("tab-content")
         content_container.setLayout(content_layout)
 
-        splitter.addWidget(sidebar_container)
+        splitter.addWidget(sidebar_scroll)
         splitter.addWidget(content_container)
 
         splitter.setStretchFactor(0, 1)
