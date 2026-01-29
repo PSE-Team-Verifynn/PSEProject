@@ -12,6 +12,10 @@ QTabWidget::pane {
     border: none;
 }
 
+QFrame {
+    border: none;
+}
+
 
 QTabBar::tab {
     background-color: @bg1;
@@ -296,4 +300,10 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
 
 #tab-content {
     background-color: @bg0;
+}
+
+#pair-loading-container {
+    background-color: @component;
+    color: red;
+    border-radius: 10px;
 }
