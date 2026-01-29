@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from nn_verification_visualisation.utils.result import *
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
@@ -9,6 +11,6 @@ class NeuralNetworkLoader(metaclass=SingletonMeta):
         try:
             model = onnx.load_model(file_path)
             onnx.checker.check_model(model, full_check=True)
-            return Success(NeuralNetwork(file_path, file_path, model))
+            return Success(NeuralNetwork(Path(file_path).stem, file_path, model))
         except BaseException as e:
             return Failure(e)
