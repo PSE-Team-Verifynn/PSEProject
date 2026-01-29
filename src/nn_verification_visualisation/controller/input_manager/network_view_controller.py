@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import List, TYPE_CHECKING
 
+import onnx
+
+from nn_verification_visualisation.controller.process_manager.network_modifier import NetworkModifier
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
@@ -33,6 +36,7 @@ class NetworkViewController:
         if path is None:
             return None
         result = NeuralNetworkLoader().load_neural_network(path)
+        NetworkModifier().custom_output_layer(result.data.model, [(0,1),(1,2)], [(0,1),(3,0),(1,1)])
         layer_dimensions = []   # list of the number of nodes per Layer
         for layer in result.data.model.graph.initializer: # adds the 1.dim of the matrix, dim of the 1. layer
             if len(layer.dims) == 2 :
