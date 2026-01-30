@@ -48,7 +48,11 @@ class ColorManager:
     }
 
     def load_raw(self, path_str: str):
-        self.raw_stylesheet = ((Path(__file__) / path_str).read_text())
+        path = Path(path_str)
+        if not path.is_absolute():
+            base_dir = Path(__file__).resolve().parent
+            path = base_dir / path_str
+        self.raw_stylesheet = path.read_text()
 
     def set_colors(self, colors: dict[str, str]):
         stylesheet = self.raw_stylesheet

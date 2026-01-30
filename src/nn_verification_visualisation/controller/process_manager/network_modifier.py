@@ -1,10 +1,9 @@
 import copy
-from typing import List
 
 from onnx import ModelProto, TensorProto, NodeProto
 import onnx
 class NetworkModifier:
-    def custom_output_layer(self, static_model: ModelProto, neurons: List[(int, int)], directions : List[(float,float)]) -> ModelProto:
+    def custom_output_layer(self, static_model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> ModelProto:
         '''
 
         :param static_model: the whole network, which is not changed in this function
@@ -24,7 +23,7 @@ class NetworkModifier:
         model.graph.output[0].type.tensor_type.shape.dim[1].dim_value =  directions.__len__()       #modifies the output dim, so it matches with the initializers
         return model
 
-    def add_bridge_neurons(self,model:ModelProto, neurons: List[(int, int)], directions : List[(float,float)]) -> ModelProto:
+    def add_bridge_neurons(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> ModelProto:
         '''
 
         :param model: the whole network
@@ -63,7 +62,7 @@ class NetworkModifier:
                 model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.append(direction[neuron_ind])
         return model
 
-    def create_initalizers(self, model: ModelProto, neurons: List[(int, int)], directions : List[(float,float)])-> tuple[TensorProto,TensorProto]:
+    def create_initalizers(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> tuple[TensorProto, TensorProto]:
         '''
 
         :param model: the whole network
@@ -88,7 +87,7 @@ class NetworkModifier:
             new_initializer2.float_data.append(1)
         return new_initializer1, new_initializer2
 
-    def create_new_layer(self, model: ModelProto, neurons: List[(int, int)], initializers: tuple[TensorProto,TensorProto]) -> NodeProto :
+    def create_new_layer(self, model: ModelProto, neurons: list[tuple[int, int]], initializers: tuple[TensorProto, TensorProto]) -> NodeProto:
         '''
         :param model: the whole network
         :param neurons: List of neurons, that should be used for the calculation

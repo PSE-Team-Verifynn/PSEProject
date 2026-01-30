@@ -1,5 +1,7 @@
 import sys
-import resources_rc
+from pathlib import Path
+
+from nn_verification_visualisation import resources_rc
 
 from PySide6.QtWidgets import QApplication
 
@@ -11,7 +13,8 @@ def main():
     app.setStyle("Fusion")
 
     color_manager = ColorManager(app)
-    color_manager.load_raw("../../../style.qss")
+    style_path = Path(__file__).resolve().parent / "style.qss"
+    color_manager.load_raw(str(style_path))
 
     window = MainWindow(color_manager)
 
