@@ -2,7 +2,7 @@ from typing import List, Callable
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout, QMenu, \
     QGraphicsDropShadowEffect
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon, QColor
 
 from nn_verification_visualisation.view.base_view.action_menu import ActionMenu
@@ -10,17 +10,17 @@ from nn_verification_visualisation.view.base_view.tabs import Tabs
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from PySide6.QtCore import QSize
 
+
 class InsertView(QWidget):
     tabs: Tabs
-    action_menu: ActionMenu
+    action_menu: ActionMenu | None
+    action_menu_open: bool = False
     page_layout: QVBoxLayout
 
     __dialog_stack: List[DialogBase]
 
     def __init__(self):
         super().__init__()
-
-
 
         self.tabs = Tabs(self.close_tab)
 
@@ -42,27 +42,12 @@ class InsertView(QWidget):
 
         self.__dialog_stack = []
 
-        menu_button = self.set_bar_icon_button(lambda: self.show_menu(menu_button), ":assets/icons/menu_icon.svg", Qt.Corner.TopLeftCorner)
+        self.action_menu = None
 
-    def show_menu(self, menu_button: QPushButton):
-        menu = QMenu()
-        menu.setWindowFlags(
-            Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint
-        )
-        menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        menu.addAction("Settings")
-        menu.addAction("Exit")
+        menu_button = self.set_bar_icon_button(lambda: self.__action_menu_open_close(menu_button), ":assets/icons/menu_icon.svg",
+                                               Qt.Corner.TopLeftCorner)
 
-        shadow = QGraphicsDropShadowEffect(menu)
-        shadow.setBlurRadius(10)
-        shadow.setOffset(0, 4)
-        shadow.setColor(QColor(0, 0, 0, 60))
-
-        menu.setGraphicsEffect(shadow)
-
-        menu.exec(menu_button.mapToGlobal(menu_button.rect().bottomLeft()))
-
-    def set_bar_icon_button(self, on_click: Callable[[], None],  icon: str, corner: Qt.Corner) -> QPushButton:
+    def set_bar_icon_button(self, on_click: Callable[[], None], icon: str, corner: Qt.Corner) -> QPushButton:
         button = QPushButton()
         button.setObjectName("icon-button")
         button.clicked.connect(on_click)
@@ -72,7 +57,7 @@ class InsertView(QWidget):
         button.setFixedHeight(40)
 
         container = QWidget()
-        container.sizeHint = lambda : QSize(button.width(), self.tabs.tabBar().height())
+        container.sizeHint = lambda: QSize(button.width(), self.tabs.tabBar().height())
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addStretch()
@@ -103,3 +88,14 @@ class InsertView(QWidget):
         super().resizeEvent(event)
         for dialog in self.__dialog_stack:
             dialog.setGeometry(self.rect())
+
+    def __action_menu_open_close(self, menu_button: QPushButton):
+        if not self.action_menu_open:
+            self.action_menu = ActionMenu(self)
+            self.action_menu_open = True
+            self.action_menu.menu.aboutToHide.connect(lambda: self.__exit_action())
+            self.action_menu.menu.popup(menu_button.mapToGlobal(menu_button.rect().bottomLeft()))
+
+    def __exit_action(self):
+        self.action_menu.hide()
+        QTimer.singleShot(200, lambda: setattr(self, "action_menu_open", False))
