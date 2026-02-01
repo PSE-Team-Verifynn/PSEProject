@@ -10,7 +10,6 @@ class PlotWidget(QWidget):
     on_export: Callable[[PlotWidget], None]
     on_fullscreen: Callable[[PlotWidget], None]
     on_lock_change: Callable[[PlotWidget], None]
-    on_transform: Callable[[PlotWidget, tuple[float, float, float, float]], None]
     figure: object | None
     axes: object | None
     canvas: object | None
