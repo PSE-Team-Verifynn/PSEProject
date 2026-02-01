@@ -133,6 +133,8 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 expr = stack.pop()
                 if stack:
                     stack[-1].append(expr)
+                else:
+                    top.append(expr)
             else:
                 if stack:
                     stack[-1].append(t)
