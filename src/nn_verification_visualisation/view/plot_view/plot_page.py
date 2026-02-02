@@ -116,6 +116,10 @@ class PlotPage(Tab):
         layout.addLayout(self.__diagram_groups_layout)
         self.__rebuild_diagram_groups()
 
+        add_diagram_button = QPushButton("Add Diagram")
+        add_diagram_button.clicked.connect(self.__add_diagram_from_current_bounds)
+        layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignLeft)
+
         size_group = QGroupBox("Card Size")
         size_layout = QVBoxLayout(size_group)
         size_layout.setContentsMargins(6, 6, 6, 6)
@@ -144,10 +148,6 @@ class PlotPage(Tab):
         layout.addWidget(node_pairs_group)
 
         layout.addStretch(1)
-
-        add_diagram_button = QPushButton("Add Diagram")
-        add_diagram_button.clicked.connect(self.__add_diagram_from_current_bounds)
-        layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignLeft)
 
         return container
 
