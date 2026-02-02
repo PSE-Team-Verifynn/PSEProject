@@ -15,7 +15,6 @@ class NetworkPage(Tab):
         self.configuration = configuration
         self.controller = controller
         self.input_count = configuration.layers_dimensions[0]
-        self.bounds_state = self.controller.get_bounds_state(self.configuration)
         super().__init__(configuration.network.name)
 
     def get_content(self) -> QWidget:
@@ -173,7 +172,7 @@ class NetworkPage(Tab):
             return
         removed = self.controller.remove_bounds(self.configuration, row)
         if removed:
-            new_count = len(self.bounds_state.saved_bounds)
+            new_count = len(self.configuration.saved_bounds)
             next_index = min(row, new_count - 1) if new_count > 0 else None
             self.__refresh_bounds_list(next_index)
             self.__update_display_bounds()
@@ -191,12 +190,15 @@ class NetworkPage(Tab):
     def __refresh_bounds_list(self, selected_row: int | None = None):
         self.bounds_list.blockSignals(True)
         self.bounds_list.clear()
-        for i, _bounds in enumerate(self.bounds_state.saved_bounds):
+        for i, _bounds in enumerate(self.configuration.saved_bounds):
             self.bounds_list.addItem(QListWidgetItem(f"Bounds {i + 1:02d}"))
         if selected_row is None:
-            selected_row = self.bounds_state.selected_bounds_index
+            selected_row = self.configuration.selected_bounds_index
         if selected_row is not None and 0 <= selected_row < self.bounds_list.count():
             self.bounds_list.setCurrentRow(selected_row)
+            self.controller.select_bounds(self.configuration, selected_row)
+            self.__set_bounds_editable(False)
+            self.__set_edit_mode(False)
         else:
             self.bounds_list.clearSelection()
             self.controller.select_bounds(self.configuration, None)
@@ -211,26 +213,26 @@ class NetworkPage(Tab):
             max_input.setEnabled(editable)
 
     def __set_edit_mode(self, active: bool):
-        has_bounds = len(self.bounds_state.saved_bounds) > 0
+        has_bounds = len(self.configuration.saved_bounds) > 0
         self.add_button.setVisible(not active)
         self.edit_group.setVisible(active)
         self.display_group.setVisible((not active) and has_bounds)
 
     def __update_samples_action(self):
-        has_bounds = len(self.bounds_state.saved_bounds) > 0
+        has_bounds = len(self.configuration.saved_bounds) > 0
         self.run_samples_button.setVisible(has_bounds)
         self.run_samples_button.setEnabled(has_bounds)
 
     def __update_display_bounds(self):
-        index = self.bounds_state.selected_bounds_index
-        if index < 0 or index >= len(self.bounds_state.saved_bounds):
+        index = self.configuration.selected_bounds_index
+        if index < 0 or index >= len(self.configuration.saved_bounds):
             self.display_group.setTitle("Bounds")
             for min_label, max_label in self.display_rows:
                 min_label.setText("—")
                 max_label.setText("—")
             self.__update_samples_action()
             return
-        bounds = self.bounds_state.saved_bounds[index]
+        bounds = self.configuration.saved_bounds[index]
         self.display_group.setTitle(f"Bounds {index + 1:02d}")
         values = bounds.get_values()
         for i, (min_label, max_label) in enumerate(self.display_rows):

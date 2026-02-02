@@ -15,7 +15,6 @@ from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.network_view.network_node import NetworkNode
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
-from nn_verification_visualisation.controller.input_manager.bounds_state import BoundsStateRegistry
 
 
 def get_neuron_colors(num_neurons) -> List[QColor]:
@@ -290,8 +289,7 @@ class NeuronPicker(DialogBase):
         parent = self.parent()
         if parent is None or not hasattr(parent, "open_dialog"):
             return
-        bounds_state = BoundsStateRegistry.get(config)
-        dialog = RunSamplesDialog(parent.close_dialog, config, bounds_state)
+        dialog = RunSamplesDialog(parent.close_dialog, config)
         parent.open_dialog(dialog)
 
     def __populate_bounds_selector(self, network_index: int):
@@ -303,19 +301,17 @@ class NeuronPicker(DialogBase):
             self.bounds_selector.blockSignals(False)
             return
         config = Storage().networks[network_index]
-        state = BoundsStateRegistry.get(config)
-        for i, _ in enumerate(state.saved_bounds):
+        for i, _ in enumerate(config.saved_bounds):
             self.bounds_selector.addItem(f"Bounds {i + 1:02d}")
-        if 0 <= state.selected_bounds_index < self.bounds_selector.count():
-            self.bounds_selector.setCurrentIndex(state.selected_bounds_index)
+        if 0 <= config.selected_bounds_index < self.bounds_selector.count():
+            self.bounds_selector.setCurrentIndex(config.selected_bounds_index)
         self.bounds_selector.blockSignals(False)
 
     def __on_bounds_changed(self, index: int):
         if self.current_network < 0 or self.current_network >= len(Storage().networks):
             return
         config = Storage().networks[self.current_network]
-        state = BoundsStateRegistry.get(config)
-        state.selected_bounds_index = index
+        config.selected_bounds_index = index
         self.__update_bounds_display()
     def __on_node_selection_change(self, layer_index: int, node_index: int) -> QColor | None:
         old_layer, old_node = self.current_neurons[self.pair_selection_index]
@@ -491,15 +487,14 @@ class NeuronPicker(DialogBase):
                 max_label.setText("—")
             return
         config = Storage().networks[self.current_network]
-        state = BoundsStateRegistry.get(config)
-        index = state.selected_bounds_index
-        if index < 0 or index >= len(state.saved_bounds):
+        index = config.selected_bounds_index
+        if index < 0 or index >= len(config.saved_bounds):
             self.bounds_display_group.setTitle("Bounds")
             for min_label, max_label in self.bounds_display_rows:
                 min_label.setText("—")
                 max_label.setText("—")
             return
-        bounds = state.saved_bounds[index]
+        bounds = config.saved_bounds[index]
         self.bounds_display_group.setTitle(f"Bounds {index + 1:02d}")
         values = bounds.get_values()
         for i, (min_label, max_label) in enumerate(self.bounds_display_rows):

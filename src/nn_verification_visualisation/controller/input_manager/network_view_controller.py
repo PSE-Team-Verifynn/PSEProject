@@ -5,7 +5,6 @@ from typing import List, TYPE_CHECKING
 import onnx
 
 from nn_verification_visualisation.controller.process_manager.network_modifier import NetworkModifier
-from nn_verification_visualisation.controller.input_manager.bounds_state import BoundsState, BoundsStateRegistry
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
@@ -28,6 +27,7 @@ class NetworkViewController:
     def __init__(self, current_network_view: NetworkView):
         self.current_network_view = current_network_view
         self.current_tab = 0
+        self._draft_bounds_by_config: dict[NetworkVerificationConfig, list[tuple[float, float]]] = {}
 
     def open_network_view(self, network: NeuralNetwork) -> bool:
         pass
@@ -36,11 +36,8 @@ class NetworkViewController:
         dialog = NetworkManagementDialog(self)
         self.current_network_view.open_dialog(dialog)
 
-    def get_bounds_state(self, config: NetworkVerificationConfig) -> BoundsState:
-        return BoundsStateRegistry.get(config)
-
     def open_run_samples_dialog(self, config: NetworkVerificationConfig):
-        dialog = RunSamplesDialog(self.current_network_view.close_dialog, config, self.get_bounds_state(config))
+        dialog = RunSamplesDialog(self.current_network_view.close_dialog, config)
         self.current_network_view.open_dialog(dialog)
 
     def load_bounds(self, config: NetworkVerificationConfig) -> bool:
@@ -91,6 +88,7 @@ class NetworkViewController:
         index = networks.index(network)
         self.current_network_view.close_network_tab(index)
         networks.remove(network)
+        self._draft_bounds_by_config.pop(network, None)
         return True
 
     def run_samples(self) -> List[int]:
@@ -103,63 +101,67 @@ class NetworkViewController:
         pass
 
     def save_bounds(self, config: NetworkVerificationConfig) -> int:
-        state = self.get_bounds_state(config)
         bounds = config.bounds.get_values()
         saved = InputBounds(config.layers_dimensions[0])
         saved.load_list(bounds)
         saved.set_read_only(True)
         saved.clear_sample()
-        state.saved_bounds.append(saved)
-        state.selected_bounds_index = len(state.saved_bounds) - 1
-        state.draft_bounds = [(0.0, 0.0)] * config.layers_dimensions[0]
+        config.saved_bounds.append(saved)
+        config.selected_bounds_index = len(config.saved_bounds) - 1
+        self._set_draft_bounds(config, [(0.0, 0.0)] * config.layers_dimensions[0])
         config.bounds.set_read_only(True)
-        return state.selected_bounds_index
+        return config.selected_bounds_index
 
     def select_bounds(self, config: NetworkVerificationConfig, bounds_index: int | None):
-        state = self.get_bounds_state(config)
         if bounds_index is None:
-            state.selected_bounds_index = -1
-            config.bounds.load_list(state.draft_bounds)
+            config.selected_bounds_index = -1
+            config.bounds.load_list(self._get_draft_bounds(config))
             config.bounds.set_read_only(False)
             config.bounds.clear_sample()
             return
 
-        if bounds_index < 0 or bounds_index >= len(state.saved_bounds):
+        if bounds_index < 0 or bounds_index >= len(config.saved_bounds):
             return
 
-        if state.selected_bounds_index == -1:
-            state.draft_bounds = config.bounds.get_values()
+        if config.selected_bounds_index == -1:
+            self._set_draft_bounds(config, config.bounds.get_values())
 
-        state.selected_bounds_index = bounds_index
-        saved = state.saved_bounds[bounds_index]
+        config.selected_bounds_index = bounds_index
+        saved = config.saved_bounds[bounds_index]
         config.bounds.load_list(saved.get_values())
         config.bounds.set_read_only(True)
         config.bounds.clear_sample()
 
     def remove_bounds(self, config: NetworkVerificationConfig, bounds_index: int) -> bool:
-        state = self.get_bounds_state(config)
-        if bounds_index < 0 or bounds_index >= len(state.saved_bounds):
+        if bounds_index < 0 or bounds_index >= len(config.saved_bounds):
             return False
-        del state.saved_bounds[bounds_index]
-        if state.selected_bounds_index == bounds_index:
+        del config.saved_bounds[bounds_index]
+        if config.selected_bounds_index == bounds_index:
             self.select_bounds(config, None)
             return True
-        if state.selected_bounds_index > bounds_index:
-            state.selected_bounds_index -= 1
+        if config.selected_bounds_index > bounds_index:
+            config.selected_bounds_index -= 1
         return True
 
     def _apply_loaded_bounds(self, config: NetworkVerificationConfig, bounds: dict[int, tuple[float, float]]):
-        state = self.get_bounds_state(config)
         bounds_list = [bounds[i] for i in range(config.layers_dimensions[0])]
-        if state.selected_bounds_index == -1:
+        if config.selected_bounds_index == -1:
             config.bounds.load_list(bounds_list)
-            state.draft_bounds = bounds_list
+            self._set_draft_bounds(config, bounds_list)
             config.bounds.set_read_only(False)
             config.bounds.clear_sample()
             return
 
-        saved = state.saved_bounds[state.selected_bounds_index]
+        saved = config.saved_bounds[config.selected_bounds_index]
         saved.load_list(bounds_list)
         saved.clear_sample()
         config.bounds.load_list(bounds_list)
         config.bounds.set_read_only(True)
+
+    def _get_draft_bounds(self, config: NetworkVerificationConfig) -> list[tuple[float, float]]:
+        if config not in self._draft_bounds_by_config:
+            self._draft_bounds_by_config[config] = config.bounds.get_values()
+        return self._draft_bounds_by_config[config]
+
+    def _set_draft_bounds(self, config: NetworkVerificationConfig, bounds: list[tuple[float, float]]):
+        self._draft_bounds_by_config[config] = bounds

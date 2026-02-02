@@ -20,7 +20,6 @@ from nn_verification_visualisation.controller.process_manager.sample_runner impo
 from nn_verification_visualisation.controller.process_manager.sample_metric_registry import load_metrics
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
-from nn_verification_visualisation.controller.input_manager.bounds_state import BoundsState
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
 
@@ -57,16 +56,13 @@ class _SampleWorker(QObject):
 
 class RunSamplesDialog(DialogBase):
     config: NetworkVerificationConfig
-    bounds_state: BoundsState
 
     def __init__(
         self,
         on_close: Callable[[], None],
         config: NetworkVerificationConfig,
-        bounds_state: BoundsState,
     ):
         self.config = config
-        self.bounds_state = bounds_state
 
         self._thread: QThread | None = None
         self._worker: _SampleWorker | None = None
@@ -152,7 +148,7 @@ class RunSamplesDialog(DialogBase):
         if bounds is None:
             self.__set_status("Select a saved bounds set before running samples.")
             return
-        self.bounds_state.selected_bounds_index = self._bounds_selector.currentIndex()
+        self.config.selected_bounds_index = self._bounds_selector.currentIndex()
 
         metrics = [key for key, cb in self._metric_checks.items() if cb.isChecked()]
         if not metrics:
@@ -177,15 +173,15 @@ class RunSamplesDialog(DialogBase):
 
     def __get_selected_bounds(self) -> InputBounds | None:
         index = self._bounds_selector.currentIndex()
-        if index < 0 or index >= len(self.bounds_state.saved_bounds):
+        if index < 0 or index >= len(self.config.saved_bounds):
             return None
-        return self.bounds_state.saved_bounds[index]
+        return self.config.saved_bounds[index]
 
     def __populate_bounds_selector(self):
         self._bounds_selector.clear()
-        for i, _bounds in enumerate(self.bounds_state.saved_bounds):
+        for i, _bounds in enumerate(self.config.saved_bounds):
             self._bounds_selector.addItem(f"Bounds {i + 1:02d}")
-        index = self.bounds_state.selected_bounds_index
+        index = self.config.selected_bounds_index
         if 0 <= index < self._bounds_selector.count():
             self._bounds_selector.setCurrentIndex(index)
 
