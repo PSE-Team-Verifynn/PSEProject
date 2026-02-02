@@ -3,6 +3,20 @@ import copy
 from onnx import ModelProto, TensorProto, NodeProto
 import onnx
 class NetworkModifier:
+    @staticmethod
+    def with_all_outputs(static_model: ModelProto) -> ModelProto:
+        model = copy.deepcopy(static_model)
+        existing = {output.name for output in model.graph.output}
+        for node in model.graph.node:
+            for name in node.output:
+                if not name or name in existing:
+                    continue
+                vi = onnx.ValueInfoProto()
+                vi.name = name
+                model.graph.output.append(vi)
+                existing.add(name)
+        return model
+
     def custom_output_layer(self, static_model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> ModelProto:
         '''
 

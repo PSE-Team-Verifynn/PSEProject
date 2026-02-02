@@ -145,9 +145,6 @@ class PlotPage(Tab):
 
         layout.addStretch(1)
 
-        edit_button = QPushButton("Edit Comparison")
-        layout.addWidget(edit_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
         add_diagram_button = QPushButton("Add Diagram")
         add_diagram_button.clicked.connect(self.__add_diagram_from_current_bounds)
         layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignLeft)
