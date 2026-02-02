@@ -33,6 +33,10 @@ class NetworkPage(Tab):
 
         self.bounds_list = QListWidget()
         self.bounds_list.setObjectName("bounds-list")
+        row_height = self.bounds_list.sizeHintForRow(0)
+        if row_height <= 0:
+            row_height = self.bounds_list.fontMetrics().height() + 8
+        self.bounds_list.setMinimumHeight(row_height * 5 + self.bounds_list.frameWidth() * 2)
         self.bounds_list.currentRowChanged.connect(self.__on_bounds_selection_changed)
         bounds_group_layout.addWidget(self.bounds_list)
 
