@@ -17,12 +17,13 @@ class InsertView(QWidget):
     action_menu_open: bool = False
     page_layout: QVBoxLayout
 
+    # Stack data structure that stores the current open dialogs (highest item is in front)
     __dialog_stack: List[DialogBase]
 
     def __init__(self):
         super().__init__()
 
-        self.tabs = Tabs(self.close_tab)
+        self.tabs = Tabs(self.close_tab, empty_page=self.get_default_tab())
 
         self.container_layout = QStackedLayout()
         self.container_layout.setContentsMargins(0, 0, 0, 0)
@@ -44,10 +45,22 @@ class InsertView(QWidget):
 
         self.action_menu = None
 
-        menu_button = self.set_bar_icon_button(lambda: self.__action_menu_open_close(menu_button), ":assets/icons/menu_icon.svg",
+        menu_button = self.set_bar_icon_button(lambda: self.__action_menu_open_close(menu_button),
+                                               ":assets/icons/menu_icon.svg",
                                                Qt.Corner.TopLeftCorner)
 
+    #override
+    def get_default_tab(self) -> QWidget|None:
+        return None
+
     def set_bar_icon_button(self, on_click: Callable[[], None], icon: str, corner: Qt.Corner) -> QPushButton:
+        '''
+        Creates a new QPushButton with an icon and adds it to a corner of the TabBar.
+        :param on_click: function to be called on clic
+        :param icon: the asset path of the icon
+        :param corner: position of the button
+        :return: the new button
+        '''
         button = QPushButton()
         button.setObjectName("icon-button")
         button.clicked.connect(on_click)
@@ -71,6 +84,10 @@ class InsertView(QWidget):
         self.tabs.close_tab(index)
 
     def open_dialog(self, dialog: DialogBase):
+        '''
+        Opens a new dialog
+        :param dialog: dialog to be opened
+        '''
         self.__dialog_stack.append(dialog)
 
         dialog.setParent(self)
@@ -78,12 +95,17 @@ class InsertView(QWidget):
         dialog.setGeometry(self.rect())
 
     def close_dialog(self) -> bool:
+        '''
+        Closes the current dialog by removing it from the stack
+        :return: if the removal was successful
+        '''
         if len(self.__dialog_stack) <= 0:
             return False
 
         self.__dialog_stack.pop().setParent(None)
         return True
 
+    # internal Qt-function to get notified on resize
     def resizeEvent(self, event):
         super().resizeEvent(event)
         for dialog in self.__dialog_stack:
