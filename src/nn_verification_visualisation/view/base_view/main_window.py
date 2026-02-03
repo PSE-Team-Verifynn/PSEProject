@@ -1,3 +1,5 @@
+from time import sleep
+
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QStyleFactory
 from PySide6.QtGui import QPalette, QColor
 from PySide6.QtCore import Qt
@@ -17,6 +19,5 @@ class MainWindow(QMainWindow):
         self.resize(800, 600)
 
         # Central widget (QMainWindow *requires* one)
-        base_view = BaseView(color_manager)
-
+        base_view = BaseView(color_manager, self)
         self.setCentralWidget(base_view)

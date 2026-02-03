@@ -1,5 +1,5 @@
 import sys
-from pathlib import Path
+from time import sleep
 
 from nn_verification_visualisation import resources_rc
 
@@ -9,17 +9,16 @@ from nn_verification_visualisation.view.base_view.color_manager import ColorMana
 from nn_verification_visualisation.view.base_view.main_window import MainWindow
 
 def main():
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
     color_manager = ColorManager(app)
-    style_path = Path(__file__).resolve().parent / "style.qss"
-    color_manager.load_raw(str(style_path))
+    color_manager.load_raw(":src/nn_verification_visualisation/style.qss")
 
     window = MainWindow(color_manager)
 
-    window.showMaximized()
-
+    window.show()
     sys.exit(app.exec())
 
 if __name__ == '__main__':

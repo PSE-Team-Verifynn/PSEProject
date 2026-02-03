@@ -1,8 +1,10 @@
+from time import sleep
+
 from PySide6.QtWidgets import QApplication
 from pathlib import Path
 
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QFile, QIODevice
 
 
 class ColorManager:
@@ -53,15 +55,9 @@ class ColorManager:
     }
 
     def load_raw(self, path_str: str):
-        '''
-        Loads the raw stylesheet without replacing its colors.
-        :param path_str: file path of the style sheet.
-        '''
-        path = Path(path_str)
-        if not path.is_absolute():
-            base_dir = Path(__file__).resolve().parent
-            path = base_dir / path_str
-        self.raw_stylesheet = path.read_text()
+        file = QFile(path_str)
+        file.open(QIODevice.ReadOnly | QIODevice.Text)
+        self.raw_stylesheet = file.readAll().data().decode("utf-8")
 
     def set_colors(self, colors: dict[str, str]):
         '''

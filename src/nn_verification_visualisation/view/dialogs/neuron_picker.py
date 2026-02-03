@@ -129,7 +129,7 @@ class NeuronPicker(DialogBase):
         else:
             self.current_algorithm = Storage().algorithms[0].name
 
-        self.network_presentation.addLayout(self.__get_button_row()) # Buttons
+        self.network_presentation.addLayout(self.__get_button_row())  # Buttons
 
         splitter.setMinimumHeight(500)
         splitter.addWidget(side_bar)
@@ -188,7 +188,8 @@ class NeuronPicker(DialogBase):
             self.bounds_toggle_button.setVisible(self.__can_show_bounds_display())
 
         # Re-create the network widget
-        self.network_widget = NetworkWidget(Storage().networks[index], nodes_selectable=True, on_selection_changed=self.__on_node_selection_change)
+        self.network_widget = NetworkWidget(Storage().networks[index], nodes_selectable=True,
+                                            on_selection_changed=self.__on_node_selection_change)
 
         # Update limits based on new network
         self.max_neuron_num_per_layer = new_network.layers_dimensions
@@ -318,6 +319,7 @@ class NeuronPicker(DialogBase):
         config = Storage().networks[self.current_network]
         config.selected_bounds_index = index
         self.__update_bounds_display()
+
     def __on_node_selection_change(self, layer_index: int, node_index: int) -> QColor | None:
         old_layer, old_node = self.current_neurons[self.pair_selection_index]
 
@@ -400,19 +402,8 @@ class NeuronPicker(DialogBase):
         input_count = 0
         if Storage().networks:
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
-        for i in range(input_count):
-            row_layout = QHBoxLayout()
-            label = QLabel(f"{i}:")
-            label.setObjectName("label")
-            min_label = QLabel("-")
-            max_label = QLabel("-")
-            min_label.setObjectName("label")
-            max_label.setObjectName("label")
-            row_layout.addWidget(label)
-            row_layout.addWidget(min_label)
-            row_layout.addWidget(max_label)
-            display_layout.addLayout(row_layout)
-            self.bounds_display_rows.append((min_label, max_label))
+        self.__rebuild_bounds_display_rows()
+
         # --- Neuron Pair Selectors ---
         for i in range(0, self.num_neurons):
             neuron_pair_group = QHBoxLayout()
