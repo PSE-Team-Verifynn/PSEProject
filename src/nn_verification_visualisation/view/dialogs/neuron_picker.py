@@ -1,7 +1,7 @@
 import random
 from typing import List, Callable, Tuple
 
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QIcon
 from numpy import clip
 
 from PySide6.QtCore import Qt
@@ -109,7 +109,7 @@ class NeuronPicker(DialogBase):
         # 1. Setup Side Bar (This creates the spinboxes)
         side_bar = QWidget()
         side_bar.setObjectName("dialog-sidebar")
-        side_bar.setMinimumWidth(250)
+        side_bar.setMinimumWidth(270)
         side_bar.setLayout(self.__get_side_bar_content())
 
         # 2. Setup Network Presentation
@@ -137,7 +137,7 @@ class NeuronPicker(DialogBase):
         splitter.setObjectName("transparent")
 
         splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(1, 4)
+        splitter.setStretchFactor(1, 3)
 
         network_picker_layout.addWidget(splitter)
 
@@ -453,8 +453,9 @@ class NeuronPicker(DialogBase):
             node_hint = QLabel("Node")
             node_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
 
-            eye_button = QPushButton("👀")
-            eye_button.setObjectName("transparent-button")
+            eye_button = QPushButton("")
+            eye_button.setIcon(QIcon(":/assets/icons/focus_node.svg"))
+            eye_button.setObjectName("icon-button")
             eye_button.clicked.connect(lambda _, idx=i: self.__jump_to_neuron(idx))
 
             layer_box = QVBoxLayout()
@@ -471,7 +472,7 @@ class NeuronPicker(DialogBase):
             neuron_pair_group.addLayout(layer_box)
             neuron_pair_group.addWidget(colon)
             neuron_pair_group.addLayout(node_box)
-            neuron_pair_group.addWidget(eye_button)
+            neuron_pair_group.addWidget(eye_button, alignment=Qt.AlignmentFlag.AlignBottom)
 
             layout.addLayout(neuron_pair_group)
 

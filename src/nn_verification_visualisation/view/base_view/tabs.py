@@ -1,9 +1,11 @@
 from typing import Callable
 
-from PySide6.QtWidgets import QTabWidget, QTabBar, QVBoxLayout, QLabel, QWidget
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import QTabWidget, QTabBar, QWidget, QHBoxLayout
+from PySide6.QtCore import QSize
+from PySide6.QtSvgWidgets import QSvgWidget
 
 from nn_verification_visualisation.view.base_view.tab import Tab
+
 
 class Tabs(QTabWidget):
 
@@ -64,7 +66,24 @@ class Tabs(QTabWidget):
         if self.has_empty_page and self.count() == 1 and self.widget(0) is self.empty_page:
             self.removeTab(0)
 
-        self.addTab(tab, tab.title)
+        index = self.addTab(tab, tab.title)
+
+        # adds the tab's icons if preset
+        if tab.icon is not None:
+            icon = QSvgWidget(tab.icon)
+            icon.setFixedSize(20, 20)
+
+            wrapper = QWidget()
+            layout = QHBoxLayout(wrapper)
+            layout.setContentsMargins(8, 0, 0, 0)
+            layout.addWidget(icon)
+
+            self.tabBar().setTabButton(
+                index,
+                self.tabBar().ButtonPosition.LeftSide,
+                wrapper
+            )
+
         self.show()
 
     def close_tab(self, index: int):
@@ -84,6 +103,7 @@ class PersistentTabBar(QTabBar):
     '''
     QTabBar that stays open even if the QTabWidget does not have any tabs.
     '''
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setDrawBase(False)
@@ -97,5 +117,5 @@ class PersistentTabBar(QTabBar):
     def sizeHint(self):
         hint = super().sizeHint()
         if self.count() == 0:
-            return QSize(0, 44) # hardcoded height fix
+            return QSize(0, 44)  # hardcoded height fix
         return hint

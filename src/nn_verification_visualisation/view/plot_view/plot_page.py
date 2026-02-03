@@ -47,7 +47,6 @@ class PlotPage(Tab):
 
     def __init__(self, controller: PlotViewController):
 
-
         self.__syncing = False
         self.__scroll_area = None
         self.__grid_host = None
@@ -58,7 +57,7 @@ class PlotPage(Tab):
         self.__node_pairs_list = None
         self.__node_pairs_layout = None
         self.controller = controller
-        super().__init__("Example Tab")
+        super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
         # configuration is currently not implemented
         # self.configuration = configuration
 

@@ -16,13 +16,13 @@ QFrame {
     border: none;
 }
 
-
 QTabBar::tab {
     background-color: @bg1;
-    padding: 8px 16px;
+    padding: 8px 8px;
     margin: 5px 0px 5px 5px;
     border-radius: 10px;
     border: 0px;
+    height: 20px;
 }
 
 QTabBar::close-button {
@@ -267,6 +267,7 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     background-color: transparent;
     icon-size: 20px;
 }
+
 #close-button {
     margin: 5px;
 }
@@ -303,7 +304,7 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
 }
 
 #pair-loading-container {
-    background-color: @component;
+    background-color: @bg1;
     color: red;
     border-radius: 10px;
 }

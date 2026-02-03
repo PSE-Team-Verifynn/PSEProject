@@ -15,7 +15,7 @@ class NetworkPage(Tab):
         self.configuration = configuration
         self.controller = controller
         self.input_count = configuration.layers_dimensions[0]
-        super().__init__(configuration.network.name)
+        super().__init__(configuration.network.name, ":assets/icons/network/network.svg")
 
     def get_content(self) -> QWidget:
         return NetworkWidget(self.configuration)
