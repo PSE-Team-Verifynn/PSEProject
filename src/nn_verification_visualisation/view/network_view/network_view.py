@@ -20,8 +20,8 @@ class NetworkView(InsertView):
     '''
     controller: NetworkViewController
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.controller = NetworkViewController(self)
 
         self.set_bar_icon_button(self.controller.open_network_management_dialog, ":assets/icons/edit_icon.svg",

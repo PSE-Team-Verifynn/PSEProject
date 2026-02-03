@@ -15,7 +15,6 @@ class InputBounds(QAbstractTableModel):
 
     __value: List[tuple[float, float]]
     count: int
-    __read_only: bool
     sample: Any | None
 
     __ACCEPTED_ROLES = [Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole] # PySide6
@@ -23,7 +22,6 @@ class InputBounds(QAbstractTableModel):
     def __init__(self, count: int):
         super().__init__()
         self.__value = [(0.0, 0.0)] * count
-        self.__read_only = False
         self.sample = None
 
         self.count = count
@@ -64,9 +62,6 @@ class InputBounds(QAbstractTableModel):
     def clear_sample(self):
         self.sample = None
 
-    def set_read_only(self, read_only: bool):
-        self.__read_only = read_only
-
     def rowCount(self, parent=QModelIndex()) -> int:
         '''
         QAbstractTableModel's row count method.
@@ -100,8 +95,6 @@ class InputBounds(QAbstractTableModel):
         :param role: reason for the value write.
         '''
         if role != Qt.ItemDataRole.EditRole or not index.isValid():
-            return False
-        if self.__read_only:
             return False
         # check if the value is actually a float
         try:

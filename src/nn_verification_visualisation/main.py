@@ -1,4 +1,6 @@
 import sys
+from time import sleep
+
 from nn_verification_visualisation import resources_rc
 
 from PySide6.QtWidgets import QApplication
@@ -16,8 +18,7 @@ def main():
 
     window = MainWindow(color_manager)
 
-    window.showMaximized()
-
+    window.show()
     sys.exit(app.exec())
 
 if __name__ == '__main__':

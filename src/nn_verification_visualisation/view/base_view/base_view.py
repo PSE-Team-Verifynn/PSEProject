@@ -12,10 +12,10 @@ class BaseView(QWidget):
     network_view: NetworkView
     color_manager: ColorManager
 
-    def __init__(self, color_manager: ColorManager):
-        super().__init__()
-        self.plot_view = PlotView()
-        self.network_view = NetworkView()
+    def __init__(self, color_manager: ColorManager, parent=None):
+        super().__init__(parent)
+        self.plot_view = PlotView(parent=self)
+        self.network_view = NetworkView(parent=self)
         self.active_view = self.network_view
         self.stack = QStackedLayout()
         self.stack.addWidget(self.network_view)
@@ -27,7 +27,7 @@ class BaseView(QWidget):
         container.setLayout(self.stack)
 
         button_bar_layout = QHBoxLayout()
-        button_bar_layout.setContentsMargins(0,0,0,0)
+        button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
         change_button = QPushButton("Change")
         change_button.setObjectName("transparent-button")
@@ -40,11 +40,11 @@ class BaseView(QWidget):
         button_bar.setLayout(button_bar_layout)
 
         self.box_layout = QVBoxLayout()
-        self.box_layout.setContentsMargins(0,0,0,0)
+        self.box_layout.setContentsMargins(0, 0, 0, 0)
         self.box_layout.setSpacing(0)
+        self.box_layout.addWidget(button_bar)
+        self.box_layout.addWidget(container)
         self.setLayout(self.box_layout)
-        self.layout().addWidget(button_bar)
-        self.layout().addWidget(container)
 
     def change_active_view(self):
         if self.active_view is self.network_view:
