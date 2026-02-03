@@ -1,10 +1,12 @@
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QDoubleSpinBox, QDataWidgetMapper, QListWidget, QListWidgetItem, QGroupBox
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QDoubleSpinBox, QDataWidgetMapper, \
+    QListWidget, QListWidgetItem, QGroupBox, QFrame
 from PySide6.QtCore import Qt
 
 from nn_verification_visualisation.controller.input_manager.network_view_controller import NetworkViewController
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
+
 
 class NetworkPage(Tab):
     configuration: NetworkVerificationConfig
@@ -32,13 +34,14 @@ class NetworkPage(Tab):
         bounds_group_layout.setSpacing(4)
 
         self.bounds_list = QListWidget()
-        self.bounds_list.setObjectName("bounds-list")
+
         row_height = self.bounds_list.sizeHintForRow(0)
         if row_height <= 0:
             row_height = self.bounds_list.fontMetrics().height() + 8
         self.bounds_list.setMinimumHeight(row_height * 5 + self.bounds_list.frameWidth() * 2)
         self.bounds_list.currentRowChanged.connect(self.__on_bounds_selection_changed)
         bounds_group_layout.addWidget(self.bounds_list)
+        bounds_group_layout.addSpacing(5)
 
         remove_button = QPushButton("Remove Selected Bounds")
         remove_button.clicked.connect(self.__on_remove_bounds_clicked)
@@ -148,7 +151,7 @@ class NetworkPage(Tab):
         return base
 
     def on_changed(self, bounds_num: int, is_max: bool, new_val: float):
-        self.configuration.bounds.bounds[bounds_num] = (new_val,new_val)
+        self.configuration.bounds.bounds[bounds_num] = (new_val, new_val)
         print("{} changed to {}".format(bounds_num, new_val))
 
     def __on_save_bounds_clicked(self):

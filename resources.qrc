@@ -11,6 +11,7 @@
     <file>assets/icons/add_chart.svg</file>
     <file>assets/icons/network/network.svg</file>
     <file>assets/icons/plot/chart.svg</file>
+    <file>assets/icons/delete.svg</file>
     <file>src/nn_verification_visualisation/style.qss</file>
   </qresource>
 </RCC>

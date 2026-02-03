@@ -114,11 +114,17 @@ QScrollBar::handle:horizontal {
 }
 
 QListWidget {
-    border: none;
+    border-radius: 10px;
+    background-color: @bg0;
+}
+
+QListWidget::viewport {
+    background-color: transparent;
 }
 
 QListWidget::item {
-    padding: 10px 5px;
+    margin: 3px;
+    padding: 7px;
     border-radius: 10px;
 }
 
@@ -130,6 +136,10 @@ QListWidget::item:selected {
 }
 QListWidget::item::text {
     border: none;
+}
+
+QListWidget::viewport {
+    background: transparent;
 }
 
 QSplitter {
@@ -190,6 +200,11 @@ QComboBox QAbstractItemView {
 
 #faded-background {
     background-color: rgba(0, 0, 0, 150);
+}
+
+#foreground-item {
+    background-color: @bg0;
+    border-radius: 10px;
 }
 
 #dialog-pane, #card {

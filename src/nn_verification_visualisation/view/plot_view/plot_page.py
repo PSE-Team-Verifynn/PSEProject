@@ -1,6 +1,7 @@
 from typing import List
 
 from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
     QFrame,
@@ -140,6 +141,8 @@ class PlotPage(Tab):
         self.__node_pairs_layout = node_pairs_layout
         self.__node_pairs_list = QListWidget()
         node_pairs_layout.addWidget(self.__node_pairs_list)
+        node_pairs_layout.addSpacing(5)
+
         remove_pair_button = QPushButton("Remove Selected Pair")
         remove_pair_button.clicked.connect(self.__remove_selected_pair)
         node_pairs_layout.addWidget(remove_pair_button)
@@ -319,8 +322,8 @@ class PlotPage(Tab):
                 widget.setParent(None)
         for plot in self.plots:
             title = getattr(plot, "plot_title", "Diagram")
-            group = QGroupBox()
-            group.setObjectName("card")
+            group = QWidget()
+            group.setObjectName("foreground-item")
             group_layout = QVBoxLayout(group)
             group_layout.setContentsMargins(6, 6, 6, 6)
             group_layout.setSpacing(0)
@@ -331,8 +334,10 @@ class PlotPage(Tab):
             header_layout.setSpacing(6)
             header_layout.addWidget(QLabel(title))
             header_layout.addStretch(1)
-            delete_button = QPushButton("🗑")
-            delete_button.setFixedSize(28, 28)
+            delete_button = QPushButton()
+            delete_button.setObjectName("icon-button")
+            delete_button.setIcon(QIcon(":assets/icons/delete.svg"))
+            delete_button.setFixedSize(24, 24)
             delete_button.clicked.connect(lambda _=False, t=title: self.__remove_diagram(t))
             header_layout.addWidget(delete_button)
             group_layout.addWidget(header)
