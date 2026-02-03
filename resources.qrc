@@ -4,5 +4,6 @@
     <file>assets/icons/edit_icon.svg</file>
     <file>assets/icons/menu_icon.svg</file>
     <file>assets/icons/add_icon.svg</file>
+    <file>src/nn_verification_visualisation/style.qss</file>
   </qresource>
 </RCC>

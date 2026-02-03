@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QApplication
 from pathlib import Path
 
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QFile, QIODevice
 
 
 class ColorManager:
@@ -48,7 +48,12 @@ class ColorManager:
     }
 
     def load_raw(self, path_str: str):
-        self.raw_stylesheet = ((Path(__file__) / path_str).read_text())
+        file = QFile(path_str)
+        file.open(QIODevice.ReadOnly | QIODevice.Text)
+        self.raw_stylesheet = file.readAll().data().decode("utf-8")
+        print(self.raw_stylesheet)
+        print("kek")
+        # self.raw_stylesheet = ((Path(__file__) / path_str).read_text())
 
     def set_colors(self, colors: dict[str, str]):
         stylesheet = self.raw_stylesheet

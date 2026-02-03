@@ -1,5 +1,5 @@
 import sys
-import resources_rc
+from nn_verification_visualisation import resources_rc
 
 from PySide6.QtWidgets import QApplication
 
@@ -7,11 +7,12 @@ from nn_verification_visualisation.view.base_view.color_manager import ColorMana
 from nn_verification_visualisation.view.base_view.main_window import MainWindow
 
 def main():
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
     color_manager = ColorManager(app)
-    color_manager.load_raw("../../../style.qss")
+    color_manager.load_raw(":src/nn_verification_visualisation/style.qss")
 
     window = MainWindow(color_manager)
 
