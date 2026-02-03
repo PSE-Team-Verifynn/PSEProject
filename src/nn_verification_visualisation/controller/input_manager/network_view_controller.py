@@ -35,7 +35,7 @@ class NetworkViewController:
         self.current_network_view.open_dialog(dialog)
 
     def load_bounds(self, config: NetworkVerificationConfig) -> bool:
-        path = self.current_network_view.open_network_file_picker("Bound-Files (*.csv, *.vnnlib);; All Files (*)")
+        path = self.current_network_view.open_network_file_picker("Bound-Files (*.csv *.vnnlib);; All Files (*)")
         if path is None:
             return False
         result = InputBoundsLoader().load_input_bounds(path, config)

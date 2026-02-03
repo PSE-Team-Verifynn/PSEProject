@@ -1,4 +1,11 @@
 class Algorithm:
+    '''
+    Data object that links to an algorithm on the disk.
+    :param name: Name of the algorithm.
+    :param path: File path to the algorithm.
+    :param is_deterministic: Whether the algorithm is deterministic.
+    '''
+    
     name: str
     path: str
     is_deterministic: bool
