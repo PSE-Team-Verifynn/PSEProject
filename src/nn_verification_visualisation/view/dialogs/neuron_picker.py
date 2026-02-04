@@ -221,7 +221,7 @@ class NeuronPicker(DialogBase):
             if item.widget():
                 item.widget().deleteLater()
 
-        self.network_presentation.addWidget(self.network_widget)
+        self.network_presentation.insertWidget(0, self.network_widget)
 
         for i, (layer, neuron) in enumerate(self.current_neurons):
             self.network_widget.select_node(layer, neuron, self.neuron_colors[i])
