@@ -51,6 +51,7 @@ class SampleMetricsWidget(QGroupBox):
         self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self._scroll.setMinimumHeight(180)
         self._scroll_content = QWidget()
+        self._scroll_content.setObjectName("soft-scroll-content")
         self._scroll_content.setMaximumWidth(320)
         self._scroll_layout = QVBoxLayout(self._scroll_content)
         self._scroll_layout.setContentsMargins(0, 0, 0, 0)

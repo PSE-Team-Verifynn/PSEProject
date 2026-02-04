@@ -112,6 +112,23 @@ QScrollBar::sub-page:horizontal {
     background: none;
 }
 
+QScrollArea#bounds-scroll {
+    background-color: @bg0;
+    border: 1px solid @fg1;
+    border-radius: 10px;
+}
+
+QScrollArea#bounds-scroll QWidget#qt_scrollarea_viewport {
+    background-color: @bg0;
+    border-radius: 10px;
+}
+
+QScrollArea#bounds-scroll > QWidget > QWidget {
+    background: transparent;
+}
+
+
+
 /* Horizontal */
 QScrollBar:horizontal {
     background: transparent;
