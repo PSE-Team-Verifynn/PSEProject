@@ -90,13 +90,11 @@ class NetworkPage(Tab):
             min_input.setFixedWidth(75)
             min_input.setSingleStep(.1)
             mapper.addMapping(min_input, 0)
-            min_input.valueChanged.connect(mapper.submit)
 
             max_input = QDoubleSpinBox(minimum=-999999, maximum=999999)
             max_input.setFixedWidth(75)
             max_input.setSingleStep(.1)
             mapper.addMapping(max_input, 1)
-            max_input.valueChanged.connect(mapper.submit)
 
             row_layout.addWidget(label)
             row_layout.addWidget(min_input)

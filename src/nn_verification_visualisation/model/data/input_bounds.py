@@ -1,5 +1,6 @@
+from time import sleep
 from typing import Any, Dict, List
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QTimer
 
 import numpy as np
 
@@ -17,7 +18,7 @@ class InputBounds(QAbstractTableModel):
     count: int
     sample: Any | None
 
-    __ACCEPTED_ROLES = [Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole] # PySide6
+    __ACCEPTED_ROLES = [Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole]  # PySide6
 
     def __init__(self, count: int):
         super().__init__()

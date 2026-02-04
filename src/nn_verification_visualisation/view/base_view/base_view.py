@@ -23,8 +23,8 @@ class BaseView(QWidget):
         self.color_manager = color_manager
         self.color_manager.set_colors(ColorManager.NETWORK_COLORS)
 
-        self.plot_view = PlotView(parent=self)
-        self.network_view = NetworkView(parent=self)
+        self.plot_view = PlotView(self.change_active_view, parent=self)
+        self.network_view = NetworkView(self.change_active_view, parent=self)
         self.active_view = self.network_view
         self.stack = QStackedLayout()
         self.stack.addWidget(self.network_view)
@@ -38,23 +38,9 @@ class BaseView(QWidget):
         container = QWidget()
         container.setLayout(self.stack)
 
-        button_bar_layout = QHBoxLayout()
-        button_bar_layout.setContentsMargins(0, 0, 0, 0)
-
-        change_button = QPushButton("Change")
-        change_button.setObjectName("transparent-button")
-        change_button.clicked.connect(self.change_active_view)
-
-        button_bar_layout.addStretch()
-        button_bar_layout.addWidget(change_button)
-
-        button_bar = QWidget()
-        button_bar.setLayout(button_bar_layout)
-
         self.box_layout = QVBoxLayout()
         self.box_layout.setContentsMargins(0, 0, 0, 0)
         self.box_layout.setSpacing(0)
-        self.box_layout.addWidget(button_bar)
         self.box_layout.addWidget(container)
         self.setLayout(self.box_layout)
 
