@@ -253,6 +253,11 @@ QComboBox QAbstractItemView {
     font-weight: bold;
 }
 
+#heading {
+    font-size: 15px;
+    font-weight: semibold;
+}
+
 QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     font-size: 14px;
 }

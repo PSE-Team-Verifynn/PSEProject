@@ -3,7 +3,7 @@ from time import sleep
 from PySide6.QtWidgets import QApplication
 from pathlib import Path
 
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QColor, QPalette, QStyleHints
 from PySide6.QtCore import Qt, QFile, QIODevice
 
 
@@ -93,3 +93,12 @@ class ColorManager:
 
     def __init__(self, app: QApplication):
         self.app = app
+        self.app.styleHints().colorSchemeChanged.connect(self.update_colors)
+        self.app.styleHints().accessibility().contrastPreferenceChanged.connect(lambda contrast: self.update_accessibility(contrast))
+
+    def update_colors(self):
+        style_hints = self.app.styleHints()
+        color_scheme = style_hints.colorScheme()
+
+    def update_accessibility(self, contrast: Qt.ContrastPreference):
+        pass

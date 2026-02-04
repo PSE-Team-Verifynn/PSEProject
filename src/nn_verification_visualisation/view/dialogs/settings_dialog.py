@@ -1,31 +1,55 @@
+import inspect
+from collections import defaultdict
+from enum import Enum
 from typing import List, Callable
-
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QScrollArea, QHBoxLayout
+from PySide6.QtWidgets import (
+    QWidget, QLabel, QVBoxLayout, QScrollArea, QHBoxLayout
+)
 
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
 
+
 class SettingsDialog(DialogBase):
-    settings: List[SettingsOption]
+    settings: List[SettingsOption] = []
 
     def __init__(self, on_close: Callable[[], None]):
-        self.settings = [
-            SettingsOption("Test", QLabel("change"), lambda _: print("test")),
-            SettingsOption("Test2", QWidget(), lambda _: print("test")),
-        ]
-
         super().__init__(on_close, "Settings")
 
     def get_content(self) -> QWidget:
-        widget = QScrollArea()
-        layout = QVBoxLayout()
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
 
-        for setting in self.settings:
-            setting_layout = QHBoxLayout()
-            setting_layout.addWidget(QLabel(setting.name))
-            setting_layout.addStretch()
-            setting_layout.addWidget(setting.settings_changer)
-            layout.addLayout(setting_layout)
+        print(f"Settings: {SettingsDialog.settings}")
 
-        widget.setLayout(layout)
-        return widget
+        groups : dict[str, List[QHBoxLayout]] = defaultdict(list)
+
+        for setting in SettingsDialog.settings:
+            row_layout = QHBoxLayout()
+            name_label = QLabel(setting.name)
+            name_label.setObjectName("label")
+            row_layout.addWidget(name_label)
+            row_layout.addStretch()
+
+            changer_widget = setting.factory()
+
+            row_layout.addWidget(changer_widget)
+            groups[setting.type].append(row_layout)
+
+        content_widget = QWidget()
+        layout = QVBoxLayout(content_widget)
+        for group_name, group in groups.items():
+            group_label = QLabel(group_name)
+            group_label.setObjectName("heading")
+            layout.addWidget(group_label)
+            for row in group:
+                layout.addLayout(row)
+
+        layout.addStretch()
+        scroll_area.setWidget(content_widget)
+
+        return scroll_area
+
+    @staticmethod
+    def add_setting(setting: SettingsOption):
+        SettingsDialog.settings.append(setting)
