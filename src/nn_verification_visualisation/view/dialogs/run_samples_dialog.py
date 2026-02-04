@@ -21,6 +21,8 @@ from nn_verification_visualisation.controller.process_manager.sample_metric_regi
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
+from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
+from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
 
 
@@ -195,7 +197,9 @@ class RunSamplesDialog(DialogBase):
 
     def __on_worker_failed(self, message: str):
         self.__set_running_state(False)
-        self.__set_status(message or "Failed to run samples.")
+        error_message = self.__format_error_message(message)
+        self.__set_status(error_message)
+        self.__show_error(error_message)
 
     def __set_running_state(self, running: bool):
         self._progress.setVisible(running)
@@ -209,6 +213,17 @@ class RunSamplesDialog(DialogBase):
     
     def __set_status(self, text: str):
         self._status_label.setText(text)
+
+    def __format_error_message(self, message: str | None) -> str:
+        if not message:
+            return "Failed to run samples."
+
+        key = "Unsupported model IR version"
+        idx = message.find(key)
+        if idx != -1:
+            return message[idx:].strip()
+
+        return message
 
     def __show_results(self, result: dict):
         parent = self.parent()
@@ -225,6 +240,18 @@ class RunSamplesDialog(DialogBase):
             parent.open_dialog(results_dialog)
 
         QTimer.singleShot(0, _open_results)
+
+    def __show_error(self, message: str):
+        parent = self.parent()
+        if parent is None or not hasattr(parent, "open_dialog"):
+            return
+
+        def _open_error():
+            if parent is None or not hasattr(parent, "open_dialog"):
+                return
+            parent.open_dialog(InfoPopup(parent.close_dialog, message, InfoType.ERROR))
+
+        QTimer.singleShot(0, _open_error)
 
     def __on_thread_finished(self):
         self._thread = None
