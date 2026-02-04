@@ -1,13 +1,8 @@
-import base64
-import gzip
-import io
 import json
-import pickle
 from typing import Any, Dict, List, Tuple
 
+import numpy as np
 import onnx
-import matplotlib.image as mpimg
-from matplotlib.figure import Figure
 
 from nn_verification_visualisation.utils.result import Result, Success, Failure, Success as RSuccess, Failure as RFailure
 from nn_verification_visualisation.utils.singleton import SingletonMeta
@@ -22,32 +17,21 @@ from nn_verification_visualisation.model.data.plot import Plot
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 
 
-def _b64_gzip_load_bytes(s: str) -> bytes:
-    return gzip.decompress(base64.b64decode(s.encode("ascii")))
-
-
 def _restore_input_bounds(values: List[Tuple[float, float]]) -> InputBounds:
     b = InputBounds(len(values))
     b.load_bounds({i: (float(lo), float(hi)) for i, (lo, hi) in enumerate(values)})
     return b
 
 
-def _load_figure(fig_obj: Dict[str, str]) -> Figure:
-    kind = fig_obj.get("kind")
-    raw = _b64_gzip_load_bytes(fig_obj.get("data", ""))
-
-    if kind == "pickle":
-        return pickle.loads(raw)
-
-    if kind == "png":
-        img = mpimg.imread(io.BytesIO(raw), format="png")
-        fig = Figure()
-        ax = fig.add_subplot(111)
-        ax.imshow(img)
-        ax.axis("off")
-        return fig
-
-    raise ValueError(f"Unknown figure kind: {kind}")
+def _load_bounds(bounds_obj: Any) -> np.ndarray:
+    if isinstance(bounds_obj, dict):
+        data = bounds_obj.get("data", [])
+    else:
+        data = bounds_obj
+    arr = np.asarray(data, dtype=float)
+    if arr.ndim != 2 or arr.shape[1] != 2:
+        raise ValueError(f"Output bounds must have shape (N, 2), got {arr.shape}")
+    return arr
 
 
 class SaveStateLoader(metaclass=SingletonMeta):
@@ -98,8 +82,11 @@ class SaveStateLoader(metaclass=SingletonMeta):
 
                 plots_in = ditem.get("plots", {}) or {}
                 for plot_id_str, pobj in plots_in.items():
-                    fig = _load_figure(pobj["figure"])
-                    dc.plots[int(plot_id_str)] = Plot(name=str(pobj["name"]), data=fig)
+                    bounds_obj = pobj.get("bounds")
+                    if bounds_obj is None:
+                        raise ValueError("Plot bounds missing in save state (expected 'bounds').")
+                    bounds = _load_bounds(bounds_obj)
+                    dc.plots[int(plot_id_str)] = Plot(name=str(pobj["name"]), data=bounds)
 
                 results_in = ditem.get("results", []) or []
                 for entry in results_in:
@@ -121,9 +108,9 @@ class SaveStateLoader(metaclass=SingletonMeta):
                         parameters=[str(p) for p in pgc_data.get("parameters", [])],
                     )
 
-                    if bool(entry.get("is_success")) and entry.get("figure") is not None:
-                        fig = _load_figure(entry["figure"])
-                        dc.results[pgc] = RSuccess(fig)
+                    if bool(entry.get("is_success")) and entry.get("bounds") is not None:
+                        bounds = _load_bounds(entry["bounds"])
+                        dc.results[pgc] = RSuccess(bounds)
                     else:
                         msg = entry.get("error") or "Unknown error"
                         dc.results[pgc] = RFailure(RuntimeError(str(msg)))

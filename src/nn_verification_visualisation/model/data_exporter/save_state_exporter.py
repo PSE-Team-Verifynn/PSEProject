@@ -1,25 +1,12 @@
-import base64
-import gzip
-import io
 import json
-import pickle
 from typing import Any, Dict, List, Tuple
 
-from matplotlib.figure import Figure
+import numpy as np
 
 from nn_verification_visualisation.utils.result import Result, Success, Failure
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 from nn_verification_visualisation.model.data.save_state import SaveState
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
-
-
-def _b64_gzip_dump_bytes(raw: bytes) -> str:
-    return base64.b64encode(gzip.compress(raw)).decode("ascii")
-
-
-def _b64_gzip_dump_pickle(obj: Any) -> str:
-    raw = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
-    return _b64_gzip_dump_bytes(raw)
 
 
 def _input_bounds_to_list(bounds_model) -> List[Tuple[float, float]]:
@@ -38,18 +25,15 @@ def _input_bounds_to_list(bounds_model) -> List[Tuple[float, float]]:
     return out
 
 
-def _dump_figure(fig: Figure) -> Dict[str, str]:
+def _dump_bounds(bounds: Any) -> Dict[str, Any]:
     """
-    Try to store a Matplotlib Figure.
-    1) Prefer pickle (best restore)
-    2) Fallback to PNG bytes (always works)
+    Store output bounds as a list of [lower, upper] rows.
+    Expected shape: (N, 2).
     """
-    try:
-        return {"kind": "pickle", "data": _b64_gzip_dump_pickle(fig)}
-    except Exception:
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        return {"kind": "png", "data": _b64_gzip_dump_bytes(buf.getvalue())}
+    arr = np.asarray(bounds, dtype=float)
+    if arr.ndim != 2 or arr.shape[1] != 2:
+        raise ValueError(f"Output bounds must have shape (N, 2), got {arr.shape}")
+    return {"kind": "bounds_v1", "data": arr.tolist()}
 
 
 def _serialize_pgc(pgc: PlotGenerationConfig, networks: list) -> Dict[str, Any]:
@@ -104,7 +88,7 @@ class SaveStateExporter(metaclass=SingletonMeta):
                 for plot_id, plot in plots_dict.items():
                     plots_out[str(int(plot_id))] = {
                         "name": str(plot.name),
-                        "figure": _dump_figure(plot.data),
+                        "bounds": _dump_bounds(plot.data),
                     }
 
                 results_out: List[Dict[str, Any]] = []
@@ -113,11 +97,11 @@ class SaveStateExporter(metaclass=SingletonMeta):
                         "pgc": _serialize_pgc(pgc, save_state.loaded_networks),
                         "is_success": bool(getattr(res, "is_success", False)),
                         "error": None,
-                        "figure": None,
+                        "bounds": None,
                     }
 
                     if entry["is_success"]:
-                        entry["figure"] = _dump_figure(getattr(res, "data", None))
+                        entry["bounds"] = _dump_bounds(getattr(res, "data", None))
                     else:
                         err = getattr(res, "error", None)
                         entry["error"] = repr(err) if err is not None else "Unknown error"

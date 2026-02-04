@@ -1,6 +1,6 @@
 from typing import Dict
 
-from matplotlib.figure import Figure
+import numpy as np
 
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
 from nn_verification_visualisation.model.data.plot import Plot
@@ -9,7 +9,7 @@ from nn_verification_visualisation.utils.result import Result
 
 class DiagramConfig:
     '''
-    Data object for a single plot page. Contains data from MatPlotLib for the diagrams and the results of the algorithms.
+    Data object for a single plot page. Stores plots and output bounds results from algorithms.
     '''
-    results: Dict[PlotGenerationConfig, Result[Figure]] = {}
+    results: Dict[PlotGenerationConfig, Result[np.ndarray]] = {}
     plots: Dict[int, Plot] = {}
