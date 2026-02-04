@@ -8,6 +8,7 @@ from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
+from nn_verification_visualisation.view.widgets.bounds_display_widget import BoundsDisplayWidget
 
 
 class NetworkPage(Tab):
@@ -123,28 +124,12 @@ class NetworkPage(Tab):
         actions_layout.addWidget(save_button)
         edit_group_layout.addLayout(actions_layout)
 
-        self.display_group = QGroupBox("Bounds")
-        display_group_layout = QVBoxLayout(self.display_group)
-        display_group_layout.setContentsMargins(6, 6, 6, 6)
-        display_group_layout.setSpacing(4)
-        self.display_rows = []
-        for i in range(self.input_count):
-            row_layout = QHBoxLayout()
-            label = QLabel(f"{i}:")
-            label.setObjectName("label")
-            min_label = QLabel("—")
-            max_label = QLabel("—")
-            min_label.setObjectName("label")
-            max_label.setObjectName("label")
-            row_layout.addWidget(label)
-            row_layout.addWidget(min_label)
-            row_layout.addWidget(max_label)
-            display_group_layout.addLayout(row_layout)
-            self.display_rows.append((min_label, max_label))
+        self.display_group = BoundsDisplayWidget("Bounds", scrollable=False)
+        self.display_group.set_rows(self.input_count)
 
         layout.addWidget(self.edit_group)
         layout.addWidget(self.display_group)
-        self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10)
+        self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10, scrollable=False)
         self.sample_metrics.setVisible(False)
         layout.addWidget(self.sample_metrics)
         self.full_results_button = QPushButton("Full Results")
@@ -250,21 +235,12 @@ class NetworkPage(Tab):
         index = self.configuration.selected_bounds_index
         if index < 0 or index >= len(self.configuration.saved_bounds):
             self.display_group.setTitle("Bounds")
-            for min_label, max_label in self.display_rows:
-                min_label.setText("—")
-                max_label.setText("—")
+            self.display_group.set_values(None)
             self.__update_samples_action()
             return
         bounds = self.configuration.saved_bounds[index]
         self.display_group.setTitle(f"Bounds {index + 1:02d}")
-        values = bounds.get_values()
-        for i, (min_label, max_label) in enumerate(self.display_rows):
-            if i < len(values):
-                min_label.setText(f"{values[i][0]:.2f}")
-                max_label.setText(f"{values[i][1]:.2f}")
-            else:
-                min_label.setText("—")
-                max_label.setText("—")
+        self.display_group.set_values(bounds.get_values())
         self.__update_samples_action()
         self.__update_sample_results()
 

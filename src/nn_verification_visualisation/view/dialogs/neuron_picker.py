@@ -6,7 +6,7 @@ from numpy import clip
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QSplitter, QLabel, QHBoxLayout,
-                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout, QGroupBox, QScrollArea, QGridLayout, QFrame, QSpacerItem, QSizePolicy)
+                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout, QGroupBox)
 
 # Assuming these imports exist in your project structure
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
@@ -15,6 +15,7 @@ from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
 from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
+from nn_verification_visualisation.view.widgets.bounds_display_widget import BoundsDisplayWidget
 from nn_verification_visualisation.view.network_view.network_node import NetworkNode
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 
@@ -76,10 +77,7 @@ class NeuronPicker(DialogBase):
             self.__on_change_algorithm
         )
         self.bounds_selector = None
-        self.bounds_display_rows = []
         self.bounds_display_group = None
-        self.bounds_scroll_area = None
-        self.bounds_scroll_content = None
         self.sample_metrics = None
         self._bounds_index_label_width = 36
 
@@ -89,13 +87,13 @@ class NeuronPicker(DialogBase):
         super().__init__(on_close, "Neuron Picker", has_title=False)
 
     def __compute_bounds_index_label_width(self, input_count: int) -> int:
-        if self.bounds_scroll_content is None:
+        if self.bounds_display_group is None:
             return 36
         if input_count <= 0:
             return 36
         max_index = input_count - 1
         sample_text = f"{max_index}:"
-        metrics = self.bounds_scroll_content.fontMetrics()
+        metrics = self.bounds_display_group.fontMetrics()
         text_width = metrics.horizontalAdvance(sample_text)
         # Add a small padding buffer so 3+ digits don't clip.
         return max(36, text_width + 8)
@@ -416,63 +414,12 @@ class NeuronPicker(DialogBase):
         layout.addSpacing(8)
 
         # --- Bounds Display ---
-        self.bounds_display_group = QGroupBox("Bounds")
-        group_layout = QVBoxLayout(self.bounds_display_group)
-        group_layout.setContentsMargins(6, 6, 6, 6)
-        group_layout.setSpacing(4)
-        self.bounds_scroll_area = QScrollArea()
-        self.bounds_scroll_area.setWidgetResizable(True)
-        self.bounds_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.bounds_scroll_area.setFrameShape(QFrame.Shape.StyledPanel)
-        self.bounds_scroll_area.setFrameShadow(QFrame.Shadow.Sunken)
-        self.bounds_scroll_area.setMinimumHeight(200)
-        self.bounds_scroll_area.setMaximumHeight(260)
-        self.bounds_scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.bounds_scroll_content = QWidget()
-        self.bounds_scroll_content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        display_layout = QGridLayout(self.bounds_scroll_content)
-        display_layout.setContentsMargins(0, 0, 0, 0)
-        display_layout.setHorizontalSpacing(8)
-        display_layout.setVerticalSpacing(4)
-        display_layout.setColumnStretch(0, 0)
-        display_layout.setColumnStretch(1, 0)
-        display_layout.setColumnStretch(2, 0)
-        display_layout.setColumnStretch(3, 0)
-        display_layout.setColumnStretch(4, 1)
-        display_layout.setColumnMinimumWidth(1, 12)
-        display_layout.setColumnMinimumWidth(2, 72)
-        display_layout.setColumnMinimumWidth(3, 72)
-        self.bounds_display_rows = []
+        self.bounds_display_group = BoundsDisplayWidget("Bounds", scrollable=True, min_height=200, max_height=260)
         input_count = 0
         if Storage().networks:
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
         self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
-        for i in range(input_count):
-            label = QLabel(f"{i}:")
-            label.setObjectName("label")
-            label.setFixedWidth(self._bounds_index_label_width)
-            label.setContentsMargins(6, 0, 0, 0)
-            min_label = QLabel("-")
-            max_label = QLabel("-")
-            min_label.setObjectName("label")
-            max_label.setObjectName("label")
-            min_label.setFixedWidth(72)
-            max_label.setFixedWidth(72)
-            min_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            max_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            display_layout.addWidget(label, i, 0)
-            display_layout.addWidget(min_label, i, 2)
-            display_layout.addWidget(max_label, i, 3)
-            self.bounds_display_rows.append((min_label, max_label))
-        display_layout.addItem(
-            QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding),
-            input_count,
-            0,
-            1,
-            3,
-        )
-        self.bounds_scroll_area.setWidget(self.bounds_scroll_content)
-        group_layout.addWidget(self.bounds_scroll_area)
+        self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
         self.__rebuild_bounds_display_rows()
 
         # --- Sample Results ---
@@ -567,29 +514,18 @@ class NeuronPicker(DialogBase):
             return
         if self.current_network < 0 or self.current_network >= len(Storage().networks):
             self.bounds_display_group.setTitle("Bounds")
-            for min_label, max_label in self.bounds_display_rows:
-                min_label.setText("-")
-                max_label.setText("-")
+            self.bounds_display_group.set_values(None)
             return
         config = Storage().networks[self.current_network]
         index = config.selected_bounds_index
         if index < 0 or index >= len(config.saved_bounds):
             self.bounds_display_group.setTitle("Bounds")
-            for min_label, max_label in self.bounds_display_rows:
-                min_label.setText("—")
-                max_label.setText("—")
+            self.bounds_display_group.set_values(None)
             self.__update_sample_results()
             return
         bounds = config.saved_bounds[index]
         self.bounds_display_group.setTitle(f"Bounds {index + 1:02d}")
-        values = bounds.get_values()
-        for i, (min_label, max_label) in enumerate(self.bounds_display_rows):
-            if i < len(values):
-                min_label.setText(f"{values[i][0]:.2f}")
-                max_label.setText(f"{values[i][1]:.2f}")
-            else:
-                min_label.setText("—")
-                max_label.setText("—")
+        self.bounds_display_group.set_values(bounds.get_values())
         self.__update_sample_results()
 
     def __toggle_bounds_display(self):
@@ -639,41 +575,8 @@ class NeuronPicker(DialogBase):
     def __rebuild_bounds_display_rows(self):
         if self.bounds_display_group is None:
             return
-        if self.bounds_scroll_content is None:
-            return
-        layout = self.bounds_scroll_content.layout()
-        if layout is None:
-            return
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        self.bounds_display_rows = []
         input_count = 0
         if Storage().networks and 0 <= self.current_network < len(Storage().networks):
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
         self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
-        for i in range(input_count):
-            label = QLabel(f"{i}:")
-            label.setObjectName("label")
-            label.setFixedWidth(self._bounds_index_label_width)
-            label.setContentsMargins(6, 0, 0, 0)
-            min_label = QLabel("-")
-            max_label = QLabel("-")
-            min_label.setObjectName("label")
-            max_label.setObjectName("label")
-            min_label.setFixedWidth(72)
-            max_label.setFixedWidth(72)
-            min_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            max_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            layout.addWidget(label, i, 0)
-            layout.addWidget(min_label, i, 2)
-            layout.addWidget(max_label, i, 3)
-            self.bounds_display_rows.append((min_label, max_label))
-        layout.addItem(
-            QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding),
-            input_count,
-            0,
-            1,
-            3,
-        )
+        self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)

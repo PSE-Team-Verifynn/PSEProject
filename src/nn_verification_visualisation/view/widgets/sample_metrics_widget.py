@@ -22,10 +22,12 @@ class SampleMetricsWidget(QGroupBox):
         *,
         include_min: bool = True,
         max_items: int | None = None,
+        scrollable: bool = True,
     ):
         super().__init__(title)
         self._include_min = include_min
         self._max_items = max_items
+        self._scrollable = scrollable
 
         self._content = QWidget()
         self._content_layout = QVBoxLayout(self._content)
@@ -43,20 +45,23 @@ class SampleMetricsWidget(QGroupBox):
 
         self._content_layout.addLayout(self._summary_layout)
 
-        self._scroll = QScrollArea()
-        self._scroll.setObjectName("soft-scroll")
-        self._scroll.setWidgetResizable(True)
-        self._scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self._scroll.setMinimumHeight(180)
         self._scroll_content = QWidget()
         self._scroll_content.setMaximumWidth(320)
         self._scroll_layout = QVBoxLayout(self._scroll_content)
         self._scroll_layout.setContentsMargins(0, 0, 0, 0)
         self._scroll_layout.setSpacing(6)
-        self._scroll.setWidget(self._scroll_content)
-        self._content_layout.addWidget(self._scroll)
+        if self._scrollable:
+            self._scroll = QScrollArea()
+            self._scroll.setObjectName("soft-scroll")
+            self._scroll.setWidgetResizable(True)
+            self._scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+            self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            self._scroll.setMinimumHeight(180)
+            self._scroll.setWidget(self._scroll_content)
+            self._content_layout.addWidget(self._scroll)
+        else:
+            self._content_layout.addWidget(self._scroll_content)
 
         container = QVBoxLayout(self)
         container.setContentsMargins(6, 6, 6, 6)
