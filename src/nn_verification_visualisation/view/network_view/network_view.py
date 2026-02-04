@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Callable
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QPushButton, QFileDialog, QWidget
 from PySide6.QtCore import Qt
 
@@ -20,12 +21,18 @@ class NetworkView(InsertView):
     '''
     controller: NetworkViewController
 
-    def __init__(self, parent=None):
+    def __init__(self, change_view: Callable[[], None], parent=None):
         super().__init__(parent)
         self.controller = NetworkViewController(self)
 
-        self.set_bar_icon_button(self.controller.open_network_management_dialog, ":assets/icons/edit_icon.svg",
-                                 Qt.Corner.TopRightCorner)
+        edit_button = self._create_simple_icon_button(self.controller.open_network_management_dialog, ":assets/icons/edit_icon.svg")
+
+        view_toggle_button = QPushButton()
+        view_toggle_button.clicked.connect(change_view)
+        view_toggle_button.setObjectName("switch-button")
+        view_toggle_button.setIcon(QIcon(":assets/icons/network/switch.svg"))
+
+        self.set_bar_corner_widgets([edit_button,view_toggle_button], Qt.Corner.TopRightCorner, width=110)
 
         for network in Storage().networks:
             self.add_network_tab(network)

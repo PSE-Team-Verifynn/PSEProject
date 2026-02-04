@@ -336,6 +336,15 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     icon-size: 20px;
 }
 
+#switch-button {
+    background-color: transparent;
+    height: 40px;
+    icon-size: 50px;
+    padding: 0px;
+    margin: 0;
+    padding-right: 10px;
+}
+
 #close-button {
     margin: 5px;
 }
