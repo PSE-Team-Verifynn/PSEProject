@@ -37,15 +37,14 @@ class SampleMetricsWidget(QGroupBox):
         self._summary_layout.setSpacing(4)
 
         self._summary_samples = QLabel("Samples: —")
-        self._summary_metrics = QLabel("Metrics: —")
-        for label in (self._summary_samples, self._summary_metrics):
+        for label in (self._summary_samples,):
             label.setWordWrap(True)
         self._summary_layout.addWidget(self._summary_samples)
-        self._summary_layout.addWidget(self._summary_metrics)
 
         self._content_layout.addLayout(self._summary_layout)
 
         self._scroll = QScrollArea()
+        self._scroll.setObjectName("soft-scroll")
         self._scroll.setWidgetResizable(True)
         self._scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -70,7 +69,6 @@ class SampleMetricsWidget(QGroupBox):
         self._clear_scroll()
         if not result:
             self._summary_samples.setText("Samples: —")
-            self._summary_metrics.setText("Metrics: —")
             placeholder = QLabel("No sample results available.")
             placeholder.setObjectName("label")
             self._scroll_layout.addWidget(placeholder)
@@ -87,7 +85,6 @@ class SampleMetricsWidget(QGroupBox):
         metric_names = [metric_map[m].name if m in metric_map else m for m in metrics]
 
         self._summary_samples.setText(f"Samples: {num_samples}")
-        self._summary_metrics.setText(f"Metrics: {', '.join(metric_names)}")
 
         for output_entry in outputs:
             name = output_entry.get("name", "output")
