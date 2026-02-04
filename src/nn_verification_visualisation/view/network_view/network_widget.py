@@ -74,7 +74,6 @@ class NetworkWidget(QGraphicsView):
 
         # add the nodes
         for i, num_nodes in enumerate(layers):
-            print(f"Drawing Layer {i}, Number of Nodes: {num_nodes}")
             current_layer_nodes = []
             x = i * self.layer_spacing
             layer_height = num_nodes * self.node_spacing
@@ -99,8 +98,6 @@ class NetworkWidget(QGraphicsView):
 
         total_edges = sum(layers[i] * layers[i + 1] for i in range(len(layers) - 1))
         self.use_performance_mode = total_edges > self.performance_mode_edge_threshold
-
-        print(f"Total Edges: {total_edges}. Performance Mode: {self.use_performance_mode}")
 
         for i in range(len(self.node_layers) - 1):
             source_layer = self.node_layers[i]

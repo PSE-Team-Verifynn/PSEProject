@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QWidget, QSplitter, QLabel, QHBoxLayout,
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
+from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
 from nn_verification_visualisation.view.network_view.network_node import NetworkNode
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 
