@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QWidget,
     QLabel,
     QVBoxLayout,
-    QHBoxLayout,
     QGridLayout,
     QScrollArea,
 )
@@ -23,12 +22,10 @@ class SampleMetricsWidget(QGroupBox):
         *,
         include_min: bool = True,
         max_items: int | None = None,
-        show_outputs_summary: bool = True,
     ):
         super().__init__(title)
         self._include_min = include_min
         self._max_items = max_items
-        self._show_outputs_summary = show_outputs_summary
 
         self._content = QWidget()
         self._content_layout = QVBoxLayout(self._content)
@@ -41,13 +38,10 @@ class SampleMetricsWidget(QGroupBox):
 
         self._summary_samples = QLabel("Samples: —")
         self._summary_metrics = QLabel("Metrics: —")
-        self._summary_outputs = QLabel("Outputs sampled: —")
-        for label in (self._summary_samples, self._summary_metrics, self._summary_outputs):
+        for label in (self._summary_samples, self._summary_metrics):
             label.setWordWrap(True)
         self._summary_layout.addWidget(self._summary_samples)
         self._summary_layout.addWidget(self._summary_metrics)
-        self._summary_layout.addWidget(self._summary_outputs)
-        self._summary_outputs.setVisible(self._show_outputs_summary)
 
         self._content_layout.addLayout(self._summary_layout)
 
@@ -77,7 +71,6 @@ class SampleMetricsWidget(QGroupBox):
         if not result:
             self._summary_samples.setText("Samples: —")
             self._summary_metrics.setText("Metrics: —")
-            self._summary_outputs.setText("Outputs sampled: —")
             placeholder = QLabel("No sample results available.")
             placeholder.setObjectName("label")
             self._scroll_layout.addWidget(placeholder)
@@ -95,8 +88,6 @@ class SampleMetricsWidget(QGroupBox):
 
         self._summary_samples.setText(f"Samples: {num_samples}")
         self._summary_metrics.setText(f"Metrics: {', '.join(metric_names)}")
-        self._summary_outputs.setText(f"Outputs sampled: {len(outputs)}")
-        self._summary_outputs.setVisible(self._show_outputs_summary)
 
         for output_entry in outputs:
             name = output_entry.get("name", "output")

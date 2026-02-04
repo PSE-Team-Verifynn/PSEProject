@@ -7,13 +7,6 @@ class NetworkModifier:
     def with_all_outputs(static_model: ModelProto) -> ModelProto:
         model = copy.deepcopy(static_model)
         existing = {output.name for output in model.graph.output}
-        for model_input in model.graph.input:
-            if not model_input.name or model_input.name in existing:
-                continue
-            vi = onnx.ValueInfoProto()
-            vi.name = model_input.name
-            model.graph.output.append(vi)
-            existing.add(model_input.name)
         activation_ops = {
             "Relu",
             "Sigmoid",
