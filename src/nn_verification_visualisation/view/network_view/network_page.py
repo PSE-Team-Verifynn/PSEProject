@@ -7,6 +7,7 @@ from nn_verification_visualisation.model.data.network_verification_config import
 from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
 
 
 class NetworkPage(Tab):
@@ -146,6 +147,11 @@ class NetworkPage(Tab):
         self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10)
         self.sample_metrics.setVisible(False)
         layout.addWidget(self.sample_metrics)
+        self.full_results_button = QPushButton("Full Results")
+        self.full_results_button.setVisible(False)
+        self.full_results_button.setEnabled(False)
+        self.full_results_button.clicked.connect(self.__on_full_results_clicked)
+        layout.addWidget(self.full_results_button)
         layout.addStretch(1)
         base.setLayout(layout)
 
@@ -267,8 +273,22 @@ class NetworkPage(Tab):
         if index < 0 or index >= len(self.configuration.saved_bounds):
             self.sample_metrics.set_result(None)
             self.sample_metrics.setVisible(False)
+            self.full_results_button.setEnabled(False)
+            self.full_results_button.setVisible(False)
             return
         bounds = self.configuration.saved_bounds[index]
         result = bounds.get_sample()
         self.sample_metrics.set_result(result)
         self.sample_metrics.setVisible(result is not None)
+        self.full_results_button.setEnabled(result is not None)
+        self.full_results_button.setVisible(result is not None)
+
+    def __on_full_results_clicked(self):
+        index = self.configuration.selected_bounds_index
+        if index < 0 or index >= len(self.configuration.saved_bounds):
+            return
+        result = self.configuration.saved_bounds[index].get_sample()
+        if result is None:
+            return
+        parent = self.controller.current_network_view
+        parent.open_dialog(SampleResultsDialog(parent.close_dialog, result))
