@@ -6,7 +6,7 @@ from numpy import clip
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QSplitter, QLabel, QHBoxLayout,
-                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout, QGroupBox, QScrollArea, QGridLayout)
+                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout, QGroupBox, QScrollArea, QGridLayout, QFrame, QSpacerItem, QSizePolicy)
 
 # Assuming these imports exist in your project structure
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
@@ -78,11 +78,24 @@ class NeuronPicker(DialogBase):
         self.bounds_display_group = None
         self.bounds_scroll_area = None
         self.bounds_scroll_content = None
+        self._bounds_index_label_width = 36
 
         # Update the algorithm list on change
         Storage().algorithm_change_listeners.append(self.update_algorithms)
 
         super().__init__(on_close, "Neuron Picker", has_title=False)
+
+    def __compute_bounds_index_label_width(self, input_count: int) -> int:
+        if self.bounds_scroll_content is None:
+            return 36
+        if input_count <= 0:
+            return 36
+        max_index = input_count - 1
+        sample_text = f"{max_index}:"
+        metrics = self.bounds_scroll_content.fontMetrics()
+        text_width = metrics.horizontalAdvance(sample_text)
+        # Add a small padding buffer so 3+ digits don't clip.
+        return max(36, text_width + 8)
 
     def update_algorithms(self):
         index = self.algorithm_selector.currentIndex() if self.algorithm_selector.currentIndex() > -1 else 0
@@ -405,29 +418,54 @@ class NeuronPicker(DialogBase):
         self.bounds_scroll_area = QScrollArea()
         self.bounds_scroll_area.setWidgetResizable(True)
         self.bounds_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.bounds_scroll_area.setFrameShape(QFrame.Shape.StyledPanel)
+        self.bounds_scroll_area.setFrameShadow(QFrame.Shadow.Sunken)
+        self.bounds_scroll_area.setMinimumHeight(200)
+        self.bounds_scroll_area.setMaximumHeight(260)
+        self.bounds_scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.bounds_scroll_content = QWidget()
+        self.bounds_scroll_content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         display_layout = QGridLayout(self.bounds_scroll_content)
         display_layout.setContentsMargins(0, 0, 0, 0)
-        display_layout.setHorizontalSpacing(12)
+        display_layout.setHorizontalSpacing(8)
         display_layout.setVerticalSpacing(4)
+        display_layout.setColumnStretch(0, 0)
+        display_layout.setColumnStretch(1, 0)
+        display_layout.setColumnStretch(2, 0)
+        display_layout.setColumnStretch(3, 0)
+        display_layout.setColumnStretch(4, 1)
+        display_layout.setColumnMinimumWidth(1, 12)
+        display_layout.setColumnMinimumWidth(2, 72)
+        display_layout.setColumnMinimumWidth(3, 72)
         self.bounds_display_rows = []
         input_count = 0
         if Storage().networks:
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
+        self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
         for i in range(input_count):
             label = QLabel(f"{i}:")
             label.setObjectName("label")
-            label.setFixedWidth(28)
+            label.setFixedWidth(self._bounds_index_label_width)
+            label.setContentsMargins(6, 0, 0, 0)
             min_label = QLabel("-")
             max_label = QLabel("-")
             min_label.setObjectName("label")
             max_label.setObjectName("label")
+            min_label.setFixedWidth(72)
+            max_label.setFixedWidth(72)
             min_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             max_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             display_layout.addWidget(label, i, 0)
-            display_layout.addWidget(min_label, i, 1)
-            display_layout.addWidget(max_label, i, 2)
+            display_layout.addWidget(min_label, i, 2)
+            display_layout.addWidget(max_label, i, 3)
             self.bounds_display_rows.append((min_label, max_label))
+        display_layout.addItem(
+            QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding),
+            input_count,
+            0,
+            1,
+            3,
+        )
         self.bounds_scroll_area.setWidget(self.bounds_scroll_content)
         group_layout.addWidget(self.bounds_scroll_area)
         self.__rebuild_bounds_display_rows()
@@ -553,17 +591,28 @@ class NeuronPicker(DialogBase):
         input_count = 0
         if Storage().networks and 0 <= self.current_network < len(Storage().networks):
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
+        self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
         for i in range(input_count):
             label = QLabel(f"{i}:")
             label.setObjectName("label")
-            label.setFixedWidth(28)
+            label.setFixedWidth(self._bounds_index_label_width)
+            label.setContentsMargins(6, 0, 0, 0)
             min_label = QLabel("-")
             max_label = QLabel("-")
             min_label.setObjectName("label")
             max_label.setObjectName("label")
+            min_label.setFixedWidth(72)
+            max_label.setFixedWidth(72)
             min_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             max_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             layout.addWidget(label, i, 0)
-            layout.addWidget(min_label, i, 1)
-            layout.addWidget(max_label, i, 2)
+            layout.addWidget(min_label, i, 2)
+            layout.addWidget(max_label, i, 3)
             self.bounds_display_rows.append((min_label, max_label))
+        layout.addItem(
+            QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding),
+            input_count,
+            0,
+            1,
+            3,
+        )
