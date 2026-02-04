@@ -20,7 +20,11 @@ class SampleResultsDialog(DialogBase):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
 
-        metrics_widget = SampleMetricsWidget("Sample Results")
+        metrics_widget = SampleMetricsWidget(
+            "Sample Results",
+            detailed_labels=True,
+            sort_values=False,
+        )
         metrics_widget.set_result(self.result)
         layout.addWidget(metrics_widget)
 
