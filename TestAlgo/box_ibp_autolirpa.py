@@ -20,7 +20,6 @@ def calculate_output_bounds(onnx_model, input_bounds: np.ndarray) -> np.ndarray:
 
     # ONNX -> PyTorch
     torch_model = ConvertModel(onnx_model).eval()
-
     lb = torch.tensor(input_bounds[:, 0], dtype=torch.float32).unsqueeze(0)
     ub = torch.tensor(input_bounds[:, 1], dtype=torch.float32).unsqueeze(0)
     x0 = (lb + ub) / 2.0
