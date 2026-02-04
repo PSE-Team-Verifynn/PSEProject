@@ -84,7 +84,7 @@ class Tabs(QTabWidget):
                 wrapper
             )
 
-        self.show()
+        # self.show()
 
     def close_tab(self, index: int):
         '''
@@ -92,7 +92,7 @@ class Tabs(QTabWidget):
         :param index: index of the tab to close
         '''
         self.removeTab(index)
-        self.show()
+        # self.show()
 
         if self.has_empty_page and self.count() == 0:
             self._add_default_tab()

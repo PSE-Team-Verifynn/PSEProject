@@ -1,8 +1,10 @@
+from time import sleep
+
 from PySide6.QtWidgets import QApplication
 from pathlib import Path
 
-from PySide6.QtGui import QColor, QPalette
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPalette, QStyleHints
+from PySide6.QtCore import Qt, QFile, QIODevice
 
 
 class ColorManager:
@@ -22,6 +24,7 @@ class ColorManager:
         "bg1": "#E5F0D2",
         "hbg1": "#f0f7e4",
         "bg2": "#C3D6A1",
+        "hbg2": "#d1e0b8",
         "fg0": "#5E7A2D",
         "fg1": "#7C964D",
         "hfg1": "#87a353",
@@ -41,6 +44,7 @@ class ColorManager:
         "bg1": "#E8EAED",
         "hbg1": "#f2f4f7",
         "bg2": "#CDD6DD",
+        "hbg2": "#dde6ed",
         "fg0": "#436680",
         "fg1": "#6C879B",
         "hfg1": "#7895ab",
@@ -53,15 +57,9 @@ class ColorManager:
     }
 
     def load_raw(self, path_str: str):
-        '''
-        Loads the raw stylesheet without replacing its colors.
-        :param path_str: file path of the style sheet.
-        '''
-        path = Path(path_str)
-        if not path.is_absolute():
-            base_dir = Path(__file__).resolve().parent
-            path = base_dir / path_str
-        self.raw_stylesheet = path.read_text()
+        file = QFile(path_str)
+        file.open(QIODevice.ReadOnly | QIODevice.Text)
+        self.raw_stylesheet = file.readAll().data().decode("utf-8")
 
     def set_colors(self, colors: dict[str, str]):
         '''
@@ -97,3 +95,12 @@ class ColorManager:
 
     def __init__(self, app: QApplication):
         self.app = app
+        self.app.styleHints().colorSchemeChanged.connect(self.update_colors)
+        self.app.styleHints().accessibility().contrastPreferenceChanged.connect(lambda contrast: self.update_accessibility(contrast))
+
+    def update_colors(self):
+        style_hints = self.app.styleHints()
+        color_scheme = style_hints.colorScheme()
+
+    def update_accessibility(self, contrast: Qt.ContrastPreference):
+        pass

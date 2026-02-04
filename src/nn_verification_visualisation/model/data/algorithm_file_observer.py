@@ -21,7 +21,8 @@ class AlgorithmFileObserver(FileSystemEventHandler):
         self.watch_dir = (current_dir.parents[3] / "TestAlgo")
 
         if not self.watch_dir.exists():
-            raise FileNotFoundError(f"Could not find algorithm directory at: {self.watch_dir}")
+            print(f"Could not find algorithm directory at: {self.watch_dir}")
+            return
 
         self.__initial_sync()
 

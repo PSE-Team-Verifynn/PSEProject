@@ -45,7 +45,7 @@ class ListDialogBase(Generic[T], DialogBase):
         for item in self.data:
             self.list_widget.addItem(self.get_title(item))
 
-        self.list_widget.show()
+        #  self.list_widget.show()
 
         content_layout.addWidget(self.list_widget)
 
@@ -74,7 +74,7 @@ class ListDialogBase(Generic[T], DialogBase):
     def add_item(self, item: T):
         self.data.append(item)
         self.list_widget.addItem(self.get_title(item))
-        self.list_widget.show()
+        # self.list_widget.show()
 
     def __internal_on_remove_clicked(self) -> None:
         list_items = self.list_widget.selectedItems()
@@ -88,5 +88,5 @@ class ListDialogBase(Generic[T], DialogBase):
         if success:
             self.list_widget.takeItem(self.list_widget.row(item))
             self.data.pop(index)
-            self.list_widget.show()
+            # self.list_widget.show()
 

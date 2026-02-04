@@ -20,8 +20,8 @@ class InsertView(QWidget):
     # Stack data structure that stores the current open dialogs (highest item is in front)
     __dialog_stack: List[DialogBase]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent = None):
+        super().__init__(parent)
 
         self.tabs = Tabs(self.close_tab, empty_page=self.get_default_tab())
 
@@ -91,7 +91,7 @@ class InsertView(QWidget):
         self.__dialog_stack.append(dialog)
 
         dialog.setParent(self)
-        dialog.show()
+        dialog.setVisible(True)
         dialog.setGeometry(self.rect())
 
     def close_dialog(self) -> bool:

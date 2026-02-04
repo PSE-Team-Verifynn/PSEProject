@@ -70,6 +70,7 @@ class DialogBase(QWidget):
         close_btn.setFixedHeight(button_size)
         close_btn.setObjectName("close-button")
         close_btn.setIcon(QIcon(":assets/icons/close_icon.svg"))
+        close_btn.setStyleSheet("color: red;")
         close_btn.clicked.connect(self.on_close)
 
         bar_layout.addWidget(left_padding)

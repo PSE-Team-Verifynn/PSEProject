@@ -1,6 +1,7 @@
 from typing import List
 
 from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QCheckBox,
     QFrame,
@@ -140,6 +141,8 @@ class PlotPage(Tab):
         self.__node_pairs_layout = node_pairs_layout
         self.__node_pairs_list = QListWidget()
         node_pairs_layout.addWidget(self.__node_pairs_list)
+        node_pairs_layout.addSpacing(5)
+
         remove_pair_button = QPushButton("Remove Selected Pair")
         remove_pair_button.clicked.connect(self.__remove_selected_pair)
         node_pairs_layout.addWidget(remove_pair_button)
@@ -191,6 +194,7 @@ class PlotPage(Tab):
         card_layout.setSpacing(6)
 
         plot_placeholder = QFrame()
+        plot_placeholder.setObjectName("plot-container")
         plot_placeholder.setFrameShape(QFrame.Shape.StyledPanel)
         plot_placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         plot_layout = QVBoxLayout(plot_placeholder)
@@ -199,6 +203,7 @@ class PlotPage(Tab):
 
         figure = Figure(figsize=(3.2, 2.4))
         canvas = FigureCanvas(figure)
+
         canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         toolbar = NavigationToolbar(canvas, plot_placeholder)
 
@@ -222,14 +227,21 @@ class PlotPage(Tab):
         footer.setFixedHeight(40)
         footer_layout = QHBoxLayout(footer)
         footer_layout.setContentsMargins(0, 0, 0, 0)
-        footer_layout.setSpacing(6)
 
-        footer_layout.addWidget(QLabel(title))
+        title_widget = QLabel(title)
+        title_widget.setObjectName("heading")
+
+        footer_layout.addSpacing(10)
+        footer_layout.addWidget(title_widget)
         footer_layout.addStretch(1)
-        lock_button = QPushButton("Lock")
+        lock_button = QPushButton()
+        lock_button.setObjectName("icon-button-tight")
+        lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
         lock_button.clicked.connect(lambda: self.__toggle_lock(card, lock_button))
         footer_layout.addWidget(lock_button)
-        fullscreen_button = QPushButton("Fullscreen")
+        fullscreen_button = QPushButton()
+        fullscreen_button.setObjectName("icon-button-tight")
+        fullscreen_button.setIcon(QIcon(":assets/icons/plot/fullscreen.svg"))
         fullscreen_button.clicked.connect(lambda: self.fullscreen(card))
         footer_layout.addWidget(fullscreen_button)
 
@@ -277,7 +289,11 @@ class PlotPage(Tab):
 
     def __toggle_lock(self, widget: PlotWidget, button: QPushButton):
         widget.locked = not getattr(widget, "locked", False)
-        button.setText("Unlock" if widget.locked else "Lock")
+        if widget.locked:
+            button.setIcon(QIcon(":assets/icons/plot/locked.svg"))
+        else:
+            button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
+
 
     def __on_card_size_changed(self, value: int):
         self.controller.set_card_size(value)
@@ -319,8 +335,8 @@ class PlotPage(Tab):
                 widget.setParent(None)
         for plot in self.plots:
             title = getattr(plot, "plot_title", "Diagram")
-            group = QGroupBox()
-            group.setObjectName("card")
+            group = QWidget()
+            group.setObjectName("foreground-item")
             group_layout = QVBoxLayout(group)
             group_layout.setContentsMargins(6, 6, 6, 6)
             group_layout.setSpacing(0)
@@ -331,8 +347,10 @@ class PlotPage(Tab):
             header_layout.setSpacing(6)
             header_layout.addWidget(QLabel(title))
             header_layout.addStretch(1)
-            delete_button = QPushButton("🗑")
-            delete_button.setFixedSize(28, 28)
+            delete_button = QPushButton()
+            delete_button.setObjectName("icon-button")
+            delete_button.setIcon(QIcon(":assets/icons/delete.svg"))
+            delete_button.setFixedSize(24, 24)
             delete_button.clicked.connect(lambda _=False, t=title: self.__remove_diagram(t))
             header_layout.addWidget(delete_button)
             group_layout.addWidget(header)

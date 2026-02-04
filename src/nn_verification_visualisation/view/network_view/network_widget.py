@@ -2,12 +2,15 @@ import random
 from typing import List, Callable
 
 from PySide6.QtGui import QColor, QPainter, QPen, QWheelEvent, QKeyEvent, QTransform, QPalette
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QSlider
 from PySide6.QtCore import Qt, QVariantAnimation, QEasingCurve, QParallelAnimationGroup
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.network_view.network_edge_batch import NetworkEdgeBatch
 from nn_verification_visualisation.view.network_view.network_node import NetworkNode
+
+from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
+from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
 
 
 class NetworkWidget(QGraphicsView):
@@ -62,6 +65,24 @@ class NetworkWidget(QGraphicsView):
         # Initial View
         self.fitInView(self.scene.itemsBoundingRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
+        SettingsDialog.add_setting(SettingsOption("Network Height To Width Ratio", self.get_height_to_width_changer, f"Network Display: {self.configuration.network.name}"))
+
+    def get_height_to_width_changer(self):
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(5, 20)
+        current_value = int(self.height_to_width_ration * 10)
+        slider.setValue(current_value)
+        slider.valueChanged.connect(self.height_to_width_changed)
+
+        return slider
+
+    def height_to_width_changed(self, value: int):
+        self.height_to_width_ration = value / 10
+        self.node_layers = []
+        self.scene.clear()
+        self.__build_network()
+
+
     def __build_network(self):
         layers = self.configuration.layers_dimensions
         if not layers:
@@ -74,7 +95,6 @@ class NetworkWidget(QGraphicsView):
 
         # add the nodes
         for i, num_nodes in enumerate(layers):
-            print(f"Drawing Layer {i}, Number of Nodes: {num_nodes}")
             current_layer_nodes = []
             x = i * self.layer_spacing
             layer_height = num_nodes * self.node_spacing
@@ -99,8 +119,6 @@ class NetworkWidget(QGraphicsView):
 
         total_edges = sum(layers[i] * layers[i + 1] for i in range(len(layers) - 1))
         self.use_performance_mode = total_edges > self.performance_mode_edge_threshold
-
-        print(f"Total Edges: {total_edges}. Performance Mode: {self.use_performance_mode}")
 
         for i in range(len(self.node_layers) - 1):
             source_layer = self.node_layers[i]
