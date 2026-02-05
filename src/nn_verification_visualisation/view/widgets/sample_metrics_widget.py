@@ -205,17 +205,37 @@ class SampleMetricsWidget(QGroupBox):
         )
         default_output_index = 0 if outputs and not has_named_output else None
 
-        activations: list[tuple[float, str, int]] = []
+        labeled_outputs: list[tuple[dict, str]] = []
         for output_index, output_entry in enumerate(outputs):
             name = output_entry.get("name", "output")
             force_output = default_output_index is not None and output_index == default_output_index
             layer_label = self._pretty_layer_label(name, layer_counter, force_output=force_output)
             if layer_label.startswith("Layer "):
                 layer_counter += 1
+            labeled_outputs.append((output_entry, layer_label))
+
+        hidden_layers = layer_counter - 1
+        output_layer_index = hidden_layers + 1
+
+        def resolve_layer_index(layer_label: str) -> int | None:
+            if layer_label.startswith("Layer "):
+                suffix = layer_label.replace("Layer ", "", 1).strip()
+                if suffix.isdigit():
+                    return int(suffix)
+            lowered = layer_label.lower()
+            if lowered == "input":
+                return 0
+            if lowered == "output":
+                return output_layer_index
+            return None
+
+        activations: list[tuple[float, str, int, int | None]] = []
+        for output_entry, layer_label in labeled_outputs:
+            layer_index = resolve_layer_index(layer_label)
             values = output_entry.get("values", {}) or {}
             metric_values = values.get(metric_key, []) or []
             for idx, value in enumerate(metric_values):
-                activations.append((float(value), layer_label, idx))
+                activations.append((float(value), layer_label, idx, layer_index))
 
         if not activations:
             return
@@ -230,14 +250,17 @@ class SampleMetricsWidget(QGroupBox):
         group_layout.setHorizontalSpacing(8)
         group_layout.setVerticalSpacing(2)
 
-        for row, (value, layer_label, idx) in enumerate(top_items):
-            short_label = self._short_layer_label(layer_label)
-            if short_label == "Out":
-                label_text = f"Out {idx}"
-            elif short_label == "In":
-                label_text = f"In {idx}"
+        for row, (value, layer_label, idx, layer_index) in enumerate(top_items):
+            if layer_index is not None:
+                label_text = f"L{layer_index} N{idx}"
             else:
-                label_text = f"{short_label} N{idx}"
+                short_label = self._short_layer_label(layer_label)
+                if short_label == "Out":
+                    label_text = f"Out {idx}"
+                elif short_label == "In":
+                    label_text = f"In {idx}"
+                else:
+                    label_text = f"{short_label} N{idx}"
             idx_label = QLabel(label_text)
             idx_label.setObjectName("label")
             val_label = QLabel(f"{value:.6f}")
