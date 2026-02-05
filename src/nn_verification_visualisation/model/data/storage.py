@@ -18,6 +18,9 @@ from nn_verification_visualisation.utils.result import Success, Failure, Result
 
 
 class Storage(metaclass=SingletonMeta):
+    '''
+    This object stores the data of the program. This includes the networks diagrams and the algorithms.
+    '''
     networks: List[NetworkVerificationConfig]
     diagrams: List[DiagramConfig]
     algorithms: List[Algorithm]
@@ -36,7 +39,10 @@ class Storage(metaclass=SingletonMeta):
         self._suppress_autosave = False
 
     def load_save_state(self, save_state: SaveState):
+        '''
         """Replace current networks/diagrams with the data from SaveState."""
+        :param save_state: the state that will be loaded
+        '''
         self._suppress_autosave = True
         try:
             if save_state is None:
@@ -49,14 +55,24 @@ class Storage(metaclass=SingletonMeta):
             self._suppress_autosave = False
 
     def get_save_state(self) -> SaveState:
-        """Create a snapshot of the current state (networks + diagrams)."""
+        '''
+        Create a snapshot of the current state (networks + diagrams).
+        :return: the snapshot
+        '''
         return SaveState(loaded_networks=list(self.networks), diagrams=list(self.diagrams))
 
     def set_save_state_path(self, file_path: str):
+        '''
+        Sets the save state path to a specific path.
+        :param file_path: location of the save state
+        '''
         self._save_state_path = file_path
 
     def load_from_disk(self) -> Result[SaveState]:
-        """Load SaveState from default path (if exists)."""
+        '''
+        Load SaveState from default path (if exists).
+        :return: true if the load was successful, false otherwise
+        '''
         path = Path(self._save_state_path)
         if not path.exists():
             return Failure(FileNotFoundError(str(path)))
@@ -67,7 +83,10 @@ class Storage(metaclass=SingletonMeta):
         return res
 
     def save_to_disk(self) -> Result[None]:
-        """Export current state and write it to disk."""
+        '''
+        Export current state and write it to disk.
+        :return: true if the save was successful, false otherwise
+        '''
         try:
             path = Path(self._save_state_path)
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,7 +102,9 @@ class Storage(metaclass=SingletonMeta):
             return Failure(e)
 
     def request_autosave(self):
-        """Call this after any state mutation (network/bounds/diagram changes). Debounced."""
+        '''
+        Call this after any state mutation (network/bounds/diagram changes). Debounced.
+        '''
         if self._suppress_autosave:
             return
 
@@ -101,6 +122,10 @@ class Storage(metaclass=SingletonMeta):
         self._autosave_timer.start(self._autosave_delay_ms)
 
     def remove_algorithm(self, algo_path):
+        '''
+        removes an algorithm from the list of algorithms.
+        :param algo_path: the path of the algorithm to remove.
+        '''
         matching_indeces = [i for i in range(len(self.algorithms)) if self.algorithms[i].path == algo_path]
         if not matching_indeces:
             return
@@ -108,6 +133,11 @@ class Storage(metaclass=SingletonMeta):
         self.__call_listeners()
 
     def modify_algorithm(self, algo_path, new_algorithm):
+        '''
+        Checks if the file of the algorithm have changed.
+        :param algo_path: the watched algorithm
+        :param new_algorithm: the updated algorithm
+        '''
         matching_indices = [i for i in range(len(self.algorithms)) if self.algorithms[i].path == algo_path]
         if not matching_indices:
             return
@@ -115,9 +145,16 @@ class Storage(metaclass=SingletonMeta):
         self.__call_listeners()
 
     def add_algorithm(self, new_algorithm):
+        '''
+        Adds an algorithm to the list of algorithms.
+        :param new_algorithm: the new algorithm
+        '''
         self.algorithms.append(new_algorithm)
         self.__call_listeners()
 
     def __call_listeners(self):
+        '''
+        Notifies all the listeners, that a change has happened.
+        '''
         for listener in self.algorithm_change_listeners:
             listener()

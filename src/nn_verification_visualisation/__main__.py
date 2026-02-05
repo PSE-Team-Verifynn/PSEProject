@@ -1,4 +1,5 @@
 import sys
+from logging import Logger
 from pathlib import Path
 
 from nn_verification_visualisation import resources_rc

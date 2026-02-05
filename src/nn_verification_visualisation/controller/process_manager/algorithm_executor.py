@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from logging import Logger
+
 import numpy
 import numpy as np
 
@@ -10,7 +12,9 @@ from nn_verification_visualisation.utils.result import Result, Success, Failure
 
 
 class AlgorithmExecutor:
+    logger = Logger(__name__)
     def execute_algorithm(self, config: PlotGenerationConfig) -> Result[tuple[np.ndarray, list[tuple[float, float]]]]:
+
         try:
             model = config.nnconfig.network.model
 
@@ -33,7 +37,6 @@ class AlgorithmExecutor:
         bounds_model: InputBounds (QAbstractTableModel)
         Returns np.ndarray shape (N, 2) with [lower, upper].
         """
-
         raw = getattr(bounds_model, "_InputBounds__value", None)
         if raw is not None:
             return np.asarray(raw, dtype=float)
@@ -44,6 +47,7 @@ class AlgorithmExecutor:
             lo = bounds_model.data(bounds_model.index(r, 0))
             hi = bounds_model.data(bounds_model.index(r, 1))
             if lo is None or hi is None:
+                logger.error(f"Missing bounds at row {r}")
                 raise ValueError(f"Missing bounds at row {r}")
             arr[r, 0] = float(lo)
             arr[r, 1] = float(hi)

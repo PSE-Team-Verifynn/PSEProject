@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from logging import Logger
 from typing import Iterable
 
 import numpy as np
@@ -17,12 +18,16 @@ def run_samples_for_bounds(
     num_samples: int,
     metrics: Iterable[str],
 ) -> dict:
+    logger = Logger(__name__)
     if num_samples <= 0:
+        logger.error("num_samples must be positive")
         raise ValueError("num_samples must be positive")
+
 
     metric_map = get_metric_map()
     metric_list = [metric for metric in metrics if metric in metric_map]
     if not metric_list:
+        logger.error("No valid metrics selected")
         raise ValueError("No valid metrics selected")
 
     model = onnx.load(network.path)
@@ -30,6 +35,7 @@ def run_samples_for_bounds(
     session = ort.InferenceSession(model.SerializeToString(), providers=["CPUExecutionProvider"])
     inputs = session.get_inputs()
     if not inputs:
+        logger.error("Model has no inputs")
         raise RuntimeError("Model has no inputs")
     input_name = inputs[0].name
 
@@ -38,6 +44,7 @@ def run_samples_for_bounds(
         if output.name:
             output_names.append(output.name)
     if not output_names:
+        logger.error("Model has no outputs to sample")
         raise RuntimeError("Model has no outputs to sample")
 
     low = np.array([pair[0] for pair in bounds], dtype=np.float32)
@@ -51,6 +58,9 @@ def run_samples_for_bounds(
         expected_tail = input_shape[1:]
         total_features = samples.shape[1]
         if not all(dim is not None for dim in expected_tail):
+            logger.error("Sample input rank mismatch. "
+                f"Input '{input_name}' expects rank {expected_rank} shape {input_shape}, "
+                "but its dimensions are dynamic. Use bounds that match the model input shape.")
             raise RuntimeError(
                 "Sample input rank mismatch. "
                 f"Input '{input_name}' expects rank {expected_rank} shape {input_shape}, "
@@ -58,6 +68,9 @@ def run_samples_for_bounds(
             )
         expected_size = int(np.prod(expected_tail))
         if expected_size != total_features:
+            logger.error("Sample input size mismatch. "
+                f"Input '{input_name}' expects shape {input_shape} "
+                f"(size {expected_size}), but bounds provide {total_features} values.")
             raise RuntimeError(
                 "Sample input size mismatch. "
                 f"Input '{input_name}' expects shape {input_shape} "
@@ -69,6 +82,7 @@ def run_samples_for_bounds(
         for i in range(samples.shape[0]):
             out = session.run(output_names, {input_name: samples[i:i + 1]})
             if not out:
+                logger.error("Model produced no outputs")
                 raise RuntimeError("Model produced no outputs")
             for idx, item in enumerate(out):
                 out_lists[idx].append(item)
@@ -76,6 +90,7 @@ def run_samples_for_bounds(
     else:
         outputs = session.run(output_names, {input_name: samples})
         if not outputs:
+            logger.error("Model produced no outputs")
             raise RuntimeError("Model produced no outputs")
 
     output_entries: list[dict] = []

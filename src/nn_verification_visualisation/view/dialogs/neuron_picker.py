@@ -1,4 +1,5 @@
 import random
+from logging import Logger
 from typing import List, Callable, Tuple
 
 from PySide6.QtGui import QColor, QIcon
@@ -198,6 +199,7 @@ class NeuronPicker(DialogBase):
         return move_buttons
 
     def construct_config(self) -> Result[PlotGenerationConfig]:
+        logger = Logger(__name__)
         """
         Uses the current state of the UI to construct a PlotGenerationConfig.
         This config represents the user choice on how to generate the plot.
@@ -205,15 +207,18 @@ class NeuronPicker(DialogBase):
         """
         if len(Storage().networks) < self.current_network - 1 or len(
                 Storage().networks) == 0 or self.current_algorithm == "":
+            logger.error("No network selected - please load a network first")
             return Failure(Exception("No network selected - please load a network first"))
         network = Storage().networks[self.current_network]
         matching_algorithms = [alg for alg in Storage().algorithms if alg.name == self.current_algorithm]
         if not matching_algorithms:
+            logger.error("No algorithm selected - please load an algorithm first")
             return Failure(Exception("No algorithm selected - please load an algorithm first"))
 
         algorithm = matching_algorithms[0]
 
         if self.bounds_selector is None or self.bounds_selector.currentIndex() < 0:
+            logger.error("No bounds selected - please load bounds for the chosen network first")
             return Failure(Exception("No bounds selected - please load bounds for the chosen network first"))
 
         bounds_index = self.bounds_selector.currentIndex()

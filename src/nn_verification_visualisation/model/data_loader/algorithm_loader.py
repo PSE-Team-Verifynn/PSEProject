@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import inspect
 import sys
+from logging import Logger
 from pathlib import Path
 from typing import Callable, Dict, Any
 
@@ -16,6 +17,7 @@ CalculateFn = Callable[[Any, Any], Any]
 
 
 class AlgorithmLoader(metaclass=SingletonMeta):
+    logger = Logger(__name__)
     # cash: absolute path -> calculate_output_bounds
     _fn_cache: Dict[str, CalculateFn] = {}
 
@@ -68,13 +70,16 @@ class AlgorithmLoader(metaclass=SingletonMeta):
         path = Path(file_path)
 
         if not path.is_file():
+            logger.error(f"Algorithm is not found: {path}")
             raise FileNotFoundError(f"Algorithm is not found: {path}")
         if path.suffix.lower() != ".py":
+            logger.error(f"Algorithm is not a .py file, got: {path.suffix}")
             raise ValueError(f"Algorithm must be a .py file, got: {path.suffix}")
 
         module_name = "nnvv_alg_" + hashlib.md5(str(path.resolve()).encode("utf-8")).hexdigest()
         spec = importlib.util.spec_from_file_location(module_name, str(path))
         if spec is None or spec.loader is None:
+            logger.error(f"Algorithm {module_name} could not be imported")
             raise ImportError(f"Algorithm {module_name} could not be imported")
 
         module = importlib.util.module_from_spec(spec)
@@ -93,10 +98,12 @@ class AlgorithmLoader(metaclass=SingletonMeta):
     def _get_calculate_output_bounds(module) -> CalculateFn:
         fn = getattr(module, "calculate_output_bounds", None)
         if fn is None or not callable(fn):
+            logger.error("Algorithm has no calculate_output_bounds(onnx_model, input_bounds) function")
             raise AttributeError("Algorithm has no calculate_output_bounds(onnx_model, input_bounds) function")
 
         sig = inspect.signature(fn)
         if len(sig.parameters) != 2:
+            logger.error("calculate_output_bounds must accept exactly 2 parameters: (onnx_model, input_bounds)")
             raise TypeError("calculate_output_bounds must accept exactly 2 parameters: (onnx_model, input_bounds)")
 
         return fn

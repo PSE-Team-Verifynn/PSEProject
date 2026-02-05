@@ -5,6 +5,7 @@ import gzip
 import io
 import json
 import pickle
+from logging import Logger
 from typing import Dict, List, Tuple
 
 import onnx
@@ -28,7 +29,6 @@ from nn_verification_visualisation.utils.singleton import SingletonMeta
 def _b64_gzip_load_bytes(s: str) -> bytes:
     return gzip.decompress(base64.b64decode(s.encode("ascii")))
 
-
 def _restore_input_bounds(values: List[Tuple[float, float]]) -> InputBounds:
     b = InputBounds(len(values))
 
@@ -46,6 +46,7 @@ def _restore_input_bounds(values: List[Tuple[float, float]]) -> InputBounds:
 
 
 def _load_figure(fig_obj: Dict[str, str]) -> Figure:
+    logger = Logger(__name__)
     kind = fig_obj.get("kind")
     raw = _b64_gzip_load_bytes(fig_obj.get("data", ""))
 
@@ -59,12 +60,13 @@ def _load_figure(fig_obj: Dict[str, str]) -> Figure:
         ax.imshow(img)
         ax.axis("off")
         return fig
-
+    logger.error(f"Unknown figure kind: {kind}")
     raise ValueError(f"Unknown figure kind: {kind}")
 
 
 class SaveStateLoader(metaclass=SingletonMeta):
     def load_save_state(self, file_path: str) -> Result[SaveState]:
+        logger = Logger(__name__)
         """
         Loads SaveState from JSON file.
         Important: ONNX-модель isn't saved in SaveState -> load it from network.path.
@@ -74,6 +76,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
             doc = json.loads(text)
 
             if doc.get("format") != "nnvv_save_state":
+                logger.error(f"Unsupported format: {doc['format']}")
                 raise ValueError("Not a nnvv_save_state file.")
             _ = int(doc.get("version", 1))
 

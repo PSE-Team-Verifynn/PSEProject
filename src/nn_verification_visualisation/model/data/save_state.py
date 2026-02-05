@@ -4,6 +4,11 @@ from nn_verification_visualisation.model.data.diagram_config import DiagramConfi
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 
 class SaveState:
+    '''
+    Save state object that represents the saved networks and diagrams
+    :param loaded_networks: list of loaded networks
+    :param diagrams: list of diagrams
+    '''
     loaded_networks: List[NetworkVerificationConfig]
     diagrams: List[DiagramConfig]
 

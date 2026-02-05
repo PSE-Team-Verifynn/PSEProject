@@ -30,16 +30,22 @@ class NetworkViewController:
         self._draft_bounds_by_config: dict[NetworkVerificationConfig, list[tuple[float, float]]] = {}
 
     def _connect_bounds_autosave(self, config: NetworkVerificationConfig):
-        """Autosave when user edits bounds in the table."""
+        '''
+        Autosave when user edits bounds in the table.
+        :param config: the network that is edited.
+        '''
         try:
             config.bounds.dataChanged.connect(lambda *args: Storage().request_autosave())
         except Exception:
             pass
-
+    #DELETE?
     def open_network_view(self, network: NeuralNetwork) -> bool:
         pass
 
     def open_network_management_dialog(self):
+        '''
+        open the network management dialog.
+        '''
         dialog = NetworkManagementDialog(self)
         self.current_network_view.open_dialog(dialog)
 
@@ -48,10 +54,19 @@ class NetworkViewController:
         config: NetworkVerificationConfig,
         on_results: Callable[[dict], None] | None = None,
     ):
+        '''
+        opens the run samples dialog.
+        :param config: the network that is given the samples
+        '''
         dialog = RunSamplesDialog(self.current_network_view.close_dialog, config, on_results=on_results)
         self.current_network_view.open_dialog(dialog)
 
     def load_bounds(self, config: NetworkVerificationConfig) -> bool:
+        '''
+        Loads the input bounds of a network
+        :param config: the network that is given the bounds
+        :return: true if loading was successfully
+        '''
         path = self.current_network_view.open_network_file_picker("Bound-Files (*.csv *.vnnlib);; All Files (*)")
         if path is None:
             return False
@@ -71,6 +86,10 @@ class NetworkViewController:
         return result.is_success
 
     def load_new_network(self) -> NetworkVerificationConfig | None:
+        '''
+        loads a new network from the path that the user picks
+        :return: the network that is found at the given path
+        '''
         path = self.current_network_view.open_network_file_picker("ONNX-Files (*.onnx);; All Files (*)")
         if path is None:
             return None
@@ -97,6 +116,11 @@ class NetworkViewController:
         return network
 
     def remove_neural_network(self, network: NetworkVerificationConfig) -> bool:
+        '''
+        Removes the neural network from the program
+        :param network: the network that will be removed
+        :return: true if removal was successfully
+        '''
         networks = Storage().networks
         if network not in networks:
             return False
@@ -106,13 +130,13 @@ class NetworkViewController:
         self._draft_bounds_by_config.pop(network, None)
         Storage().request_autosave()
         return True
-
+    #DELETE?
     def run_samples(self) -> List[int]:
         pass
-
+    #DELETE?
     def add_sample(self, bounds: InputBounds) -> List[int]:
         pass
-
+    #DELETE?
     def change_tab(self, index: int):
         pass
 
