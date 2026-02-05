@@ -11,5 +11,9 @@ class DiagramConfig:
     '''
     Data object for a single plot page. Contains data from MatPlotLib for the diagrams and the results of the algorithms.
     '''
-    results: Dict[PlotGenerationConfig, Result[Figure]] = {}
+    plot_generation_configs : list[PlotGenerationConfig] = []
+    polygons : list[list[tuple[float, float]]] = []
     plots: Dict[int, Plot] = {}
+    def __init__(self, plot_generation_configs: list[PlotGenerationConfig], polygons: list[list[tuple[float,float]]]) -> None:
+        self.plot_generation_configs = plot_generation_configs
+        self.polygons = polygons

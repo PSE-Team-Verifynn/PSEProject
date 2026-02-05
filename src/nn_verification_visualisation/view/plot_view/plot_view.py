@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QPushButton
 from PySide6.QtGui import QIcon
 
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
+from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
 from nn_verification_visualisation.view.plot_view.plot_page import PlotPage
 
@@ -26,9 +27,9 @@ class PlotView(InsertView):
 
         self.set_bar_corner_widgets([add_button, view_toggle_button],Qt.Corner.TopRightCorner, width=110)
 
-    def add_plot_tab(self, polygons: list[list[tuple[float, float]]]):
+    def add_plot_tab(self, diagram_config: DiagramConfig):
         '''
         Adds a plot tab to the QTabWidget. Only updates UI, not the backend.
         :param polygons: Data object of the new tab.
         '''
-        self.tabs.add_tab(PlotPage(self.controller, polygons))
+        self.tabs.add_tab(PlotPage(self.controller, diagram_config))

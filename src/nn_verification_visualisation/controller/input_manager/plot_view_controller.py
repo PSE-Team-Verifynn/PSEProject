@@ -7,6 +7,7 @@ from nn_verification_visualisation.model.data.algorithm_file_observer import Alg
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.model.data.plot import Plot
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
+from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.dialogs.plot_config_dialog import PlotConfigDialog
 
 if TYPE_CHECKING:
@@ -17,9 +18,6 @@ class PlotViewController:
     current_tab: int
     card_size: int
     plot_titles: list[str]
-    node_pairs: list[str]
-    node_pair_bounds: list[list[tuple[tuple[float, float], tuple[float, float]]]]
-    node_pair_colors: list[tuple[str, str]]
     diagram_selections: dict[str, set[int]]
 
     def __init__(self, current_plot_view: PlotView):
@@ -56,7 +54,11 @@ class PlotViewController:
         for plot_generation_config in plot_generation_configs:
             output_bounds, directions = AlgorithmExecutor.execute_algorithm(AlgorithmExecutor(), plot_generation_config).data
             polygons.append(self.compute_polygon(output_bounds, directions))
-        self.current_plot_view.add_plot_tab(polygons)
+        diagram_config = DiagramConfig(plot_generation_configs,polygons)
+        storage = Storage()
+        storage.diagrams.append(diagram_config)
+        self.current_plot_view.add_plot_tab(diagram_config)
+
 
     def change_tab(self, index: int):
         pass
@@ -78,40 +80,6 @@ class PlotViewController:
         if title in self.plot_titles:
             self.plot_titles.remove(title)
         self.diagram_selections.pop(title, None)
-
-    def add_node_pair(self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]) -> int:
-        pair_index = len(self.node_pairs)
-        self.node_pairs.append(f"Node Pair {pair_index + 1}")
-        self.node_pair_bounds.append(bounds)
-        palette = [
-            ("#59aef2", "#3b6ea8"),
-            ("#7cc38d", "#3d7b57"),
-            ("#f0b76f", "#a36b28"),
-            ("#c08fd6", "#6e4d8c"),
-            ("#f28fa2", "#9d3f50"),
-            ("#7bd1d1", "#3a7a7a"),
-        ]
-        self.node_pair_colors.append(palette[pair_index % len(palette)])
-        return pair_index
-
-    def remove_node_pair(self, index: int):
-        if index < 0 or index >= len(self.node_pair_bounds):
-            return
-        del self.node_pairs[index]
-        del self.node_pair_bounds[index]
-        if index < len(self.node_pair_colors):
-            del self.node_pair_colors[index]
-        for title, selection in self.diagram_selections.items():
-            updated = set()
-            for idx in selection:
-                if idx == index:
-                    continue
-                if idx > index:
-                    updated.add(idx - 1)
-                else:
-                    updated.add(idx)
-            self.diagram_selections[title] = updated
-
     def get_node_pairs(self) -> list[str]:
         return list(self.node_pairs)
 

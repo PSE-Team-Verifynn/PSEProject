@@ -24,7 +24,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
-from sympy.codegen.ast import NoneToken
+from sympy.codegen.ast import NoneToken, none
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
@@ -48,8 +48,8 @@ class PlotPage(Tab):
     __diagram_groups_layout: QVBoxLayout | None
     __node_pairs_list: QListWidget | None
     __node_pairs_layout: QVBoxLayout | None
-
-    def __init__(self, controller: PlotViewController, polygons:list[list[tuple[float, float]]] = None):
+    node_pairs: list[list[tuple[int,int]]]
+    def __init__(self, controller: PlotViewController, diagram_config: DiagramConfig = None):
 
         self.__syncing = False
         self.__scroll_area = None
@@ -61,7 +61,14 @@ class PlotPage(Tab):
         self.__node_pairs_list = None
         self.__node_pairs_layout = None
         self.controller = controller
-        self._polygons = polygons or []
+        self.node_pairs =  []
+        if diagram_config:
+            self._polygons = diagram_config.polygons
+            for config in diagram_config.plot_generation_configs:
+                self.node_pairs.append(config.selected_neurons)
+        else:
+            self._polygons = None
+
         super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
         # configuration is currently not implemented
         # self.configuration = configuration
@@ -289,6 +296,39 @@ class PlotPage(Tab):
         spacer_row = (len(self.plots) + columns - 1) // columns
         spacer = QSpacerItem(0, self.__bottom_spacer_height, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.__plot_grid.addItem(spacer, spacer_row, 0, 1, columns)
+
+    def add_node_pair(self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]) -> int:
+        pair_index = len(self.node_pairs)
+        self.node_pairs.append(f"Node Pair {pair_index + 1}")
+        self.node_pair_bounds.append(bounds)
+        palette = [
+            ("#59aef2", "#3b6ea8"),
+            ("#7cc38d", "#3d7b57"),
+            ("#f0b76f", "#a36b28"),
+            ("#c08fd6", "#6e4d8c"),
+            ("#f28fa2", "#9d3f50"),
+            ("#7bd1d1", "#3a7a7a"),
+        ]
+        self.node_pair_colors.append(palette[pair_index % len(palette)])
+        return pair_index
+
+    def remove_node_pair(self, index: int):
+        if index < 0 or index >= len(self.node_pair_bounds):
+            return
+        del self.node_pairs[index]
+        del self.node_pair_bounds[index]
+        if index < len(self.node_pair_colors):
+            del self.node_pair_colors[index]
+        for title, selection in self.diagram_selections.items():
+            updated = set()
+            for idx in selection:
+                if idx == index:
+                    continue
+                if idx > index:
+                    updated.add(idx - 1)
+                else:
+                    updated.add(idx)
+            self.diagram_selections[title] = updated
 
     def __toggle_lock(self, widget: PlotWidget, button: QPushButton):
         widget.locked = not getattr(widget, "locked", False)
