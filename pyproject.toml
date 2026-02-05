@@ -3,6 +3,8 @@ name = "nn_verification_visualisation"
 
 dynamic = ["version"]
 
+requires-python = ">=3.10"
+
 dependencies = [
   "pyside6 >= 6.10.1",
   "onnx >= 1.20.1",
@@ -11,9 +13,6 @@ dependencies = [
   "matplotlib >= 3.10.8",
   "watchdog >= 6.0.0"
 ]
-
-requires-python = ">=3.10"
-
 
 description = ""
 readme = "README.md"
@@ -27,3 +26,23 @@ authors = [
 
 [project.scripts]
 nn_verification_visualisation = "nn_verification_visualisation.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-qt>=4.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--cov=nn_verification_visualisation",
+    "--cov-report=term-missing"
+]
