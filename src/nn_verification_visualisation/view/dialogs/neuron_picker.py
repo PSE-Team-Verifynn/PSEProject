@@ -11,12 +11,12 @@ from PySide6.QtWidgets import (QWidget, QSplitter, QLabel, QHBoxLayout,
 # Assuming these imports exist in your project structure
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
 from nn_verification_visualisation.model.data.storage import Storage
+from nn_verification_visualisation.utils.result import Result, Failure, Success
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
 from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
 from nn_verification_visualisation.view.widgets.bounds_display_widget import BoundsDisplayWidget
-from nn_verification_visualisation.view.network_view.network_node import NetworkNode
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 
 
@@ -46,6 +46,13 @@ def get_neuron_colors(num_neurons) -> List[QColor]:
 
 
 class NeuronPicker(DialogBase):
+    """
+    Manages selection of the configuration that can then be used to generate plots.
+
+    This class is responsible for creating and managing a dialog where users can
+    select neurons from a neural network, configure algorithms, and choose input bounds
+    for further processing.
+    """
     current_network: int
     current_algorithm: str
     current_neurons: List[Tuple[int, int]]
@@ -102,7 +109,7 @@ class NeuronPicker(DialogBase):
         super().__init__(on_close, "Neuron Picker", has_title=False)
 
         if preset is not None:
-            self.load_from_config(preset)
+            self.__load_from_config(preset)
             
     def __compute_bounds_index_label_width(self, input_count: int) -> int:
         if self.bounds_display_group is None:
@@ -116,7 +123,11 @@ class NeuronPicker(DialogBase):
         # Add a small padding buffer so 3+ digits don't clip.
         return max(36, text_width + 8)
 
-    def update_algorithms(self):
+    def update_algorithms(self) -> None:
+        """
+        Refreshes the algorithm selector.
+        This is used to provide an up-to-date list of algorithms to the user.
+        """
         index = self.algorithm_selector.currentIndex() if self.algorithm_selector.currentIndex() > -1 else 0
         self.algorithm_selector.blockSignals(True)
 
@@ -187,24 +198,30 @@ class NeuronPicker(DialogBase):
         move_buttons.setAlignment(Qt.AlignmentFlag.AlignRight)
         return move_buttons
 
-    def construct_config(self) -> PlotGenerationConfig | None:
+    def construct_config(self) -> Result[PlotGenerationConfig]:
+        """
+        Uses the current state of the UI to construct a PlotGenerationConfig.
+        This config represents the user choice on how to generate the plot.
+        :return: a result of the constructed PlotGenerationConfig.
+        """
         if len(Storage().networks) < self.current_network - 1 or len(
                 Storage().networks) == 0 or self.current_algorithm == "":
-            return None
+            return Failure(Exception("No network selected - please load a network first"))
         network = Storage().networks[self.current_network]
         matching_algorithms = [alg for alg in Storage().algorithms if alg.name == self.current_algorithm]
         if not matching_algorithms:
-            return None
+            return Failure(Exception("No algorithm selected - please load an algorithm first"))
+
         algorithm = matching_algorithms[0]
 
         if self.bounds_selector is None or self.bounds_selector.currentIndex() < 0:
-            return None
+            return Failure(Exception("No bounds selected - please load bounds for the chosen network first"))
 
         bounds_index = self.bounds_selector.currentIndex()
 
-        return PlotGenerationConfig(network, algorithm, self.current_neurons, [], bounds_index=bounds_index)
+        return Success(PlotGenerationConfig(network, algorithm, self.current_neurons, [], bounds_index=bounds_index))
 
-    def load_from_config(self, config: PlotGenerationConfig):
+    def __load_from_config(self, config: PlotGenerationConfig):
         def __sync_ui_to_internal_state():
             """
             Helper to update SpinBoxes and NetworkWidget based on self.current_neurons
@@ -268,7 +285,6 @@ class NeuronPicker(DialogBase):
 
         self.current_neurons = []
         for i, (layer, neuron) in enumerate(config.selected_neurons):
-            # Validate against network limits to prevent crashes
             if layer < len(self.max_neuron_num_per_layer):
                 max_nodes = self.max_neuron_num_per_layer[layer]
                 valid_neuron = min(neuron, max_nodes - 1) if max_nodes > 0 else 0
@@ -297,11 +313,9 @@ class NeuronPicker(DialogBase):
             self.bounds_toggle_button.setVisible(True)
         self.__update_sample_results()
 
-        # Re-create the network widget
         self.network_widget = NetworkWidget(Storage().networks[index], nodes_selectable=True,
                                             on_selection_changed=self.__on_node_selection_change)
 
-        # Update limits based on new network
         self.max_neuron_num_per_layer = new_network.layers_dimensions
 
         # Update Layer Spinbox Ranges

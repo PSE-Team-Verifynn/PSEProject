@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
+from nn_verification_visualisation.utils.result import Result
 from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.dialogs.neuron_picker import NeuronPicker
@@ -27,10 +28,11 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
     def on_add_clicked(self):
         def on_neuron_picker_close():
             self.parent_controller.current_plot_view.close_dialog()
-            config: PlotGenerationConfig = neuron_picker.construct_config()
-            if config is None:
+            config_res: Result[PlotGenerationConfig] = neuron_picker.construct_config()
+            if not config_res.is_success:
+                self.__show_error_dialog("Could not create configuration:", config_res.error)
                 return
-            self.add_item(config)
+            self.add_item(config_res.data)
 
         neuron_picker = NeuronPicker(on_neuron_picker_close)
 
@@ -42,24 +44,29 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
     def on_edit_clicked(self, item: PlotGenerationConfig) -> None:
         def on_neuron_picker_close():
             self.parent_controller.current_plot_view.close_dialog()
-            edited_config = neuron_picker.construct_config()
-            if edited_config is None:
-                error_dialog = InfoPopup(
-                    self.parent_controller.current_plot_view.close_dialog,
-                    "Editing Failed",
-                    InfoType.ERROR
-                )
-                self.parent_controller.current_plot_view.open_dialog(error_dialog)
-            else:
-                index = self.list_widget.currentRow()
-                if index >= 0:
-                    self.list_widget.takeItem(index)
-                    self.data.pop(index)
-                    self.list_widget.insertItem(index, self.get_title(edited_config))
-                    self.data.insert(index, edited_config)
-                    self.list_widget.setCurrentRow(index)
+            edited_config_res: Result[PlotGenerationConfig] = neuron_picker.construct_config()
+            if not edited_config_res.is_success:
+                self.__show_error_dialog("Could not edit configuration:", edited_config_res.error)
+                return
+            index = self.list_widget.currentRow()
+            if index >= 0:
+                self.list_widget.takeItem(index)
+                self.data.pop(index)
+                self.list_widget.insertItem(index, self.get_title(edited_config_res.data))
+                self.data.insert(index, edited_config_res.data)
+                self.list_widget.setCurrentRow(index)
 
         neuron_picker = NeuronPicker(on_neuron_picker_close, preset=item)
         self.parent_controller.current_plot_view.open_dialog(neuron_picker)
 
         return None
+
+    def __show_error_dialog(self, base_message: str, error: BaseException):
+        has_message = error is not None and hasattr(error, 'message')
+        error_message = error.message if has_message else str(error)
+        error_dialog = InfoPopup(
+            self.parent_controller.current_plot_view.close_dialog,
+            base_message + "\n" + error_message,
+            InfoType.ERROR
+        )
+        self.parent_controller.current_plot_view.open_dialog(error_dialog)

@@ -60,6 +60,7 @@ class ColorManager:
         file = QFile(path_str)
         file.open(QIODevice.ReadOnly | QIODevice.Text)
         self.raw_stylesheet = file.readAll().data().decode("utf-8")
+        file.close()
 
     def set_colors(self, colors: dict[str, str]):
         '''
