@@ -52,9 +52,11 @@ class PlotViewController:
             selection.discard(pair_index)
 
     def start_computation(self, plot_generation_configs: list[PlotGenerationConfig]):
+        polygons = []
         for plot_generation_config in plot_generation_configs:
-            AlgorithmExecutor.execute_algorithm(AlgorithmExecutor(), plot_generation_config)
-        pass
+            output_bounds, directions = AlgorithmExecutor.execute_algorithm(AlgorithmExecutor(), plot_generation_config).data
+            polygons.append(self.compute_polygon(output_bounds, directions))
+        self.current_plot_view.add_plot_tab(polygons)
 
     def change_tab(self, index: int):
         pass
@@ -124,8 +126,7 @@ class PlotViewController:
 
 
     def compute_polygon(
-        self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]
-    ) -> list[tuple[float, float]]:
+        self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[tuple[float, float]]:
         def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
             def inside(p: tuple[float, float]) -> bool:
                 return a * p[0] + b * p[1] <= c + 1e-9
@@ -155,11 +156,12 @@ class PlotViewController:
                     out.append(intersect(prev, curr))
             return out
 
-        max_bound = max(abs(v) for _, (low, high) in bounds for v in (low, high))
+        max_bound = max(abs(v) for (low, high) in bounds for v in (low, high))
         m = max(5.0, max_bound * 2.0 + 1.0)
         poly: list[tuple[float, float]] = [(-m, -m), (m, -m), (m, m), (-m, m)]
 
-        for (a, b), (low, high) in bounds:
+        for i, (low, high) in enumerate(bounds):
+            a,b = directions[i]
             poly = clip_polygon(poly, a, b, high)
             if not poly:
                 break

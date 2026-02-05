@@ -10,23 +10,19 @@ from nn_verification_visualisation.utils.result import Result, Success, Failure
 
 
 class AlgorithmExecutor:
-    def execute_algorithm(self, config: PlotGenerationConfig) -> Result[np.ndarray]:
+    def execute_algorithm(self, config: PlotGenerationConfig):
         try:
             model = config.nnconfig.network.model
 
             # InputBounds (QAbstractTableModel) -> np.ndarray (N, 2)
             input_bounds = self._input_bounds_to_numpy(config.nnconfig.bounds)
-            print(input_bounds)
             fn_res = AlgorithmLoader.load_calculate_output_bounds(config.algorithm.path)
-            print (fn_res.data)
             if not fn_res.is_success:
                 raise fn_res.error
-            directions = AlgorithmExecutor.calculate_directions(self,16)
+            directions = AlgorithmExecutor.calculate_directions(self,2)
             modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, config.selected_neurons, directions)
-
             output_bounds = fn_res.data(modified_model, input_bounds)
-
-            return Success(output_bounds)
+            return Success((output_bounds, directions))
 
         except BaseException as e:
             return Failure(e)
@@ -54,6 +50,6 @@ class AlgorithmExecutor:
         return arr
     def   calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
         directions = []
-        for i in range(1, num_directions):
+        for i in range(0, num_directions):
             directions.append((numpy.sin(2 * numpy.pi * i / num_directions), numpy.cos(2 * numpy.pi * i / num_directions)))
         return directions

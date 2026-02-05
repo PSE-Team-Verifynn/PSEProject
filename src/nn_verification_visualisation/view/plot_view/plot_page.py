@@ -24,6 +24,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
+from sympy.codegen.ast import none, NoneToken
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
@@ -46,7 +47,7 @@ class PlotPage(Tab):
     __node_pairs_list: QListWidget | None
     __node_pairs_layout: QVBoxLayout | None
 
-    def __init__(self, controller: PlotViewController):
+    def __init__(self, controller: PlotViewController, polygons:list[list[tuple[float, float]]]):
 
         self.__syncing = False
         self.__scroll_area = None
@@ -59,6 +60,12 @@ class PlotPage(Tab):
         self.__node_pairs_layout = None
         self.controller = controller
         super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
+        print(polygons)
+        if polygons is not None:
+            for polygon in polygons:
+                new_plot_widget = self.__create_plot_card("Test")
+                self.plots.append(new_plot_widget)
+                self.__render_plot(new_plot_widget, polygon)
         # configuration is currently not implemented
         # self.configuration = configuration
 
@@ -89,7 +96,7 @@ class PlotPage(Tab):
         self.plots.append(plot_card)
         self.__plot_map["Diagram 01"] = plot_card
         self.controller.register_plot("Diagram 01")
-        self.__render_plot(plot_card)
+        self.__render_plot(plot_card, none)
         self.__rebuild_diagram_groups()
 
         scroll_area.setWidget(grid_host)
@@ -374,7 +381,7 @@ class PlotPage(Tab):
         self.__rebuild_diagram_groups()
         self.__relayout_plots()
 
-    def __render_plot(self, plot: PlotWidget):
+    def __render_plot(self, plot: PlotWidget, poly_points : list[tuple[float, float]] = None ) -> None:
         if plot.axes is None or plot.canvas is None:
             return
         ax = plot.axes
@@ -391,7 +398,6 @@ class PlotPage(Tab):
             if pair_index >= len(self.controller.node_pair_bounds):
                 continue
             bounds = self.controller.get_node_pair_bounds(pair_index)
-            poly_points = self.controller.compute_polygon(bounds)
             if not poly_points:
                 continue
             all_points.extend(poly_points)
