@@ -116,19 +116,16 @@ class NetworkViewController:
         bounds = config.bounds.get_values()
         saved = InputBounds(config.layers_dimensions[0])
         saved.load_list(bounds)
-        saved.set_read_only(True)
         saved.clear_sample()
         config.saved_bounds.append(saved)
         config.selected_bounds_index = len(config.saved_bounds) - 1
         self._set_draft_bounds(config, [(0.0, 0.0)] * config.layers_dimensions[0])
-        config.bounds.set_read_only(True)
         return config.selected_bounds_index
 
     def select_bounds(self, config: NetworkVerificationConfig, bounds_index: int | None):
         if bounds_index is None:
             config.selected_bounds_index = -1
             config.bounds.load_list(self._get_draft_bounds(config))
-            config.bounds.set_read_only(False)
             config.bounds.clear_sample()
 
             Storage().request_autosave()
@@ -143,7 +140,6 @@ class NetworkViewController:
         config.selected_bounds_index = bounds_index
         saved = config.saved_bounds[bounds_index]
         config.bounds.load_list(saved.get_values())
-        config.bounds.set_read_only(True)
         config.bounds.clear_sample()
 
         Storage().request_autosave()
@@ -167,7 +163,6 @@ class NetworkViewController:
         if config.selected_bounds_index == -1:
             config.bounds.load_list(bounds_list)
             self._set_draft_bounds(config, bounds_list)
-            config.bounds.set_read_only(False)
             config.bounds.clear_sample()
             return
 
@@ -175,7 +170,6 @@ class NetworkViewController:
         saved.load_list(bounds_list)
         saved.clear_sample()
         config.bounds.load_list(bounds_list)
-        config.bounds.set_read_only(True)
         Storage().request_autosave()
 
     def _get_draft_bounds(self, config: NetworkVerificationConfig) -> list[tuple[float, float]]:
