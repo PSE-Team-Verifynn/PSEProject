@@ -24,7 +24,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
-from sympy.codegen.ast import none, NoneToken
+from sympy.codegen.ast import NoneToken
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
@@ -59,13 +59,8 @@ class PlotPage(Tab):
         self.__node_pairs_list = None
         self.__node_pairs_layout = None
         self.controller = controller
+        self._polygons = polygons or []
         super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
-        print(polygons)
-        if polygons is not None:
-            for polygon in polygons:
-                new_plot_widget = self.__create_plot_card("Test")
-                self.plots.append(new_plot_widget)
-                self.__render_plot(new_plot_widget, polygon)
         # configuration is currently not implemented
         # self.configuration = configuration
 
@@ -92,11 +87,21 @@ class PlotPage(Tab):
         self.plots = []
         self.__plot_map = {}
 
-        plot_card = self.__create_plot_card("Diagram 01")
-        self.plots.append(plot_card)
-        self.__plot_map["Diagram 01"] = plot_card
-        self.controller.register_plot("Diagram 01")
-        self.__render_plot(plot_card, none)
+        if self._polygons:
+            for index, polygon in enumerate(self._polygons, start=1):
+                title_text = f"Diagram {index:02d}"
+                plot_card = self.__create_plot_card(title_text)
+                plot_card.polygon_points = polygon
+                self.plots.append(plot_card)
+                self.__plot_map[title_text] = plot_card
+                self.controller.register_plot(title_text)
+                self.__render_plot(plot_card, polygon)
+        else:
+            plot_card = self.__create_plot_card("Diagram 01")
+            self.plots.append(plot_card)
+            self.__plot_map["Diagram 01"] = plot_card
+            self.controller.register_plot("Diagram 01")
+            self.__render_plot(plot_card, None)
         self.__rebuild_diagram_groups()
 
         scroll_area.setWidget(grid_host)
@@ -381,9 +386,13 @@ class PlotPage(Tab):
         self.__rebuild_diagram_groups()
         self.__relayout_plots()
 
-    def __render_plot(self, plot: PlotWidget, poly_points : list[tuple[float, float]] = None ) -> None:
+    def __render_plot(self, plot: PlotWidget, poly_points : list[tuple[float, float]] | None = None ) -> None:
         if plot.axes is None or plot.canvas is None:
             return
+        if poly_points is None:
+            poly_points = getattr(plot, "polygon_points", None)
+        if poly_points is not None:
+            poly_points = list(poly_points)
         ax = plot.axes
         ax.cla()
         self.__attach_limit_callbacks(plot)
@@ -394,11 +403,16 @@ class PlotPage(Tab):
         all_points: list[tuple[float, float]] = []
         legend_handles = []
         legend_labels = []
+        if poly_points and len(poly_points) >= 3 and not selection:
+            poly_array = np.array(poly_points)
+            polygon = Polygon(poly_array, closed=True, facecolor="#7cc38d", edgecolor="#3d7b57", alpha=0.6)
+            ax.add_patch(polygon)
+            all_points.extend(poly_points)
         for order, pair_index in enumerate(sorted(selection)):
             if pair_index >= len(self.controller.node_pair_bounds):
                 continue
             bounds = self.controller.get_node_pair_bounds(pair_index)
-            if not poly_points:
+            if not poly_points or len(poly_points) < 3:
                 continue
             all_points.extend(poly_points)
             face, edge = self.controller.get_node_pair_colors(pair_index)
