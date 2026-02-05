@@ -7,12 +7,12 @@ class TestMain:
 
     def test_main_creates_application(self, mocker):
         """Test that main() creates a QApplication instance."""
-        from nn_verification_visualisation.main import main
+        from nn_verification_visualisation.__main__ import main
 
         # Mock using pytest-mock's mocker fixture
-        mock_qapp_class = mocker.patch('nn_verification_visualisation.main.QApplication')
-        mock_color_manager_class = mocker.patch('nn_verification_visualisation.main.ColorManager')
-        mock_main_window_class = mocker.patch('nn_verification_visualisation.main.MainWindow')
+        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mock_color_manager_class = mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mock_main_window_class = mocker.patch('nn_verification_visualisation.__main__.MainWindow')
         mock_exit = mocker.patch('sys.exit')
 
         # Setup
@@ -28,11 +28,11 @@ class TestMain:
 
     def test_main_sets_fusion_style(self, mocker):
         """Test that main() sets the Fusion style."""
-        from nn_verification_visualisation.main import main
+        from nn_verification_visualisation.__main__ import main
 
-        mock_qapp_class = mocker.patch('nn_verification_visualisation.main.QApplication')
-        mocker.patch('nn_verification_visualisation.main.ColorManager')
-        mocker.patch('nn_verification_visualisation.main.MainWindow')
+        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
         mocker.patch('sys.exit')
 
         mock_app = mocker.Mock()
@@ -45,11 +45,11 @@ class TestMain:
 
     def test_main_initializes_color_manager(self, mocker):
         """Test that main() creates and initializes ColorManager."""
-        from nn_verification_visualisation.main import main
+        from nn_verification_visualisation.__main__ import main
 
-        mock_qapp_class = mocker.patch('nn_verification_visualisation.main.QApplication')
-        mock_color_manager_class = mocker.patch('nn_verification_visualisation.main.ColorManager')
-        mocker.patch('nn_verification_visualisation.main.MainWindow')
+        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mock_color_manager_class = mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
         mocker.patch('sys.exit')
 
         mock_app = mocker.Mock()
@@ -68,11 +68,11 @@ class TestMain:
 
     def test_main_creates_and_shows_window(self, mocker):
         """Test that main() creates MainWindow and shows it."""
-        from nn_verification_visualisation.main import main
+        from nn_verification_visualisation.__main__ import main
 
-        mock_qapp_class = mocker.patch('nn_verification_visualisation.main.QApplication')
-        mock_color_manager_class = mocker.patch('nn_verification_visualisation.main.ColorManager')
-        mock_main_window_class = mocker.patch('nn_verification_visualisation.main.MainWindow')
+        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mock_color_manager_class = mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mock_main_window_class = mocker.patch('nn_verification_visualisation.__main__.MainWindow')
         mocker.patch('sys.exit')
 
         mock_app = mocker.Mock()

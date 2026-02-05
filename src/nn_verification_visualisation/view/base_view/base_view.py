@@ -1,8 +1,7 @@
 import time
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QStyleHints
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QStackedWidget, QStackedLayout, QHBoxLayout, QComboBox
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QComboBox
 
 from nn_verification_visualisation.view.base_view.color_manager import ColorManager
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
@@ -50,7 +49,6 @@ class BaseView(QWidget):
         SettingsDialog.add_setting(SettingsOption("High Contrast", self.get_high_contrast_changer, "Appearance"))
 
     def change_active_view(self):
-        t1 = time.time()
         old_view = self.active_view
         old_view.setUpdatesEnabled(False)
         if self.active_view is self.network_view:
@@ -63,10 +61,7 @@ class BaseView(QWidget):
             new_colors= ColorManager.NETWORK_COLORS
 
         self.stack.setCurrentIndex(index)
-        print(f"Stack switch: {(time.time() - t1) * 1000:.0f}ms")
-        t2 = time.time()
         self.color_manager.set_colors(new_colors)
-        print(f"Color change: {(time.time() - t2) * 1000:.0f}ms")  # ← This is slow!
         self.active_view.setUpdatesEnabled(True)
 
     def get_color_mode_changer(self):

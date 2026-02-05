@@ -3,7 +3,6 @@ QMainWindow {
 }
 
 QTabBar {
-    draw-control: none;
     border: 0px;
 }
 
