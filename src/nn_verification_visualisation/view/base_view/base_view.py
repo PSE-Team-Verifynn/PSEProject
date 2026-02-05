@@ -1,4 +1,6 @@
-from PySide6.QtCore import Qt
+import time
+
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QStyleHints
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QStackedWidget, QStackedLayout, QHBoxLayout, QComboBox
 
@@ -29,7 +31,7 @@ class BaseView(QWidget):
         self.color_manager = color_manager
         self.color_manager.set_colors(ColorManager.NETWORK_COLORS)
 
-        # this is done in order to prevent C++ object deletion
+        # this is done to prevent C++ object deletion
         self.style_hints = self.color_manager.app.styleHints()
         self.accessibility_hints = self.style_hints.accessibility()
         self.contrast_preference = self.accessibility_hints.contrastPreference()
@@ -61,16 +63,24 @@ class BaseView(QWidget):
         SettingsDialog.add_setting(SettingsOption("High Contrast", self.get_high_contrast_changer, "Appearance"))
 
     def change_active_view(self):
+        t1 = time.time()
+        old_view = self.active_view
+        old_view.setUpdatesEnabled(False)
         if self.active_view is self.network_view:
             index = 1
             self.active_view = self.plot_view
-            self.color_manager.set_colors(ColorManager.DIAGRAM_COLORS)
+            new_colors = ColorManager.DIAGRAM_COLORS
         else:
             index = 0
             self.active_view = self.network_view
-            self.color_manager.set_colors(ColorManager.NETWORK_COLORS)
+            new_colors= ColorManager.NETWORK_COLORS
 
         self.stack.setCurrentIndex(index)
+        print(f"Stack switch: {(time.time() - t1) * 1000:.0f}ms")
+        t2 = time.time()
+        self.color_manager.set_colors(new_colors)
+        print(f"Color change: {(time.time() - t2) * 1000:.0f}ms")  # ← This is slow!
+        self.active_view.setUpdatesEnabled(True)
 
     def get_color_mode_changer(self):
         change_widget = QComboBox()

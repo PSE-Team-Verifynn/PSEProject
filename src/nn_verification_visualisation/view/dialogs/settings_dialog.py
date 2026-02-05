@@ -51,5 +51,6 @@ class SettingsDialog(DialogBase):
         return scroll_area
 
     @staticmethod
-    def add_setting(setting: SettingsOption):
+    def add_setting(setting: SettingsOption) -> Callable[[], None]:
         SettingsDialog.settings.append(setting)
+        return lambda: SettingsDialog.settings.remove(setting)
