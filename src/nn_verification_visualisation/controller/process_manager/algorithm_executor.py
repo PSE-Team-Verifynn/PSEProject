@@ -51,5 +51,5 @@ class AlgorithmExecutor:
     def   calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
         directions = []
         for i in range(0, num_directions):
-            directions.append((numpy.sin(2 * numpy.pi * i / num_directions), numpy.cos(2 * numpy.pi * i / num_directions)))
+            directions.append((numpy.sin(numpy.pi * i / num_directions), numpy.cos(numpy.pi * i / num_directions)))
         return directions
