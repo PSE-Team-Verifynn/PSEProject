@@ -6,6 +6,7 @@ import pickle
 from typing import Any, Dict, List, Tuple
 
 import onnx
+import numpy as np
 import matplotlib.image as mpimg
 from matplotlib.figure import Figure
 
@@ -121,11 +122,13 @@ class SaveStateLoader(metaclass=SingletonMeta):
                         parameters=[str(p) for p in pgc_data.get("parameters", [])],
                     )
 
-                    if bool(entry.get("is_success")) and entry.get("figure") is not None:
-                        fig = _load_figure(entry["figure"])
-                        dc.results[pgc] = RSuccess(fig)
+                    if bool(entry.get("is_success")) and entry.get("output_bounds") is not None:
+                        bounds = np.asarray(entry["output_bounds"], dtype=float)
+                        dc.results[pgc] = RSuccess(bounds)
                     else:
                         msg = entry.get("error") or "Unknown error"
+                        if bool(entry.get("is_success")) and entry.get("output_bounds") is None:
+                            msg = "Missing output_bounds in save file"
                         dc.results[pgc] = RFailure(RuntimeError(str(msg)))
 
                 diagrams.append(dc)
