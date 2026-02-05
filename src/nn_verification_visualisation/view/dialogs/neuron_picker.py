@@ -13,9 +13,9 @@ from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.utils.result import Result, Failure, Success
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
-from nn_verification_visualisation.view.base_view.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.base_view.sample_metrics import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
-from nn_verification_visualisation.view.base_view.bounds_display_widget import BoundsDisplayWidget
+from nn_verification_visualisation.view.base_view.bounds_display import BoundsDisplayWidget
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 
 

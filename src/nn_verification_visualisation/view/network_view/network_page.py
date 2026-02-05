@@ -5,9 +5,9 @@ from nn_verification_visualisation.controller.input_manager.network_view_control
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
-from nn_verification_visualisation.view.base_view.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.base_view.sample_metrics import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
-from nn_verification_visualisation.view.base_view.bounds_display_widget import BoundsDisplayWidget
+from nn_verification_visualisation.view.base_view.bounds_display import BoundsDisplayWidget
 
 
 class NetworkPage(Tab):
