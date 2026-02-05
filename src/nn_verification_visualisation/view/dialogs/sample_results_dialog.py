@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import Callable
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
-from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.base_view.sample_metrics_widget import SampleMetricsWidget
 
 
 class SampleResultsDialog(DialogBase):

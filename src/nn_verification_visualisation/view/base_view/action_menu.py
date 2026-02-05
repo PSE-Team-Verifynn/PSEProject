@@ -6,7 +6,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QPushButton, QMenu, QGraphicsDropShadowEffect, QApplication, QMainWindow
 
-from nn_verification_visualisation.view.base_view.action_menu_item import ActionMenuItem
 from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 
@@ -19,7 +18,6 @@ if TYPE_CHECKING:
 
 
 class ActionMenu(QWidget):
-    items: List[ActionMenuItem]
 
     def __init__(self, parent: InsertView):
         super().__init__()

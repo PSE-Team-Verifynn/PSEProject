@@ -2,11 +2,10 @@ import random
 from typing import List, Callable, Tuple
 
 from PySide6.QtGui import QColor, QIcon
-from numpy import clip
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QSplitter, QLabel, QHBoxLayout,
-                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout, QGroupBox)
+                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout)
 
 # Assuming these imports exist in your project structure
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
@@ -14,9 +13,9 @@ from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.utils.result import Result, Failure, Success
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
-from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.base_view.sample_metrics_widget import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
-from nn_verification_visualisation.view.widgets.bounds_display_widget import BoundsDisplayWidget
+from nn_verification_visualisation.view.base_view.bounds_display_widget import BoundsDisplayWidget
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 
 
