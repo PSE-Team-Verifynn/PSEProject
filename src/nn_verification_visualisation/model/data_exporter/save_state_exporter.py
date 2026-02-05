@@ -5,6 +5,7 @@ import json
 import pickle
 from typing import Any, Dict, List, Tuple
 
+import numpy as np
 from matplotlib.figure import Figure
 
 from nn_verification_visualisation.utils.result import Result, Success, Failure
@@ -113,11 +114,13 @@ class SaveStateExporter(metaclass=SingletonMeta):
                         "pgc": _serialize_pgc(pgc, save_state.loaded_networks),
                         "is_success": bool(getattr(res, "is_success", False)),
                         "error": None,
-                        "figure": None,
+                        "output_bounds": None,
                     }
 
                     if entry["is_success"]:
-                        entry["figure"] = _dump_figure(getattr(res, "data", None))
+                        bounds = getattr(res, "data", None)
+                        if bounds is not None:
+                            entry["output_bounds"] = np.asarray(bounds, dtype=float).tolist()
                     else:
                         err = getattr(res, "error", None)
                         entry["error"] = repr(err) if err is not None else "Unknown error"
