@@ -1,7 +1,8 @@
 from __future__ import annotations
+
+from logging import Logger
 from typing import TYPE_CHECKING
 
-from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.utils.result import Result
 from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
@@ -21,15 +22,19 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
 
     def on_confirm_clicked(self):
         self.on_close()
+        if len(self.data) > 0:
+            self.parent_controller.start_computation(self.data)
 
     def get_title(self, item: PlotGenerationConfig) -> str:
         return "Plot: " + item.algorithm.name
 
     def on_add_clicked(self):
+        logger = Logger(__name__)
         def on_neuron_picker_close():
             self.parent_controller.current_plot_view.close_dialog()
             config_res: Result[PlotGenerationConfig] = neuron_picker.construct_config()
             if not config_res.is_success:
+                logger.error("Could not create configuration:")
                 self.__show_error_dialog("Could not create configuration:", config_res.error)
                 return
             self.add_item(config_res.data)
@@ -42,10 +47,12 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
         return True
 
     def on_edit_clicked(self, item: PlotGenerationConfig) -> None:
+        logger = Logger(__name__)
         def on_neuron_picker_close():
             self.parent_controller.current_plot_view.close_dialog()
             edited_config_res: Result[PlotGenerationConfig] = neuron_picker.construct_config()
             if not edited_config_res.is_success:
+                logger.error("Could not edit configuration:")
                 self.__show_error_dialog("Could not edit configuration:", edited_config_res.error)
                 return
             index = self.list_widget.currentRow()

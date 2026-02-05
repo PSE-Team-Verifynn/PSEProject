@@ -120,7 +120,7 @@ class NetworkModifier:
         for i in range(new_initializer1.dims[0] * new_initializer1.dims[1]):    #adds data, so that dims matches the number of elements
             new_initializer1.float_data.append(0)
         for i in range(new_initializer2.dims[0]):
-            new_initializer2.float_data.append(1)
+            new_initializer2.float_data.append(0)
         return new_initializer1, new_initializer2
 
     def create_new_layer(self, model: ModelProto, neurons: list[tuple[int, int]], initializers: tuple[TensorProto, TensorProto]) -> NodeProto:

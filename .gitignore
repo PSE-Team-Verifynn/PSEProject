@@ -36,6 +36,8 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+src/nn_verification_visualisation/save_state.json
+
 # Unit test / coverage reports
 htmlcov/
 .tox/

@@ -1,22 +1,27 @@
 from __future__ import annotations
 
+import logging
+from logging import Logger
 from typing import TYPE_CHECKING
 
+import numpy as np
+
+from nn_verification_visualisation.controller.process_manager.algorithm_executor import AlgorithmExecutor
 from nn_verification_visualisation.model.data_loader.algorithm_file_observer import AlgorithmFileObserver
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
+from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
+from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.dialogs.plot_config_dialog import PlotConfigDialog
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.view.plot_view.plot_view import PlotView
 
 class PlotViewController:
+    logger = Logger(__name__)
     current_plot_view: PlotView
     current_tab: int
     card_size: int
     plot_titles: list[str]
-    node_pairs: list[str]
-    node_pair_bounds: list[list[tuple[tuple[float, float], tuple[float, float]]]]
-    node_pair_colors: list[tuple[str, str]]
     diagram_selections: dict[str, set[int]]
 
     def __init__(self, current_plot_view: PlotView):
@@ -48,8 +53,29 @@ class PlotViewController:
         else:
             selection.discard(pair_index)
 
-    def start_computation(self, config: DiagramConfig):
-        pass
+    def start_computation(self, plot_generation_configs: list[PlotGenerationConfig]):
+        polygons = []
+        for plot_generation_config in plot_generation_configs:
+            execution_res = AlgorithmExecutor.execute_algorithm(AlgorithmExecutor(), plot_generation_config)
+            if not execution_res.is_success:
+                logger.error(f"Could not execute algorithm: {execution_res.error}")
+                print(f"Could not execute algorithm: {execution_res.error}")
+                continue
+            output_bound_np, directions = execution_res.data
+            if output_bound_np.shape[1] != 2:
+                print(f"Algorithm returned false bounds: {output_bound_np}")
+            output_bounds = []
+            for bounds in output_bound_np.tolist():
+                output_bounds.append((bounds[0], bounds[1]))
+            print(f"Got bounds: {output_bounds}")
+            polygons.append(self.compute_polygon(output_bounds, directions))
+            print(f"Computed polygon: {polygons[-1]}")
+
+        diagram_config = DiagramConfig(plot_generation_configs,polygons)
+        print("Generated Diagram Config")
+        storage = Storage()
+        storage.diagrams.append(diagram_config)
+        self.current_plot_view.add_plot_tab(diagram_config)
 
     def change_tab(self, index: int):
         pass
@@ -71,40 +97,6 @@ class PlotViewController:
         if title in self.plot_titles:
             self.plot_titles.remove(title)
         self.diagram_selections.pop(title, None)
-
-    def add_node_pair(self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]) -> int:
-        pair_index = len(self.node_pairs)
-        self.node_pairs.append(f"Node Pair {pair_index + 1}")
-        self.node_pair_bounds.append(bounds)
-        palette = [
-            ("#59aef2", "#3b6ea8"),
-            ("#7cc38d", "#3d7b57"),
-            ("#f0b76f", "#a36b28"),
-            ("#c08fd6", "#6e4d8c"),
-            ("#f28fa2", "#9d3f50"),
-            ("#7bd1d1", "#3a7a7a"),
-        ]
-        self.node_pair_colors.append(palette[pair_index % len(palette)])
-        return pair_index
-
-    def remove_node_pair(self, index: int):
-        if index < 0 or index >= len(self.node_pair_bounds):
-            return
-        del self.node_pairs[index]
-        del self.node_pair_bounds[index]
-        if index < len(self.node_pair_colors):
-            del self.node_pair_colors[index]
-        for title, selection in self.diagram_selections.items():
-            updated = set()
-            for idx in selection:
-                if idx == index:
-                    continue
-                if idx > index:
-                    updated.add(idx - 1)
-                else:
-                    updated.add(idx)
-            self.diagram_selections[title] = updated
-
     def get_node_pairs(self) -> list[str]:
         return list(self.node_pairs)
 
@@ -119,8 +111,7 @@ class PlotViewController:
 
 
     def compute_polygon(
-        self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]
-    ) -> list[tuple[float, float]]:
+        self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[tuple[float, float]]:
         def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
             def inside(p: tuple[float, float]) -> bool:
                 return a * p[0] + b * p[1] <= c + 1e-9
@@ -150,11 +141,12 @@ class PlotViewController:
                     out.append(intersect(prev, curr))
             return out
 
-        max_bound = max(abs(v) for _, (low, high) in bounds for v in (low, high))
+        max_bound = max(abs(v) for (low, high) in bounds for v in (low, high))
         m = max(5.0, max_bound * 2.0 + 1.0)
         poly: list[tuple[float, float]] = [(-m, -m), (m, -m), (m, m), (-m, m)]
 
-        for (a, b), (low, high) in bounds:
+        for i, (low, high) in enumerate(bounds):
+            a,b = directions[i]
             poly = clip_polygon(poly, a, b, high)
             if not poly:
                 break

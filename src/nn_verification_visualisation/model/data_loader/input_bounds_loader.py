@@ -1,6 +1,8 @@
 import re
+from logging import Logger
 from pathlib import Path
 from typing import Dict, List, Iterable, Any, Tuple
+from venv import logger
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.utils.result import Failure, Success
@@ -10,12 +12,14 @@ from nn_verification_visualisation.utils.result import Result
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 class InputBoundsLoader(metaclass=SingletonMeta):
+    logger = Logger(__name__)
     def load_input_bounds(self, file_path: str, network_config: NetworkVerificationConfig) -> Result[Dict[int, tuple[float, float]]]:
         ending = file_path.split('.')[-1]
         is_csv = (ending == 'csv')
         is_vnnlib = (ending == 'vnnlib')
 
         if not (is_csv or is_vnnlib):
+            logger.error(ending + ' is not supported. Please use a .csv or a .vnnlib file.')
             return Failure(ValueError(ending + ' is not supported. Please use a .csv or a .vnnlib file.'))
 
         if network_config is None or len(network_config.layers_dimensions) < 1:
@@ -42,6 +46,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 try:
                     header = next(reader)
                 except StopIteration:
+                    logger.error(f"{file_path} is empty.")
                     return Failure(ValueError(f"{file_path} is empty."))
                 for row in reader:
                     rows.append([cell.strip() for cell in row])
@@ -52,13 +57,16 @@ class InputBoundsLoader(metaclass=SingletonMeta):
 
         # checking whether the field count is valid
         if field_count not in (2, 3):
+            logger.error(file_path + 'needs to be consistently organized in two or three columns.')
             return Failure(ValueError(file_path + 'needs to be consistently organized in two or three columns.'))
 
         # checking whether the fields match the format of the rows
         if any([len(row) != field_count for row in rows]):
+            logger.error(f"{file_path} must have {field_count} columns in every row.")
             return Failure(ValueError(f"{file_path} must have {field_count} columns in every row."))
 
         if len(rows) != input_count:
+            logger.error(f"{file_path} has {str(len(rows))} rows. It needs the same number of inputs as the network ({input_count})")
             return Failure(ValueError(
                 f"{file_path} has {str(len(rows))} rows. It needs the same number of inputs as the network ({input_count})"))
 
@@ -71,12 +79,14 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 try:
                     position = int(row[0])
                 except ValueError:
+                    logger.error(f"Index at row {i + 2} is not an integer.")
                     return Failure(ValueError(f"Index at row {i + 2} is not an integer."))
 
                 parsed_rows.append((position, row[1:]))
 
             indices = [p[0] for p in parsed_rows]
             if sorted(indices) != list(range(input_count)):
+                logger.error("Every index in the csv file has to appear exactly once and be in range 0..N-1.")
                 return Failure(
                     ValueError("Every index in the csv file has to appear exactly once and be in range 0..N-1."))
             enumeration = parsed_rows
@@ -87,9 +97,11 @@ class InputBoundsLoader(metaclass=SingletonMeta):
             try:
                 lower_bound, upper_bound = (float(row[0]), float(row[1]))
             except ValueError:
+                logger.error(f"Item at value {i} contains an argument that is not an integer.")
                 return Failure(ValueError(f"Item at value {i} contains an argument that is not an integer."))
 
             if lower_bound > upper_bound:
+                logger.error(f"Lower bound {lower_bound} is greater than upper bound {upper_bound} for item {i}")
                 return Failure(ValueError(f"Lower bound {lower_bound} is greater than upper bound {upper_bound} for item {i}"))
 
             bounds[i] = (lower_bound, upper_bound)
@@ -129,6 +141,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 stack.append([])
             elif t == ")":
                 if not stack:
+                    logger.error("Invalid expression.")
                     raise ValueError("Invalid expression.")
                 expr = stack.pop()
                 if stack:
@@ -140,6 +153,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                     stack[-1].append(t)
 
         if stack:
+            logger.error("Invalid expression.")
             raise ValueError("Invalid expression.")
 
         """X_0 or X0"""
@@ -275,6 +289,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 found_any = True
                 rs = regions(body)
                 if not rs:
+                    logger.error("Invalid input constraints in vnnlib file")
                     raise ValueError("Invalid input constraints in vnnlib file")
 
                 new_overall: List[region] = []
@@ -286,9 +301,11 @@ class InputBoundsLoader(metaclass=SingletonMeta):
 
                 overall = new_overall
                 if not overall:
+                    logger.error("Invalid input constraints in vnnlib file")
                     raise ValueError("Invalid input constraints in vnnlib file")
 
         if not found_any:
+            logger.error("No input specs for X_i found in vnnlib file")
             raise ValueError("No input specs for X_i found in vnnlib file")
 
         #bounding box for regions if there was OR
@@ -301,6 +318,7 @@ class InputBoundsLoader(metaclass=SingletonMeta):
             for r in overall:
                 lo, hi = r.get(i, (None, None))
                 if lo is None or hi is None:
+                    logger.error(f"Missing bounds for X_{i}")
                     raise ValueError(f"Missing bounds for X_{i}")
                 lows.append(lo)
                 highs.append(hi)

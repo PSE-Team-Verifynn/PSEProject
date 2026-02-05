@@ -1,16 +1,11 @@
-from typing import List
+from typing import List, Callable
 
 from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QCheckBox,
     QFrame,
     QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
     QLabel,
     QListWidget,
-    QDialog,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -19,56 +14,107 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-import numpy as np
-from matplotlib.figure import Figure
-from matplotlib.patches import Polygon
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
-from nn_verification_visualisation.view.plot_view.comparison_loading_widget import ComparisonLoadingWidget
+from nn_verification_visualisation.view.base_view.plot_settings_widget import PlotSettingsWidget
 from nn_verification_visualisation.view.plot_view.plot_widget import PlotWidget
 from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
 from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
+from nn_verification_visualisation.view.dialogs.neuron_picker import get_neuron_colors
 
 class PlotPage(Tab):
+    plot_widgets: list[PlotWidget]
+    plot_setting_widgets: list[PlotSettingsWidget]
+
+    setting_remover: Callable[[], None] | None
+
     controller: PlotViewController
-    configuration: DiagramConfig
-    plots: List[PlotWidget]
+    diagram_config: DiagramConfig
     locked: List[PlotWidget]
     __plot_grid: QGridLayout
-    __plot_map: dict[str, PlotWidget]
     __syncing: bool
     __scroll_area: QScrollArea | None
     __grid_host: QWidget | None
     __bottom_spacer_height: int
-    __diagram_groups_layout: QVBoxLayout | None
+    __plots_sidebar_layout: QVBoxLayout
     __node_pairs_list: QListWidget | None
     __node_pairs_layout: QVBoxLayout | None
 
-    def __init__(self, controller: PlotViewController):
-
+    def __init__(self, controller: PlotViewController, diagram_config: DiagramConfig):
+        self.diagram_config = diagram_config
         self.__syncing = False
         self.__scroll_area = None
         self.__grid_host = None
         self.__bottom_spacer_height = 32
-        self.plots = []
-        self.__plot_map = {}
-        self.__diagram_groups_layout = None
-        self.__node_pairs_list = None
-        self.__node_pairs_layout = None
         self.controller = controller
+
+        self.setting_remover = None
+
+        self.plot_widgets = []
+        self.plot_setting_widgets = []
+
         super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
+
+        # add start plots
+        for i in range(len(self.diagram_config.polygons)):
+            self.__add_plot([i])
+
         # configuration is currently not implemented
         # self.configuration = configuration
-        SettingsDialog.add_setting(
-            SettingsOption("Plot Card Size", self.get_card_size_changer, "Plot View")
-        )
+
+    def __update_selection(self, widget: PlotSettingsWidget, sel: list[int]):
+        widget.set_selection(sel)
+
+        # update PlotWidget
+        length = len(self.diagram_config.polygons)
+        colors = get_neuron_colors(length)
+        index = self.plot_setting_widgets.index(widget)
+        self.plot_widgets[index].render_plot([self.diagram_config.polygons[i] for i in sel], [colors[i] for i in sel],
+                                             [f"Pair {i + 1}" for i in sel])
+    def __delete_plot(self, widget: PlotSettingsWidget):
+        index = self.plot_setting_widgets.index(widget)
+
+        # remove from DiagramConfig
+        self.diagram_config.plots.pop(index)
+
+        # remove from side panel
+        self.plot_setting_widgets.remove(widget)
+        widget.setParent(None)
+
+        #remove from main panel
+        plot_widget = self.plot_widgets.pop(index)
+        plot_widget.setParent(None)
+
+        self.__relayout_plots()
+
+
+    def __add_plot(self, plot: list[int]):
+        # add diagram to DiagramConfig
+        self.diagram_config.plots.append(plot)
+        index = len(self.diagram_config.plots)
+
+        title_text = f"Diagram {index}"
+
+        # add sidebar panel
+        settings_widget = PlotSettingsWidget(title_text, self.diagram_config, self.__update_selection, self.__delete_plot)
+        self.plot_setting_widgets.append(settings_widget)
+        self.__plots_sidebar_layout.addWidget(settings_widget)
+
+        # add main panel
+        plot_widget = PlotWidget(title=title_text, on_limits_changed=self.__on_limits_changed)
+        plot_widget.setFixedSize(self.controller.card_size, self.controller.card_size)
+
+        self.plot_widgets.append(plot_widget)
+        self.__plot_grid.addWidget(plot_widget)
+
+        self.__update_selection(settings_widget, plot)
+        self.__relayout_plots()
 
     def get_content(self) -> QWidget:
         container = QWidget()
+
         layout = QVBoxLayout(container)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
@@ -86,16 +132,6 @@ class PlotPage(Tab):
         self.__plot_grid.setSpacing(12)
         self.__plot_grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.__grid_host = grid_host
-
-        self.plots = []
-        self.__plot_map = {}
-
-        plot_card = self.__create_plot_card("Diagram 01")
-        self.plots.append(plot_card)
-        self.__plot_map["Diagram 01"] = plot_card
-        self.controller.register_plot("Diagram 01")
-        self.__render_plot(plot_card)
-        self.__rebuild_diagram_groups()
 
         scroll_area.setWidget(grid_host)
         layout.addWidget(scroll_area)
@@ -115,131 +151,18 @@ class PlotPage(Tab):
         title.setObjectName("title")
         layout.addWidget(title)
 
-        self.__diagram_groups_layout = QVBoxLayout()
-        self.__diagram_groups_layout.setContentsMargins(0, 0, 0, 0)
-        self.__diagram_groups_layout.setSpacing(8)
-        layout.addLayout(self.__diagram_groups_layout)
-        self.__rebuild_diagram_groups()
+        self.__plots_sidebar_layout = QVBoxLayout()
+        self.__plots_sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        self.__plots_sidebar_layout.setSpacing(8)
+        layout.addLayout(self.__plots_sidebar_layout)
 
         add_diagram_button = QPushButton("Add Diagram")
-        add_diagram_button.clicked.connect(self.__add_diagram_from_current_bounds)
+        add_diagram_button.clicked.connect(lambda: self.__add_plot([0]))
         layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        node_pairs_group = QGroupBox("Node Pairs")
-        node_pairs_layout = QVBoxLayout(node_pairs_group)
-        node_pairs_layout.setContentsMargins(6, 6, 6, 6)
-        node_pairs_layout.setSpacing(4)
-        self.__node_pairs_layout = node_pairs_layout
-        self.__node_pairs_list = QListWidget()
-        node_pairs_layout.addWidget(self.__node_pairs_list)
-        node_pairs_layout.addSpacing(5)
-
-        remove_pair_button = QPushButton("Remove Selected Pair")
-        remove_pair_button.clicked.connect(self.__remove_selected_pair)
-        node_pairs_layout.addWidget(remove_pair_button)
-        self.__refresh_node_pairs_list()
-        layout.addWidget(node_pairs_group)
 
         layout.addStretch(1)
 
         return container
-
-    def fullscreen(self, widget: PlotWidget):
-        if widget.canvas is None or widget.toolbar is None or widget.plot_layout is None:
-            return
-
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Fullscreen Plot")
-        dialog_layout = QVBoxLayout(dialog)
-        dialog_layout.setContentsMargins(6, 6, 6, 6)
-        dialog_layout.setSpacing(6)
-
-        widget.plot_layout.removeWidget(widget.toolbar)
-        widget.plot_layout.removeWidget(widget.canvas)
-        widget.toolbar.setParent(dialog)
-        widget.canvas.setParent(dialog)
-        dialog_layout.addWidget(widget.toolbar)
-        dialog_layout.addWidget(widget.canvas, stretch=1)
-
-        def restore():
-            dialog_layout.removeWidget(widget.toolbar)
-            dialog_layout.removeWidget(widget.canvas)
-            widget.toolbar.setParent(widget)
-            widget.canvas.setParent(widget)
-            widget.plot_layout.addWidget(widget.toolbar)
-            widget.plot_layout.addWidget(widget.canvas, stretch=1)
-
-        dialog.finished.connect(restore)
-        dialog.showMaximized()
-
-    def __create_plot_card(
-        self,
-        title: str,
-    ) -> PlotWidget:
-        card = PlotWidget()
-        card.plot_title = title
-        card.setFixedSize(self.controller.card_size, self.controller.card_size)
-        card.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(8, 8, 8, 8)
-        card_layout.setSpacing(6)
-
-        plot_placeholder = QFrame()
-        plot_placeholder.setObjectName("plot-container")
-        plot_placeholder.setFrameShape(QFrame.Shape.StyledPanel)
-        plot_placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        plot_layout = QVBoxLayout(plot_placeholder)
-        plot_layout.setContentsMargins(4, 4, 4, 4)
-        plot_layout.setSpacing(4)
-
-        figure = Figure(figsize=(3.2, 2.4))
-        canvas = FigureCanvas(figure)
-
-        canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        toolbar = NavigationToolbar(canvas, plot_placeholder)
-
-        ax = figure.add_subplot(111)
-        card.figure = figure
-        card.axes = ax
-        card.canvas = canvas
-        card.toolbar = toolbar
-        card.plot_layout = plot_layout
-        card.locked = False
-        card.polygon_patches = []
-        ax.set_title(title, fontsize=9)
-        ax.grid(True, alpha=0.2)
-        ax.set_aspect("auto")
-
-        plot_layout.addWidget(toolbar)
-        plot_layout.addWidget(canvas, stretch=1)
-        card_layout.addWidget(plot_placeholder)
-
-        footer = QWidget()
-        footer.setFixedHeight(40)
-        footer_layout = QHBoxLayout(footer)
-        footer_layout.setContentsMargins(0, 0, 0, 0)
-
-        title_widget = QLabel(title)
-        title_widget.setObjectName("heading")
-
-        footer_layout.addSpacing(10)
-        footer_layout.addWidget(title_widget)
-        footer_layout.addStretch(1)
-        lock_button = QPushButton()
-        lock_button.setObjectName("icon-button-tight")
-        lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
-        lock_button.clicked.connect(lambda: self.__toggle_lock(card, lock_button))
-        footer_layout.addWidget(lock_button)
-        fullscreen_button = QPushButton()
-        fullscreen_button.setObjectName("icon-button-tight")
-        fullscreen_button.setIcon(QIcon(":assets/icons/plot/fullscreen.svg"))
-        fullscreen_button.clicked.connect(lambda: self.fullscreen(card))
-        footer_layout.addWidget(fullscreen_button)
-
-        card.limit_callback_ids = None
-
-        card_layout.addWidget(footer)
-        return card
 
     def __relayout_plots(self):
         if self.__scroll_area is None:
@@ -254,10 +177,10 @@ class PlotPage(Tab):
             spacing = 0
         columns = max(1, (available_width + spacing) // (self.controller.card_size + spacing))
         required_width = (
-            columns * self.controller.card_size
-            + max(0, columns - 1) * spacing
-            + margins.left()
-            + margins.right()
+                columns * self.controller.card_size
+                + max(0, columns - 1) * spacing
+                + margins.left()
+                + margins.right()
         )
 
         while self.__plot_grid.count():
@@ -269,26 +192,18 @@ class PlotPage(Tab):
         if self.__grid_host is not None:
             self.__grid_host.setFixedWidth(required_width)
 
-        for index, widget in enumerate(self.plots):
+        for index, widget in enumerate(self.plot_widgets):
             row = index // columns
             col = index % columns
             self.__plot_grid.addWidget(widget, row, col)
 
-        spacer_row = (len(self.plots) + columns - 1) // columns
+        spacer_row = (len(self.plot_widgets) + columns - 1) // columns
         spacer = QSpacerItem(0, self.__bottom_spacer_height, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.__plot_grid.addItem(spacer, spacer_row, 0, 1, columns)
 
-    def __toggle_lock(self, widget: PlotWidget, button: QPushButton):
-        widget.locked = not getattr(widget, "locked", False)
-        if widget.locked:
-            button.setIcon(QIcon(":assets/icons/plot/locked.svg"))
-        else:
-            button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
-
-
     def __on_card_size_changed(self, value: int):
         self.controller.set_card_size(value)
-        for widget in self.plots:
+        for widget in self.plot_widgets:
             widget.setFixedSize(self.controller.card_size, self.controller.card_size)
         self.__relayout_plots()
 
@@ -301,155 +216,6 @@ class PlotPage(Tab):
         size_slider.valueChanged.connect(self.__on_card_size_changed)
         return size_slider
 
-    def __register_node_pair(
-        self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]
-    ) -> int:
-        pair_index = self.controller.add_node_pair(bounds)
-        self.__refresh_node_pairs_list()
-        self.__rebuild_diagram_groups()
-        return pair_index
-
-    def __refresh_node_pairs_list(self):
-        if self.__node_pairs_list is None:
-            return
-        self.__node_pairs_list.clear()
-        self.__node_pairs_list.addItems(self.controller.get_node_pairs())
-
-    def __remove_selected_pair(self):
-        if self.__node_pairs_list is None:
-            return
-        row = self.__node_pairs_list.currentRow()
-        self.controller.remove_node_pair(row)
-        self.__refresh_node_pairs_list()
-        self.__rebuild_diagram_groups()
-        for plot in self.plots:
-            self.__render_plot(plot)
-
-    def __rebuild_diagram_groups(self):
-        if self.__diagram_groups_layout is None:
-            return
-        while self.__diagram_groups_layout.count():
-            item = self.__diagram_groups_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-        for plot in self.plots:
-            title = getattr(plot, "plot_title", "Diagram")
-            group = QWidget()
-            group.setObjectName("foreground-item")
-            group_layout = QVBoxLayout(group)
-            group_layout.setContentsMargins(6, 6, 6, 6)
-            group_layout.setSpacing(0)
-
-            header = QWidget()
-            header_layout = QHBoxLayout(header)
-            header_layout.setContentsMargins(0, 0, 0, 0)
-            header_layout.setSpacing(6)
-            header_layout.addWidget(QLabel(title))
-            header_layout.addStretch(1)
-            delete_button = QPushButton()
-            delete_button.setObjectName("icon-button")
-            delete_button.setIcon(QIcon(":assets/icons/delete.svg"))
-            delete_button.setFixedSize(24, 24)
-            delete_button.clicked.connect(lambda _=False, t=title: self.__remove_diagram(t))
-            header_layout.addWidget(delete_button)
-            group_layout.addWidget(header)
-            selection = self.controller.get_selection(title)
-            for idx, pair_name in enumerate(self.controller.get_node_pairs()):
-                check_box = QCheckBox(pair_name)
-                check_box.setChecked(idx in selection)
-                check_box.stateChanged.connect(
-                    lambda state, t=title, i=idx: self.__on_pair_toggled(t, i, state)
-                )
-                group_layout.addWidget(check_box)
-            self.__diagram_groups_layout.addWidget(group)
-
-    def __on_pair_toggled(self, plot_title: str, pair_index: int, state: int):
-        self.controller.change_plot(
-            plot_title,
-            state == Qt.CheckState.Checked.value,
-            pair_index,
-        )
-        plot = self.__plot_map.get(plot_title)
-        if plot is not None:
-            self.__render_plot(plot)
-
-    def __remove_diagram(self, title: str):
-        plot = self.__plot_map.get(title)
-        if plot is None:
-            return
-        if plot in self.plots:
-            self.plots.remove(plot)
-        self.__plot_map.pop(title, None)
-        self.controller.remove_plot(title)
-        plot.setParent(None)
-        plot.deleteLater()
-        self.__rebuild_diagram_groups()
-        self.__relayout_plots()
-
-    def __render_plot(self, plot: PlotWidget):
-        if plot.axes is None or plot.canvas is None:
-            return
-        ax = plot.axes
-        ax.cla()
-        self.__attach_limit_callbacks(plot)
-        ax.grid(True, alpha=0.2)
-        title = getattr(plot, "plot_title", "Diagram")
-        ax.set_title(title, fontsize=9)
-        selection = self.controller.get_selection(title)
-        all_points: list[tuple[float, float]] = []
-        legend_handles = []
-        legend_labels = []
-        for order, pair_index in enumerate(sorted(selection)):
-            if pair_index >= len(self.controller.node_pair_bounds):
-                continue
-            bounds = self.controller.get_node_pair_bounds(pair_index)
-            poly_points = self.controller.compute_polygon(bounds)
-            if not poly_points:
-                continue
-            all_points.extend(poly_points)
-            face, edge = self.controller.get_node_pair_colors(pair_index)
-            poly_array = np.array(poly_points)
-            polygon = Polygon(poly_array, closed=True, facecolor=face, edgecolor=edge, alpha=0.6)
-            ax.add_patch(polygon)
-            legend_handles.append(polygon)
-            legend_labels.append(self.controller.get_node_pairs()[pair_index])
-        if all_points:
-            xs = [p[0] for p in all_points]
-            ys = [p[1] for p in all_points]
-            ax.set_xlim(min(xs) - 0.5, max(xs) + 0.5)
-            ax.set_ylim(min(ys) - 0.5, max(ys) + 0.5)
-        if legend_handles:
-            ax.legend(legend_handles, legend_labels, loc="upper right", fontsize=7, frameon=True)
-        plot.canvas.draw_idle()
-
-    def __attach_limit_callbacks(self, plot: PlotWidget):
-        ax = plot.axes
-        if ax is None:
-            return
-        existing = getattr(plot, "limit_callback_ids", None)
-        if existing:
-            for cid in existing:
-                try:
-                    ax.callbacks.disconnect(cid)
-                except Exception:
-                    pass
-        cids = (
-            ax.callbacks.connect("xlim_changed", lambda _ax: self.__on_limits_changed(plot)),
-            ax.callbacks.connect("ylim_changed", lambda _ax: self.__on_limits_changed(plot)),
-        )
-        plot.limit_callback_ids = cids
-
-    def __add_diagram_from_current_bounds(self):
-        title = f"Diagram {len(self.plots) + 1:02d}"
-        plot_card = self.__create_plot_card(title)
-        self.plots.append(plot_card)
-        self.__plot_map[title] = plot_card
-        self.controller.register_plot(title)
-        self.__render_plot(plot_card)
-        self.__rebuild_diagram_groups()
-        self.__relayout_plots()
-
     def __on_limits_changed(self, source: PlotWidget):
         if self.__syncing or not getattr(source, "locked", False):
             return
@@ -460,7 +226,7 @@ class PlotPage(Tab):
         ylim = ax.get_ylim()
 
         self.__syncing = True
-        for widget in self.plots:
+        for widget in self.plot_widgets:
             if widget is source or not getattr(widget, "locked", False):
                 continue
             target_ax = widget.axes
@@ -476,3 +242,12 @@ class PlotPage(Tab):
         if watched is self.__scroll_area.viewport() and event.type() == QEvent.Type.Resize:
             self.__relayout_plots()
         return super().eventFilter(watched, event)
+
+    def showEvent(self, event):
+        self.setting_remover = SettingsDialog.add_setting(
+            SettingsOption("Plot Card Size", self.get_card_size_changer, "Plot View"))
+
+    def hideEvent(self, event, /):
+        if self.setting_remover:
+            self.setting_remover()
+            self.setting_remover = None
