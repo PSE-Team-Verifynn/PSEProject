@@ -128,6 +128,7 @@ class NetworkWidget(QGraphicsView):
         # Auto-detect mode based on edge count, unless user has manually selected a mode
         if not self.manual_mode_override:
             # 1. Performance Mode (Large networks)
+            print(total_edges)
             if total_edges > self.performance_mode_edge_threshold:
                 self.use_performance_mode = True
                 self.use_weighted_mode = False

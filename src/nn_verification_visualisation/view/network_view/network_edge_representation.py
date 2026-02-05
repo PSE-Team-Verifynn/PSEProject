@@ -14,7 +14,6 @@ class NetworkEdgeBatch(QGraphicsItem):
         self.use_weighted_mode = use_weighted
         self.weights = weights
 
-        # Pre-calculate weight range for normalization
         self.min_weight = None
         self.max_weight = None
 
@@ -77,7 +76,6 @@ class NetworkEdgeBatch(QGraphicsItem):
 
                 self.lines_data.append((line, w))
 
-        # Calculate weight range ONCE during initialization
         if weight_values:
             self.min_weight = min(weight_values)
             self.max_weight = max(weight_values)

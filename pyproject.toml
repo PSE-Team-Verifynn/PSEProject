@@ -17,10 +17,11 @@ description = ""
 readme = "README.md"
 
 authors = [
-  {name = "Pradyun Gedam", email = "pradyun@example.com"},
-  {name = "Tzu-Ping Chung", email = "tzu-ping@example.com"},
-  {name = "Another person"},
-  {email = "different.person@example.com"},
+    {name="Alexander Mikhaylov"},
+    {name="Cedric Linde"},
+    {name="Elias Dörr"},
+    {name="Enrique Lopez"},
+    {name="Paul Schepperle"}
 ]
 
 [project.scripts]

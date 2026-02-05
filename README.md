@@ -1,7 +1,11 @@
 # PSE Project: Neural Network Verification Algorithm Visualisation
 
 ## Authors
-
+Alexander Mikhaylov
+Cedric Linde
+Elias Dörr
+Enrique Lopez
+Paul Schepperle
 
 ## How to get started with development
 ### Installation

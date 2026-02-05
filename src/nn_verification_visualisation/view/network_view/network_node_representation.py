@@ -12,6 +12,7 @@ class NetworkLayerLine(QGraphicsLineItem):
 
     def __init__(self, x_pos: float, top_y: float, bot_y: float):
         super().__init__()
+
         self.setLine(x_pos, top_y, x_pos, bot_y)
 
         # Style the line to look like a "spine" for the nodes
@@ -20,6 +21,7 @@ class NetworkLayerLine(QGraphicsLineItem):
         pen.setCosmetic(True)  # width stays constant on screen
         self.setPen(pen)
         self.setZValue(0)  # Behind nodes (Z=1), above edges (Z=-1)
+
 
 class NetworkNode(QGraphicsEllipseItem):
     selectable: bool
@@ -35,7 +37,7 @@ class NetworkNode(QGraphicsEllipseItem):
 
     # LOD Settings
     lod_enabled: bool = False
-    lod_threshold: float = 0.4  # Scale threshold below which nodes disappear
+    lod_threshold: float = 0.0  # Scale threshold below which nodes disappear
 
     def __init__(self, index: int, layer_index: int, radius: float, on_click: Callable[[tuple[int, int]], None],
                  selectable: bool):
