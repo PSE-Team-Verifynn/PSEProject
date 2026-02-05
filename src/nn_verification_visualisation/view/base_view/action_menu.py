@@ -12,6 +12,7 @@ from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from typing import TYPE_CHECKING
 
 from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
+from nn_verification_visualisation.model.data.storage import Storage
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.view.base_view.insert_view import InsertView
@@ -59,4 +60,5 @@ class ActionMenu(QWidget):
                 break
 
         if main_window:
+            Storage.save_to_disk()
             main_window.close()

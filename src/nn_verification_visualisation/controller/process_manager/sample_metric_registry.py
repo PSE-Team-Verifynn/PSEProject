@@ -17,7 +17,7 @@ def load_metrics() -> list[SampleMetric]:
     return [
         SampleMetric(
             key="max",
-            name="Highest activation",
+            name="Max activation",
             compute=lambda output: np.max(output, axis=0),
         ),
         SampleMetric(

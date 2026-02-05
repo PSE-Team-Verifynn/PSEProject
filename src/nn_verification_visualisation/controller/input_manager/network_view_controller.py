@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Callable
 
 import onnx
 
@@ -29,6 +29,13 @@ class NetworkViewController:
         self.current_tab = 0
         self._draft_bounds_by_config: dict[NetworkVerificationConfig, list[tuple[float, float]]] = {}
 
+    def _connect_bounds_autosave(self, config: NetworkVerificationConfig):
+        """Autosave when user edits bounds in the table."""
+        try:
+            config.bounds.dataChanged.connect(lambda *args: Storage().request_autosave())
+        except Exception:
+            pass
+
     def open_network_view(self, network: NeuralNetwork) -> bool:
         pass
 
@@ -36,7 +43,11 @@ class NetworkViewController:
         dialog = NetworkManagementDialog(self)
         self.current_network_view.open_dialog(dialog)
 
-    def open_run_samples_dialog(self, config: NetworkVerificationConfig, on_results=None):
+    def open_run_samples_dialog(
+        self,
+        config: NetworkVerificationConfig,
+        on_results: Callable[[dict], None] | None = None,
+    ):
         dialog = RunSamplesDialog(self.current_network_view.close_dialog, config, on_results=on_results)
         self.current_network_view.open_dialog(dialog)
 
@@ -47,6 +58,7 @@ class NetworkViewController:
         result = InputBoundsLoader().load_input_bounds(path, config)
         if result.is_success:
             self._apply_loaded_bounds(config, result.data)
+            Storage().request_autosave()
 
         if result.is_success:
             dialog_type = InfoType.CONFIRMATION
@@ -75,6 +87,9 @@ class NetworkViewController:
 
         storage = Storage()
         storage.networks.append(network)
+        self._connect_bounds_autosave(network)
+        Storage().request_autosave()
+
 
         self.current_network_view.add_network_tab(network)
         self.current_tab = len(storage.networks)
@@ -89,6 +104,7 @@ class NetworkViewController:
         self.current_network_view.close_network_tab(index)
         networks.remove(network)
         self._draft_bounds_by_config.pop(network, None)
+        Storage().request_autosave()
         return True
 
     def run_samples(self) -> List[int]:
@@ -115,6 +131,8 @@ class NetworkViewController:
             config.selected_bounds_index = -1
             config.bounds.load_list(self._get_draft_bounds(config))
             config.bounds.clear_sample()
+
+            Storage().request_autosave()
             return
 
         if bounds_index < 0 or bounds_index >= len(config.saved_bounds):
@@ -128,15 +146,20 @@ class NetworkViewController:
         config.bounds.load_list(saved.get_values())
         config.bounds.clear_sample()
 
+        Storage().request_autosave()
+
     def remove_bounds(self, config: NetworkVerificationConfig, bounds_index: int) -> bool:
         if bounds_index < 0 or bounds_index >= len(config.saved_bounds):
             return False
         del config.saved_bounds[bounds_index]
         if config.selected_bounds_index == bounds_index:
             self.select_bounds(config, None)
+            Storage().request_autosave()
+
             return True
         if config.selected_bounds_index > bounds_index:
             config.selected_bounds_index -= 1
+        Storage().request_autosave()
         return True
 
     def _apply_loaded_bounds(self, config: NetworkVerificationConfig, bounds: dict[int, tuple[float, float]]):
@@ -151,6 +174,7 @@ class NetworkViewController:
         saved.load_list(bounds_list)
         saved.clear_sample()
         config.bounds.load_list(bounds_list)
+        Storage().request_autosave()
 
     def _get_draft_bounds(self, config: NetworkVerificationConfig) -> list[tuple[float, float]]:
         if config not in self._draft_bounds_by_config:

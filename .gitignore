@@ -221,3 +221,4 @@ __marimo__/
 # Project docs (local only)
 PSE_Entwurf.txt
 PSE_Pflichtenheft.txt
+src/nn_verification_visualisation/save_state.json

@@ -203,11 +203,13 @@ class NetworkPage(Tab):
             self.controller.select_bounds(self.configuration, selected_row)
             self.__set_bounds_editable(False)
             self.__set_edit_mode(False)
+            self.__update_display_bounds()
         else:
             self.bounds_list.clearSelection()
             self.controller.select_bounds(self.configuration, None)
             self.__set_bounds_editable(True)
             self.__set_edit_mode(False)
+            self.__update_display_bounds()
         self.__update_samples_action()
         self.__update_sample_results()
         self.bounds_list.blockSignals(False)

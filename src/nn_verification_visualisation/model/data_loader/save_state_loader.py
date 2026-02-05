@@ -1,16 +1,16 @@
+from __future__ import annotations
+
 import base64
 import gzip
 import io
 import json
 import pickle
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import onnx
+import numpy as np
 import matplotlib.image as mpimg
 from matplotlib.figure import Figure
-
-from nn_verification_visualisation.utils.result import Result, Success, Failure, Success as RSuccess, Failure as RFailure
-from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 from nn_verification_visualisation.model.data.save_state import SaveState
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
@@ -21,6 +21,9 @@ from nn_verification_visualisation.model.data.plot_generation_config import Plot
 from nn_verification_visualisation.model.data.plot import Plot
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 
+from nn_verification_visualisation.utils.result import Result, Success, Failure, Success as RSuccess, Failure as RFailure
+from nn_verification_visualisation.utils.singleton import SingletonMeta
+
 
 def _b64_gzip_load_bytes(s: str) -> bytes:
     return gzip.decompress(base64.b64decode(s.encode("ascii")))
@@ -28,7 +31,17 @@ def _b64_gzip_load_bytes(s: str) -> bytes:
 
 def _restore_input_bounds(values: List[Tuple[float, float]]) -> InputBounds:
     b = InputBounds(len(values))
-    b.load_bounds({i: (float(lo), float(hi)) for i, (lo, hi) in enumerate(values)})
+
+    if hasattr(b, "load_list"):
+        b.load_list([(float(lo), float(hi)) for (lo, hi) in values])
+        return b
+
+    if hasattr(b, "load_bounds"):
+        b.load_bounds({i: (float(lo), float(hi)) for i, (lo, hi) in enumerate(values)})
+        return b
+
+    # fallback: try to write directly (last resort)
+    setattr(b, "_InputBounds__value", [(float(lo), float(hi)) for (lo, hi) in values])
     return b
 
 
@@ -54,7 +67,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
     def load_save_state(self, file_path: str) -> Result[SaveState]:
         """
         Loads SaveState from JSON file.
-        NOTE: ONNX model is NOT stored inside save file, so we reload it from network.path.
+        Important: ONNX-модель isn't saved in SaveState -> load it from network.path.
         """
         try:
             text = open(file_path, "r", encoding="utf-8").read()
@@ -71,9 +84,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
                 name = str(net.get("name", ""))
                 path = str(net.get("path", ""))
 
-                # Reload ONNX model from disk
                 model = onnx.load(path)
-
                 nn = NeuralNetwork(name=name, path=path, model=model)
 
                 layers_dimensions = list(item.get("layers_dimensions", []))
@@ -91,8 +102,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
             diagrams: List[DiagramConfig] = []
             for ditem in doc.get("diagrams", []):
                 dc = DiagramConfig()
-
-                # DiagramConfig has class-level dicts; ensure instance dicts
+                # IMPORTANT: DiagramConfig has class-level dicts; ensure instance dicts
                 dc.plots = {}
                 dc.results = {}
 
@@ -121,11 +131,13 @@ class SaveStateLoader(metaclass=SingletonMeta):
                         parameters=[str(p) for p in pgc_data.get("parameters", [])],
                     )
 
-                    if bool(entry.get("is_success")) and entry.get("figure") is not None:
-                        fig = _load_figure(entry["figure"])
-                        dc.results[pgc] = RSuccess(fig)
+                    if bool(entry.get("is_success")) and entry.get("output_bounds") is not None:
+                        bounds = np.asarray(entry["output_bounds"], dtype=float)
+                        dc.results[pgc] = RSuccess(bounds)
                     else:
                         msg = entry.get("error") or "Unknown error"
+                        if bool(entry.get("is_success")) and entry.get("output_bounds") is None:
+                            msg = "Missing output_bounds in save file"
                         dc.results[pgc] = RFailure(RuntimeError(str(msg)))
 
                 diagrams.append(dc)
