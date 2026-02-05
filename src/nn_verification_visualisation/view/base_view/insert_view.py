@@ -93,7 +93,7 @@ class InsertView(QWidget):
     def open_dialog(self, dialog: DialogBase):
         '''
         Opens a new dialog
-        :param dialog: dialog to be opened
+        :param dialog:  to be opened
         '''
         self.__dialog_stack.append(dialog)
 

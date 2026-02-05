@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from logging import Logger
 from typing import TYPE_CHECKING
 
 from nn_verification_visualisation.utils.result import Result
@@ -26,10 +28,12 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
         return "Plot: " + item.algorithm.name
 
     def on_add_clicked(self):
+        logger = Logger(__name__)
         def on_neuron_picker_close():
             self.parent_controller.current_plot_view.close_dialog()
             config_res: Result[PlotGenerationConfig] = neuron_picker.construct_config()
             if not config_res.is_success:
+                logger.error("Could not create configuration:")
                 self.__show_error_dialog("Could not create configuration:", config_res.error)
                 return
             self.add_item(config_res.data)
@@ -42,10 +46,12 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
         return True
 
     def on_edit_clicked(self, item: PlotGenerationConfig) -> None:
+        logger = Logger(__name__)
         def on_neuron_picker_close():
             self.parent_controller.current_plot_view.close_dialog()
             edited_config_res: Result[PlotGenerationConfig] = neuron_picker.construct_config()
             if not edited_config_res.is_success:
+                logger.error("Could not edit configuration:")
                 self.__show_error_dialog("Could not edit configuration:", edited_config_res.error)
                 return
             index = self.list_widget.currentRow()

@@ -52,15 +52,27 @@ class InputBounds(QAbstractTableModel):
         self.dataChanged.emit(top_left, bottom_right, self.__ACCEPTED_ROLES)
 
     def get_values(self) -> List[tuple[float, float]]:
+        '''
+        :return: the values of the input bounds.
+        '''
         return list(self.__value)
 
     def get_sample(self) -> Any | None:
+        '''
+        :return: the sample of the generated data
+        '''
         return self.sample
 
     def set_sample(self, sample: Any):
+        '''
+        :param sample: the sample that is saved
+        '''
         self.sample = sample
 
     def clear_sample(self):
+        '''
+        deletes the generated data
+        '''
         self.sample = None
 
     def rowCount(self, parent=QModelIndex()) -> int:

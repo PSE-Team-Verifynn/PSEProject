@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from logging import Logger
 from typing import TYPE_CHECKING
 
 from nn_verification_visualisation.controller.process_manager.algorithm_executor import AlgorithmExecutor
@@ -13,6 +15,7 @@ if TYPE_CHECKING:
     from nn_verification_visualisation.view.plot_view.plot_view import PlotView
 
 class PlotViewController:
+    logger = Logger(__name__)
     current_plot_view: PlotView
     current_tab: int
     card_size: int
@@ -53,6 +56,7 @@ class PlotViewController:
         for plot_generation_config in plot_generation_configs:
             execution_res = AlgorithmExecutor.execute_algorithm(AlgorithmExecutor(), plot_generation_config)
             if not execution_res.is_success:
+                logger.error(f"Could not execute algorithm: {execution_res.error}")
                 print(f"Could not execute algorithm: {execution_res.error}")
                 continue
             output_bounds, directions = execution_res.data

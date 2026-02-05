@@ -1,4 +1,5 @@
 import os
+from logging import Logger
 from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -12,7 +13,7 @@ class AlgorithmFileObserver(FileSystemEventHandler):
     """
     Handles the algorithm file changes. This allows the program to dynamically react to the user editing the 'algorithms' directory.
     """
-
+    logger = Logger(__name__)
     ALLOWED_EXTENSIONS = (".py",)
 
     def __init__(self):
@@ -21,6 +22,7 @@ class AlgorithmFileObserver(FileSystemEventHandler):
         self.watch_dir = (current_dir.parents[3] / "TestAlgo")
 
         if not self.watch_dir.exists():
+            logger.error(f"Could not find algorithm directory at: {self.watch_dir}")
             print(f"Could not find algorithm directory at: {self.watch_dir}")
             return
 
@@ -55,6 +57,7 @@ class AlgorithmFileObserver(FileSystemEventHandler):
 
         new_algorithm_res = AlgorithmLoader.load_algorithm(event.src_path)
         if new_algorithm_res.error:
+            logger.error(f"Failed to load algorithm: {new_algorithm_res.error}")
             print(f"Failed to load algorithm: {new_algorithm_res.error}")
             return
 
@@ -73,6 +76,7 @@ class AlgorithmFileObserver(FileSystemEventHandler):
                 print(f"Syncing existing algorithm: {file_path.stem}")
                 new_algorithm_res = AlgorithmLoader.load_algorithm(str(file_path))
                 if new_algorithm_res.error:
+                    logger.error(f"Failed to load algorithm: {new_algorithm_res.error}")
                     print(f"Failed to load algorithm: {new_algorithm_res.error}")
                     return
                 new_algorithm = new_algorithm_res.data

@@ -5,6 +5,7 @@ import gzip
 import io
 import json
 import pickle
+from logging import Logger
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -66,9 +67,11 @@ def _serialize_pgc(pgc: PlotGenerationConfig, networks: list) -> Dict[str, Any]:
     """
     PlotGenerationConfig has nnconfig (inside Qt model bounds), then serialize "flat".
     """
+    logger = Logger(__name__)
     try:
         nn_index = networks.index(pgc.nnconfig)
     except ValueError as e:
+        logger.error("PlotGenerationConfig.nnconfig is not in SaveState.loaded_networks")
         raise ValueError("PlotGenerationConfig.nnconfig is not in SaveState.loaded_networks") from e
 
     alg = pgc.algorithm
