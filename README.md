@@ -1,12 +1,5 @@
 # PSE Project: Neural Network Verification Algorithm Visualisation
 
-## Authors
-- Alexander Mikhaylov
-- Cedric Linde
-- Elias Dörr
-- Enrique Lopez
-- Paul Schepperle
-
 ## How to get started with development
 ### Installation
 To set up the project locally, follow these steps:
@@ -19,3 +12,13 @@ To set up the project locally, follow these steps:
 To run the provided tests, follow these steps:
 1. Run `pip install -e .[dev]` to install development dependencies
 2. Run `pytest` to run the tests
+
+## Authors
+- Alexander Mikhaylov
+- Cedric Linde
+- Elias Dörr
+- Enrique Lopez
+- Paul Schepperle
+
+## Contact
+Questions or feedback? Contact us at [verifynn@insert-greek-letter.de](mailto:verifynn@insert-greek-letter.de)
