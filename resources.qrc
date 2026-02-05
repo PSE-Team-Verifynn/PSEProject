@@ -9,9 +9,14 @@
     <file>assets/icons/focus_node.svg</file>
     <file>assets/icons/hourglass.svg</file>
     <file>assets/icons/add_chart.svg</file>
+    <file>assets/icons/network/switch.svg</file>
     <file>assets/icons/network/network.svg</file>
-    <file>assets/icons/plot/chart.svg</file>
     <file>assets/icons/delete.svg</file>
+    <file>assets/icons/plot/chart.svg</file>
+    <file>assets/icons/plot/locked.svg</file>
+    <file>assets/icons/plot/unlocked.svg</file>
+    <file>assets/icons/plot/fullscreen.svg</file>
+    <file>assets/icons/plot/switch.svg</file>
     <file>src/nn_verification_visualisation/style.qss</file>
   </qresource>
 </RCC>

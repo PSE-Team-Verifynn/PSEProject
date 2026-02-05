@@ -117,5 +117,5 @@ class PersistentTabBar(QTabBar):
     def sizeHint(self):
         hint = super().sizeHint()
         if self.count() == 0:
-            return QSize(0, 44)  # hardcoded height fix
+            return QSize(0, 48)  # hardcoded height fix
         return hint

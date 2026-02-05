@@ -45,6 +45,25 @@ def run_samples_for_bounds(
     samples = np.random.uniform(low=low, high=high, size=(num_samples, len(bounds))).astype(np.float32)
     input_shape = inputs[0].shape
     first_dim = input_shape[0] if input_shape else None
+    if input_shape and len(input_shape) > 2:
+        # Reshape flat samples to match expected input rank (excluding batch).
+        expected_rank = len(input_shape)
+        expected_tail = input_shape[1:]
+        total_features = samples.shape[1]
+        if not all(dim is not None for dim in expected_tail):
+            raise RuntimeError(
+                "Sample input rank mismatch. "
+                f"Input '{input_name}' expects rank {expected_rank} shape {input_shape}, "
+                "but its dimensions are dynamic. Use bounds that match the model input shape."
+            )
+        expected_size = int(np.prod(expected_tail))
+        if expected_size != total_features:
+            raise RuntimeError(
+                "Sample input size mismatch. "
+                f"Input '{input_name}' expects shape {input_shape} "
+                f"(size {expected_size}), but bounds provide {total_features} values."
+            )
+        samples = samples.reshape((num_samples, *expected_tail))
     if first_dim == 1:
         out_lists = [[] for _ in output_names]
         for i in range(samples.shape[0]):

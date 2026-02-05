@@ -1,7 +1,7 @@
 from typing import List, Callable
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout, QMenu, \
-    QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect, QSizePolicy
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon, QColor
 
@@ -20,7 +20,7 @@ class InsertView(QWidget):
     # Stack data structure that stores the current open dialogs (highest item is in front)
     __dialog_stack: List[DialogBase]
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.tabs = Tabs(self.close_tab, empty_page=self.get_default_tab())
@@ -45,40 +45,47 @@ class InsertView(QWidget):
 
         self.action_menu = None
 
-        menu_button = self.set_bar_icon_button(lambda: self.__action_menu_open_close(menu_button),
-                                               ":assets/icons/menu_icon.svg",
-                                               Qt.Corner.TopLeftCorner)
+        menu_button = self._create_simple_icon_button(lambda: self.__action_menu_open_close(menu_button),
+                                               ":assets/icons/menu_icon.svg",)
 
-    #override
-    def get_default_tab(self) -> QWidget|None:
+        self.set_bar_corner_widgets([menu_button], Qt.Corner.TopLeftCorner)
+
+    # override
+    def get_default_tab(self) -> QWidget | None:
         return None
 
-    def set_bar_icon_button(self, on_click: Callable[[], None], icon: str, corner: Qt.Corner) -> QPushButton:
+    def _create_simple_icon_button(self, on_click: Callable[[], None], icon: str) -> QPushButton:
         '''
-        Creates a new QPushButton with an icon and adds it to a corner of the TabBar.
-        :param on_click: function to be called on clic
+        Creates a simple icon button with default parameters.
+        :param on_click: function to be called on click
         :param icon: the asset path of the icon
-        :param corner: position of the button
-        :return: the new button
+        :return: the newly created button
         '''
         button = QPushButton()
         button.setObjectName("icon-button")
         button.clicked.connect(on_click)
 
         button.setIcon(QIcon(icon))
-        button.setFixedWidth(40)
-        button.setFixedHeight(40)
+        return button
+
+    def set_bar_corner_widgets(self, widgets: List[QWidget], corner: Qt.Corner, width: int = 40):
+        '''
+        Adds a list of QWidgets to a corner of the TabBar.
+        :param width: width of the widget list
+        :param corner: position of the button
+        :return: the new button
+        '''
 
         container = QWidget()
-        container.sizeHint = lambda: QSize(button.width(), self.tabs.tabBar().height())
+        container.sizeHint = lambda: QSize(width, self.tabs.tabBar().height())
+        container.setFixedHeight(self.tabs.tabBar().sizeHint().height())
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addStretch()
-        layout.addWidget(button)
+        [layout.addWidget(w, alignment=Qt.AlignmentFlag.AlignVCenter) for w in widgets]
         layout.addStretch()
 
         self.tabs.setCornerWidget(container, corner)
-        return button
 
     def close_tab(self, index: int):
         self.tabs.close_tab(index)

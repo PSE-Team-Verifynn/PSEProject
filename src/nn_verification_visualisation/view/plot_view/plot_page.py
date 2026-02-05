@@ -30,6 +30,8 @@ from nn_verification_visualisation.controller.input_manager.plot_view_controller
 from nn_verification_visualisation.view.plot_view.comparison_loading_widget import ComparisonLoadingWidget
 from nn_verification_visualisation.view.plot_view.plot_widget import PlotWidget
 from nn_verification_visualisation.view.base_view.tab import Tab
+from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
+from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
 
 class PlotPage(Tab):
     controller: PlotViewController
@@ -61,6 +63,9 @@ class PlotPage(Tab):
         super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
         # configuration is currently not implemented
         # self.configuration = configuration
+        SettingsDialog.add_setting(
+            SettingsOption("Plot Card Size", self.get_card_size_changer, "Plot View")
+        )
 
     def get_content(self) -> QWidget:
         container = QWidget()
@@ -119,20 +124,6 @@ class PlotPage(Tab):
         add_diagram_button = QPushButton("Add Diagram")
         add_diagram_button.clicked.connect(self.__add_diagram_from_current_bounds)
         layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        size_group = QGroupBox("Card Size")
-        size_layout = QVBoxLayout(size_group)
-        size_layout.setContentsMargins(6, 6, 6, 6)
-        size_layout.setSpacing(4)
-        # Temporary: will be replaced by persistent settings.
-        size_slider = QSlider(Qt.Orientation.Horizontal)
-        size_slider.setMinimum(320)
-        size_slider.setMaximum(560)
-        size_slider.setValue(self.controller.card_size)
-        size_slider.setSingleStep(10)
-        size_slider.valueChanged.connect(self.__on_card_size_changed)
-        size_layout.addWidget(size_slider)
-        layout.addWidget(size_group)
 
         node_pairs_group = QGroupBox("Node Pairs")
         node_pairs_layout = QVBoxLayout(node_pairs_group)
@@ -194,6 +185,7 @@ class PlotPage(Tab):
         card_layout.setSpacing(6)
 
         plot_placeholder = QFrame()
+        plot_placeholder.setObjectName("plot-container")
         plot_placeholder.setFrameShape(QFrame.Shape.StyledPanel)
         plot_placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         plot_layout = QVBoxLayout(plot_placeholder)
@@ -202,6 +194,7 @@ class PlotPage(Tab):
 
         figure = Figure(figsize=(3.2, 2.4))
         canvas = FigureCanvas(figure)
+
         canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         toolbar = NavigationToolbar(canvas, plot_placeholder)
 
@@ -225,14 +218,21 @@ class PlotPage(Tab):
         footer.setFixedHeight(40)
         footer_layout = QHBoxLayout(footer)
         footer_layout.setContentsMargins(0, 0, 0, 0)
-        footer_layout.setSpacing(6)
 
-        footer_layout.addWidget(QLabel(title))
+        title_widget = QLabel(title)
+        title_widget.setObjectName("heading")
+
+        footer_layout.addSpacing(10)
+        footer_layout.addWidget(title_widget)
         footer_layout.addStretch(1)
-        lock_button = QPushButton("Lock")
+        lock_button = QPushButton()
+        lock_button.setObjectName("icon-button-tight")
+        lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
         lock_button.clicked.connect(lambda: self.__toggle_lock(card, lock_button))
         footer_layout.addWidget(lock_button)
-        fullscreen_button = QPushButton("Fullscreen")
+        fullscreen_button = QPushButton()
+        fullscreen_button.setObjectName("icon-button-tight")
+        fullscreen_button.setIcon(QIcon(":assets/icons/plot/fullscreen.svg"))
         fullscreen_button.clicked.connect(lambda: self.fullscreen(card))
         footer_layout.addWidget(fullscreen_button)
 
@@ -280,13 +280,26 @@ class PlotPage(Tab):
 
     def __toggle_lock(self, widget: PlotWidget, button: QPushButton):
         widget.locked = not getattr(widget, "locked", False)
-        button.setText("Unlock" if widget.locked else "Lock")
+        if widget.locked:
+            button.setIcon(QIcon(":assets/icons/plot/locked.svg"))
+        else:
+            button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
+
 
     def __on_card_size_changed(self, value: int):
         self.controller.set_card_size(value)
         for widget in self.plots:
             widget.setFixedSize(self.controller.card_size, self.controller.card_size)
         self.__relayout_plots()
+
+    def get_card_size_changer(self) -> QWidget:
+        size_slider = QSlider(Qt.Orientation.Horizontal)
+        size_slider.setMinimum(320)
+        size_slider.setMaximum(560)
+        size_slider.setValue(self.controller.card_size)
+        size_slider.setSingleStep(10)
+        size_slider.valueChanged.connect(self.__on_card_size_changed)
+        return size_slider
 
     def __register_node_pair(
         self, bounds: list[tuple[tuple[float, float], tuple[float, float]]]

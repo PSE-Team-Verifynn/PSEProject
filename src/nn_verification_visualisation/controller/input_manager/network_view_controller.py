@@ -36,8 +36,8 @@ class NetworkViewController:
         dialog = NetworkManagementDialog(self)
         self.current_network_view.open_dialog(dialog)
 
-    def open_run_samples_dialog(self, config: NetworkVerificationConfig):
-        dialog = RunSamplesDialog(self.current_network_view.close_dialog, config)
+    def open_run_samples_dialog(self, config: NetworkVerificationConfig, on_results=None):
+        dialog = RunSamplesDialog(self.current_network_view.close_dialog, config, on_results=on_results)
         self.current_network_view.open_dialog(dialog)
 
     def load_bounds(self, config: NetworkVerificationConfig) -> bool:

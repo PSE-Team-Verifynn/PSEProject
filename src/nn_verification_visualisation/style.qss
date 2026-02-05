@@ -34,7 +34,18 @@ QTabBar::tab:selected {
     border: 1px solid @fg1;
 }
 
-QAbstractButton {
+QToolButton {
+    background-color: @bg1;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 2px;
+}
+
+QToolButton:hover {
+    background-color: @hbg1;
+}
+
+QPushButton {
     background-color: @fg1;
     color: @fgt;
     height: 30;
@@ -42,7 +53,7 @@ QAbstractButton {
     border-radius: 10px;
 }
 
-QAbstractButton:hover {
+QPushButton:hover {
     background-color: @hfg1;
 
     height: 30;
@@ -191,11 +202,36 @@ QComboBox QAbstractItemView {
     border: none;
     border-radius: 6px;
     background-color: @bg0;
-    selection-background-color: @bg1;
+    selection-background-color: @bg0;
     selection-color: @bgt;
     color: @bgt;
     padding: 2px;
     outline: 0;
+}
+
+QSlider::groove {
+    height: 6px;
+    background: @component;
+    border-radius: 3px;
+}
+
+QSlider::sub-page {
+    background: @fg1;
+    border-radius: 3px;
+}
+
+QSlider::add-page {
+    background: @fg0;
+    border-radius: 3px;
+}
+
+QSlider::handle {
+    width: 12px;
+    height: 12px;
+    background: @bg0;
+    border-radius: 7px;
+    border: 1px solid @fg1;
+    margin: -4px 0;   /* centers handle */
 }
 
 #faded-background {
@@ -214,8 +250,13 @@ QComboBox QAbstractItemView {
 
 #plot-card {
     background-color: @bg1;
-    color : red;
     border-radius: 15px;
+    border: 2px solid @fg1;
+}
+
+#plot-container {
+    background-color: @bg0;
+    border-radius: 10px;
 }
 
 
@@ -283,9 +324,25 @@ QLabel,QMenu::item::text,QListWidget::item, #label, #popup-content {
     background-color: @bg1;
 }
 
+#icon-button-tight {
+    background-color: transparent;
+    icon-size: 24px;
+    padding: 3px;
+    margin: 0px;
+}
+
 #icon-button, #close-button {
     background-color: transparent;
     icon-size: 20px;
+}
+
+#switch-button {
+    background-color: transparent;
+    height: 40px;
+    icon-size: 50px;
+    padding: 0px;
+    margin: 0;
+    padding-right: 10px;
 }
 
 #close-button {

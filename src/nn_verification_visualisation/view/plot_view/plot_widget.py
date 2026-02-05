@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Callable
 
+from PySide6.QtCore import Qt
+
 from nn_verification_visualisation.model.data.plot import Plot
 from PySide6.QtWidgets import QWidget
 
@@ -16,3 +18,9 @@ class PlotWidget(QWidget):
     locked: bool
     toolbar: object | None
     plot_layout: object | None
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("plot-card")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setAutoFillBackground(True)

@@ -25,11 +25,6 @@ def load_metrics() -> list[SampleMetric]:
             name="Mean activation",
             compute=lambda output: np.mean(output, axis=0),
         ),
-        SampleMetric(
-            key="min",
-            name="Lowest activation",
-            compute=lambda output: np.min(output, axis=0),
-        ),
     ]
 
 

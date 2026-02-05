@@ -6,6 +6,9 @@ from nn_verification_visualisation.controller.input_manager.network_view_control
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
+from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
+from nn_verification_visualisation.view.widgets.bounds_display_widget import BoundsDisplayWidget
 
 
 class NetworkPage(Tab):
@@ -87,13 +90,11 @@ class NetworkPage(Tab):
             min_input.setFixedWidth(75)
             min_input.setSingleStep(.1)
             mapper.addMapping(min_input, 0)
-            min_input.valueChanged.connect(mapper.submit)
 
             max_input = QDoubleSpinBox(minimum=-999999, maximum=999999)
             max_input.setFixedWidth(75)
             max_input.setSingleStep(.1)
             mapper.addMapping(max_input, 1)
-            max_input.valueChanged.connect(mapper.submit)
 
             row_layout.addWidget(label)
             row_layout.addWidget(min_input)
@@ -121,32 +122,25 @@ class NetworkPage(Tab):
         actions_layout.addWidget(save_button)
         edit_group_layout.addLayout(actions_layout)
 
-        self.display_group = QGroupBox("Bounds")
-        display_group_layout = QVBoxLayout(self.display_group)
-        display_group_layout.setContentsMargins(6, 6, 6, 6)
-        display_group_layout.setSpacing(4)
-        self.display_rows = []
-        for i in range(self.input_count):
-            row_layout = QHBoxLayout()
-            label = QLabel(f"{i}:")
-            label.setObjectName("label")
-            min_label = QLabel("—")
-            max_label = QLabel("—")
-            min_label.setObjectName("label")
-            max_label.setObjectName("label")
-            row_layout.addWidget(label)
-            row_layout.addWidget(min_label)
-            row_layout.addWidget(max_label)
-            display_group_layout.addLayout(row_layout)
-            self.display_rows.append((min_label, max_label))
+        self.display_group = BoundsDisplayWidget("Bounds", scrollable=False)
+        self.display_group.set_rows(self.input_count)
 
         layout.addWidget(self.edit_group)
         layout.addWidget(self.display_group)
+        self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10, scrollable=False)
+        self.sample_metrics.setVisible(False)
+        layout.addWidget(self.sample_metrics)
+        self.full_results_button = QPushButton("Full Results")
+        self.full_results_button.setVisible(False)
+        self.full_results_button.setEnabled(False)
+        self.full_results_button.clicked.connect(self.__on_full_results_clicked)
+        layout.addWidget(self.full_results_button)
         layout.addStretch(1)
         base.setLayout(layout)
 
         self.__refresh_bounds_list()
         self.__set_edit_mode(False)
+        self.__update_sample_results()
 
         return base
 
@@ -166,12 +160,14 @@ class NetworkPage(Tab):
             self.controller.select_bounds(self.configuration, None)
             self.__set_bounds_editable(True)
             self.__set_edit_mode(True)
+            self.__update_sample_results()
             return
 
         self.controller.select_bounds(self.configuration, row)
         self.__set_bounds_editable(False)
         self.__set_edit_mode(False)
         self.__update_display_bounds()
+        self.__update_sample_results()
 
     def __on_remove_bounds_clicked(self):
         row = self.bounds_list.currentRow()
@@ -183,6 +179,7 @@ class NetworkPage(Tab):
             next_index = min(row, new_count - 1) if new_count > 0 else None
             self.__refresh_bounds_list(next_index)
             self.__update_display_bounds()
+            self.__update_sample_results()
 
     def __on_add_bounds_clicked(self):
         self.bounds_list.clearSelection()
@@ -190,9 +187,10 @@ class NetworkPage(Tab):
         self.__set_bounds_editable(True)
         self.__set_edit_mode(True)
         self.__update_samples_action()
+        self.__update_sample_results()
 
     def __on_run_samples_clicked(self):
-        self.controller.open_run_samples_dialog(self.configuration)
+        self.controller.open_run_samples_dialog(self.configuration, on_results=lambda _res: self.__update_sample_results())
 
     def __refresh_bounds_list(self, selected_row: int | None = None):
         self.bounds_list.blockSignals(True)
@@ -212,6 +210,7 @@ class NetworkPage(Tab):
             self.__set_bounds_editable(True)
             self.__set_edit_mode(False)
         self.__update_samples_action()
+        self.__update_sample_results()
         self.bounds_list.blockSignals(False)
 
     def __set_bounds_editable(self, editable: bool):
@@ -234,19 +233,36 @@ class NetworkPage(Tab):
         index = self.configuration.selected_bounds_index
         if index < 0 or index >= len(self.configuration.saved_bounds):
             self.display_group.setTitle("Bounds")
-            for min_label, max_label in self.display_rows:
-                min_label.setText("—")
-                max_label.setText("—")
+            self.display_group.set_values(None)
             self.__update_samples_action()
             return
         bounds = self.configuration.saved_bounds[index]
         self.display_group.setTitle(f"Bounds {index + 1:02d}")
-        values = bounds.get_values()
-        for i, (min_label, max_label) in enumerate(self.display_rows):
-            if i < len(values):
-                min_label.setText(f"{values[i][0]:.2f}")
-                max_label.setText(f"{values[i][1]:.2f}")
-            else:
-                min_label.setText("—")
-                max_label.setText("—")
+        self.display_group.set_values(bounds.get_values())
         self.__update_samples_action()
+        self.__update_sample_results()
+
+    def __update_sample_results(self):
+        index = self.configuration.selected_bounds_index
+        if index < 0 or index >= len(self.configuration.saved_bounds):
+            self.sample_metrics.set_result(None)
+            self.sample_metrics.setVisible(False)
+            self.full_results_button.setEnabled(False)
+            self.full_results_button.setVisible(False)
+            return
+        bounds = self.configuration.saved_bounds[index]
+        result = bounds.get_sample()
+        self.sample_metrics.set_result(result)
+        self.sample_metrics.setVisible(result is not None)
+        self.full_results_button.setEnabled(result is not None)
+        self.full_results_button.setVisible(result is not None)
+
+    def __on_full_results_clicked(self):
+        index = self.configuration.selected_bounds_index
+        if index < 0 or index >= len(self.configuration.saved_bounds):
+            return
+        result = self.configuration.saved_bounds[index].get_sample()
+        if result is None:
+            return
+        parent = self.controller.current_network_view
+        parent.open_dialog(SampleResultsDialog(parent.close_dialog, result))

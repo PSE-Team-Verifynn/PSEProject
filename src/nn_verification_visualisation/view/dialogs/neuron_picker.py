@@ -13,7 +13,10 @@ from nn_verification_visualisation.model.data.plot_generation_config import Plot
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.run_samples_dialog import RunSamplesDialog
-from nn_verification_visualisation.view.network_view.network_node_representation import NetworkNode
+from nn_verification_visualisation.view.widgets.sample_metrics_widget import SampleMetricsWidget
+from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
+from nn_verification_visualisation.view.widgets.bounds_display_widget import BoundsDisplayWidget
+from nn_verification_visualisation.view.network_view.network_node import NetworkNode
 from nn_verification_visualisation.view.network_view.network_widget import NetworkWidget
 
 
@@ -89,9 +92,9 @@ class NeuronPicker(DialogBase):
             self.__on_change_algorithm
         )
         self.bounds_selector = None
-        self.bounds_display_rows = []
         self.bounds_display_group = None
-        self.max_bounds_display_inputs = 20
+        self.sample_metrics = None
+        self._bounds_index_label_width = 36
 
         # Update the algorithm list on change
         Storage().algorithm_change_listeners.append(self.update_algorithms)
@@ -99,8 +102,19 @@ class NeuronPicker(DialogBase):
         super().__init__(on_close, "Neuron Picker", has_title=False)
 
         if preset is not None:
-            print("Loading preset:")
             self.load_from_config(preset)
+            
+    def __compute_bounds_index_label_width(self, input_count: int) -> int:
+        if self.bounds_display_group is None:
+            return 36
+        if input_count <= 0:
+            return 36
+        max_index = input_count - 1
+        sample_text = f"{max_index}:"
+        metrics = self.bounds_display_group.fontMetrics()
+        text_width = metrics.horizontalAdvance(sample_text)
+        # Add a small padding buffer so 3+ digits don't clip.
+        return max(36, text_width + 8)
 
     def update_algorithms(self):
         index = self.algorithm_selector.currentIndex() if self.algorithm_selector.currentIndex() > -1 else 0
@@ -280,7 +294,8 @@ class NeuronPicker(DialogBase):
         self.__rebuild_bounds_display_rows()
         self.__update_bounds_display()
         if hasattr(self, "bounds_toggle_button") and self.bounds_toggle_button is not None:
-            self.bounds_toggle_button.setVisible(self.__can_show_bounds_display())
+            self.bounds_toggle_button.setVisible(True)
+        self.__update_sample_results()
 
         # Re-create the network widget
         self.network_widget = NetworkWidget(Storage().networks[index], nodes_selectable=True,
@@ -395,7 +410,7 @@ class NeuronPicker(DialogBase):
         parent = self.parent()
         if parent is None or not hasattr(parent, "open_dialog"):
             return
-        dialog = RunSamplesDialog(parent.close_dialog, config)
+        dialog = RunSamplesDialog(parent.close_dialog, config, on_results=lambda _res: self.__update_sample_results())
         parent.open_dialog(dialog)
 
     def __populate_bounds_selector(self, network_index: int):
@@ -419,6 +434,7 @@ class NeuronPicker(DialogBase):
         config = Storage().networks[self.current_network]
         config.selected_bounds_index = index
         self.__update_bounds_display()
+        self.__update_sample_results()
 
     def __on_node_selection_change(self, layer_index: int, node_index: int) -> QColor | None:
         old_layer, old_node = self.current_neurons[self.neuron_selection_index]
@@ -484,22 +500,21 @@ class NeuronPicker(DialogBase):
         self.bounds_toggle_button.setObjectName("transparent-button")
         self.bounds_toggle_button.setFixedWidth(32)
         self.bounds_toggle_button.clicked.connect(self.__toggle_bounds_display)
-        self.bounds_toggle_button.setVisible(self.__can_show_bounds_display())
+        self.bounds_toggle_button.setVisible(True)
         bounds_group.addWidget(self.bounds_toggle_button)
         layout.addLayout(bounds_group)
         layout.addSpacing(8)
 
         # --- Bounds Display ---
-        self.bounds_display_group = QGroupBox("Bounds")
-        display_layout = QVBoxLayout(self.bounds_display_group)
-        display_layout.setContentsMargins(6, 6, 6, 6)
-        display_layout.setSpacing(4)
-        self.bounds_display_rows = []
+        self.bounds_display_group = BoundsDisplayWidget("Bounds", scrollable=True, min_height=200, max_height=260)
         input_count = 0
         if Storage().networks:
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
+        self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
+        self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
         self.__rebuild_bounds_display_rows()
 
+        # --- Sample Results ---
         # --- Neuron Pair Selectors ---
         for i in range(0, self.num_neurons):
             neuron_group = QHBoxLayout()
@@ -568,6 +583,21 @@ class NeuronPicker(DialogBase):
         self.bounds_display_group.setVisible(False)
         self.__update_bounds_display()
 
+        self.sample_metrics = SampleMetricsWidget(
+            "Sample Results",
+            include_min=False,
+            max_items=10,
+            scrollable=False,
+        )
+        layout.addSpacing(12)
+        self.sample_metrics.setVisible(False)
+        layout.addWidget(self.sample_metrics)
+        self.full_results_button = QPushButton("Full Results")
+        self.full_results_button.setVisible(False)
+        self.full_results_button.setEnabled(False)
+        self.full_results_button.clicked.connect(self.__on_full_results_clicked)
+        layout.addWidget(self.full_results_button)
+
         layout.addStretch()
 
         print("Sidebar loaded")
@@ -578,75 +608,69 @@ class NeuronPicker(DialogBase):
             return
         if self.current_network < 0 or self.current_network >= len(Storage().networks):
             self.bounds_display_group.setTitle("Bounds")
-            for min_label, max_label in self.bounds_display_rows:
-                min_label.setText("-")
-                max_label.setText("-")
+            self.bounds_display_group.set_values(None)
             return
         config = Storage().networks[self.current_network]
         index = config.selected_bounds_index
         if index < 0 or index >= len(config.saved_bounds):
             self.bounds_display_group.setTitle("Bounds")
-            for min_label, max_label in self.bounds_display_rows:
-                min_label.setText("-")
-                max_label.setText("-")
+            self.bounds_display_group.set_values(None)
+            self.__update_sample_results()
             return
         bounds = config.saved_bounds[index]
         self.bounds_display_group.setTitle(f"Bounds {index + 1:02d}")
-        values = bounds.get_values()
-        for i, (min_label, max_label) in enumerate(self.bounds_display_rows):
-            if i < len(values):
-                min_label.setText(f"{values[i][0]:.2f}")
-                max_label.setText(f"{values[i][1]:.2f}")
-            else:
-                min_label.setText("-")
-                max_label.setText("-")
+        self.bounds_display_group.set_values(bounds.get_values())
+        self.__update_sample_results()
 
     def __toggle_bounds_display(self):
         if self.bounds_display_group is None:
             return
-        if not self.__can_show_bounds_display():
-            self.bounds_display_group.setVisible(False)
-            return
         self.bounds_display_group.setVisible(not self.bounds_display_group.isVisible())
+
+    def __update_sample_results(self):
+        if self.sample_metrics is None:
+            return
+        if not Storage().networks:
+            self.sample_metrics.set_result(None)
+            self.sample_metrics.setVisible(False)
+            self.full_results_button.setEnabled(False)
+            self.full_results_button.setVisible(False)
+            return
+        config = Storage().networks[self.current_network]
+        index = getattr(config, "selected_bounds_index", -1)
+        if index < 0 or index >= len(config.saved_bounds):
+            self.sample_metrics.set_result(None)
+            self.sample_metrics.setVisible(False)
+            self.full_results_button.setEnabled(False)
+            self.full_results_button.setVisible(False)
+            return
+        bounds = config.saved_bounds[index]
+        result = bounds.get_sample()
+        self.sample_metrics.set_result(result)
+        self.sample_metrics.setVisible(result is not None)
+        self.full_results_button.setEnabled(result is not None)
+        self.full_results_button.setVisible(result is not None)
+
+    def __on_full_results_clicked(self):
+        if not Storage().networks:
+            return
+        config = Storage().networks[self.current_network]
+        index = getattr(config, "selected_bounds_index", -1)
+        if index < 0 or index >= len(config.saved_bounds):
+            return
+        result = config.saved_bounds[index].get_sample()
+        if result is None:
+            return
+        parent = self.parent()
+        if parent is None or not hasattr(parent, "open_dialog"):
+            return
+        parent.open_dialog(SampleResultsDialog(parent.close_dialog, result))
 
     def __rebuild_bounds_display_rows(self):
         if self.bounds_display_group is None:
             return
-        layout = self.bounds_display_group.layout()
-        if layout is None:
-            return
-        if not self.__can_show_bounds_display():
-            while layout.count():
-                item = layout.takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
-            self.bounds_display_rows = []
-            self.bounds_display_group.setVisible(False)
-            return
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        self.bounds_display_rows = []
         input_count = 0
         if Storage().networks and 0 <= self.current_network < len(Storage().networks):
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
-        for i in range(input_count):
-            row_layout = QHBoxLayout()
-            label = QLabel(f"{i}:")
-            label.setObjectName("label")
-            min_label = QLabel("-")
-            max_label = QLabel("-")
-            min_label.setObjectName("label")
-            max_label.setObjectName("label")
-            row_layout.addWidget(label)
-            row_layout.addWidget(min_label)
-            row_layout.addWidget(max_label)
-            layout.addLayout(row_layout)
-            self.bounds_display_rows.append((min_label, max_label))
-
-    def __can_show_bounds_display(self) -> bool:
-        if not Storage().networks or self.current_network < 0 or self.current_network >= len(Storage().networks):
-            return False
-        input_count = Storage().networks[self.current_network].layers_dimensions[0]
-        return input_count <= self.max_bounds_display_inputs
+        self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
+        self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
