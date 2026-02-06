@@ -9,6 +9,7 @@ from nn_verification_visualisation.view.base_view.action_menu import ActionMenu
 from nn_verification_visualisation.view.base_view.tabs import Tabs
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from PySide6.QtCore import QSize
+from nn_verification_visualisation.model.data.storage import Storage
 
 
 class InsertView(QWidget):
@@ -88,6 +89,14 @@ class InsertView(QWidget):
         self.tabs.setCornerWidget(container, corner)
 
     def close_tab(self, index: int):
+        # If the tab widget has diagram_config (PlotPage), remove it from Storage().diagrams
+        w = self.tabs.widget(index)
+        diagram = getattr(w, "diagram_config", None)
+        if diagram is not None:
+            storage = Storage()
+            if diagram in storage.diagrams:
+                storage.diagrams.remove(diagram)
+                storage.request_autosave()
         self.tabs.close_tab(index)
 
     def open_dialog(self, dialog: DialogBase):

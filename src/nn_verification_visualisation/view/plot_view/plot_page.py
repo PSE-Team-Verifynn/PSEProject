@@ -23,6 +23,7 @@ from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
 from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
 from nn_verification_visualisation.view.dialogs.neuron_picker import get_neuron_colors
+from nn_verification_visualisation.model.data.storage import Storage
 
 class PlotPage(Tab):
     plot_widgets: list[PlotWidget]
@@ -57,27 +58,48 @@ class PlotPage(Tab):
 
         super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
 
-        # add start plots
-        for i in range(len(self.diagram_config.polygons)):
-            self.__add_plot([i])
+        # build plots from saved state if present, otherwise create default (one per polygon)
+        self.__initializing = True
+
+        if not getattr(self.diagram_config, "plots", None):
+            self.diagram_config.plots = [[i] for i in range(len(self.diagram_config.polygons))]
+            Storage().request_autosave()  # we changed persisted data
+
+        for sel in self.diagram_config.plots:
+            self.__add_plot(list(sel), update_config=False)
+
+        self.__initializing = False
 
         # configuration is currently not implemented
         # self.configuration = configuration
 
     def __update_selection(self, widget: PlotSettingsWidget, sel: list[int]):
+        index = self.plot_setting_widgets.index(widget)
+
+        # persist selection
+        if 0 <= index < len(self.diagram_config.plots):
+            self.diagram_config.plots[index] = list(sel)
+            if not getattr(self, "_PlotPage__initializing", False):
+                Storage().request_autosave()
+
         widget.set_selection(sel)
 
-        # update PlotWidget
+        # update PlotWidget (ваш текущий код ниже без изменений)
         length = len(self.diagram_config.polygons)
         colors = get_neuron_colors(length)
-        index = self.plot_setting_widgets.index(widget)
-        self.plot_widgets[index].render_plot([self.diagram_config.polygons[i] for i in sel], [colors[i] for i in sel],
-                                             [f"Pair {i + 1}" for i in sel])
+        self.plot_widgets[index].render_plot(
+            [self.diagram_config.polygons[i] for i in sel],
+            [colors[i] for i in sel],
+            [f"Pair {i + 1}" for i in sel],
+        )
+
     def __delete_plot(self, widget: PlotSettingsWidget):
         index = self.plot_setting_widgets.index(widget)
 
         # remove from DiagramConfig
         self.diagram_config.plots.pop(index)
+
+        Storage().request_autosave()
 
         # remove from side panel
         self.plot_setting_widgets.remove(widget)
@@ -90,10 +112,13 @@ class PlotPage(Tab):
         self.__relayout_plots()
 
 
-    def __add_plot(self, plot: list[int]):
-        # add diagram to DiagramConfig
-        self.diagram_config.plots.append(plot)
-        index = len(self.diagram_config.plots)
+    def __add_plot(self, plot: list[int], update_config: bool = True):
+        # Persist only when user actually adds a plot (not when restoring from SaveState)
+        if update_config:
+            self.diagram_config.plots.append(list(plot))
+            Storage().request_autosave()
+
+        index = len(self.plot_setting_widgets) + 1
 
         title_text = f"Diagram {index}"
 

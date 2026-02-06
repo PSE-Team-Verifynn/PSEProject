@@ -1,15 +1,5 @@
-from __future__ import annotations
-
-import base64
-import gzip
-import io
 import json
-import pickle
-from logging import Logger
 from typing import Any, Dict, List, Tuple
-
-import numpy as np
-from matplotlib.figure import Figure
 
 from nn_verification_visualisation.model.data.save_state import SaveState
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
@@ -17,66 +7,40 @@ from nn_verification_visualisation.utils.result import Result, Success, Failure
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 
-def _b64_gzip_dump_bytes(raw: bytes) -> str:
-    return base64.b64encode(gzip.compress(raw)).decode("ascii")
-
-
-def _b64_gzip_dump_pickle(obj: Any) -> str:
-    return _b64_gzip_dump_bytes(pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL))
-
-
 def _input_bounds_to_list(bounds_model) -> List[Tuple[float, float]]:
     """
-    InputBounds (Qt model) -> [(lo, hi), ...]
-    Supports several InputBounds realisations:
-    - get_values()
-    - __value (name-mangled)
-    - read through data()/index()
+    InputBounds -> [(lo, hi), ...]
+    Tries:
+      - get_values()
+      - internal _InputBounds__value
+      - Qt model API (rowCount/data/index)
     """
     if hasattr(bounds_model, "get_values"):
         vals = bounds_model.get_values()
         return [(float(lo), float(hi)) for (lo, hi) in vals]
 
-    values = getattr(bounds_model, "_InputBounds__value", None)
-    if values is not None:
-        return [(float(lo), float(hi)) for (lo, hi) in values]
+    raw = getattr(bounds_model, "_InputBounds__value", None)
+    if raw is not None:
+        return [(float(lo), float(hi)) for (lo, hi) in raw]
 
+    n = bounds_model.rowCount()
     out: List[Tuple[float, float]] = []
-    for r in range(bounds_model.rowCount()):
+    for r in range(n):
         lo = bounds_model.data(bounds_model.index(r, 0))
         hi = bounds_model.data(bounds_model.index(r, 1))
         out.append((float(lo), float(hi)))
     return out
 
 
-def _dump_figure(fig: Figure) -> Dict[str, str]:
-    """
-    Try to store Matplotlib Figure:
-    - prefer pickle (best restore),
-    - fallback to PNG if pickle fails.
-    """
-    try:
-        return {"kind": "pickle", "data": _b64_gzip_dump_pickle(fig)}
-    except Exception:
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        return {"kind": "png", "data": _b64_gzip_dump_bytes(buf.getvalue())}
-
-
-def _serialize_pgc(pgc: PlotGenerationConfig, networks: list) -> Dict[str, Any]:
-    """
-    PlotGenerationConfig has nnconfig (inside Qt model bounds), then serialize "flat".
-    """
-    logger = Logger(__name__)
-    try:
-        nn_index = networks.index(pgc.nnconfig)
-    except ValueError as e:
-        logger.error("PlotGenerationConfig.nnconfig is not in SaveState.loaded_networks")
-        raise ValueError("PlotGenerationConfig.nnconfig is not in SaveState.loaded_networks") from e
+def _serialize_pgc(pgc: PlotGenerationConfig, nn_index_map: Dict[int, int]) -> Dict[str, Any]:
+    """PlotGenerationConfig -> JSON-friendly dict."""
+    nn_idx = nn_index_map.get(id(pgc.nnconfig))
+    if nn_idx is None:
+        raise ValueError("PlotGenerationConfig.nnconfig is not in SaveState.loaded_networks")
 
     alg = pgc.algorithm
     return {
-        "nn_index": int(nn_index),
+        "nn_index": int(nn_idx),
         "algorithm": {
             "name": str(alg.name),
             "path": str(alg.path),
@@ -84,16 +48,15 @@ def _serialize_pgc(pgc: PlotGenerationConfig, networks: list) -> Dict[str, Any]:
         },
         "selected_neurons": [(int(a), int(b)) for (a, b) in pgc.selected_neurons],
         "parameters": [str(p) for p in pgc.parameters],
+        "bounds_index": int(getattr(pgc, "bounds_index", -1)),
     }
 
 
 class SaveStateExporter(metaclass=SingletonMeta):
     def export_save_state(self, save_state: SaveState) -> Result[str]:
-        """
-        Exports SaveState as JSON string.
-        Important: ONNX-model is not saved, only network.name + network.path.
-        """
         try:
+            nn_index_map = {id(cfg): i for i, cfg in enumerate(save_state.loaded_networks)}
+
             networks_out: List[Dict[str, Any]] = []
             for cfg in save_state.loaded_networks:
                 networks_out.append({
@@ -109,39 +72,18 @@ class SaveStateExporter(metaclass=SingletonMeta):
                 })
 
             diagrams_out: List[Dict[str, Any]] = []
-            for dcfg in save_state.diagrams:
-                plots_dict = getattr(dcfg, "plots", {}) or {}
-                results_dict = getattr(dcfg, "results", {}) or {}
-
-                plots_out: Dict[str, Any] = {}
-                for plot_id, plot in plots_dict.items():
-                    plots_out[str(int(plot_id))] = {
-                        "name": str(plot.name),
-                        "figure": _dump_figure(plot.data),
-                    }
-
-                results_out: List[Dict[str, Any]] = []
-                for pgc, res in results_dict.items():
-                    entry: Dict[str, Any] = {
-                        "pgc": _serialize_pgc(pgc, save_state.loaded_networks),
-                        "is_success": bool(getattr(res, "is_success", False)),
-                        "error": None,
-                        "output_bounds": None,
-                    }
-
-                    if entry["is_success"]:
-                        bounds = getattr(res, "data", None)
-                        if bounds is not None:
-                            entry["output_bounds"] = np.asarray(bounds, dtype=float).tolist()
-                    else:
-                        err = getattr(res, "error", None)
-                        entry["error"] = repr(err) if err is not None else "Unknown error"
-
-                    results_out.append(entry)
+            for d in save_state.diagrams:
+                pgcs = [_serialize_pgc(pgc, nn_index_map) for pgc in getattr(d, "plot_generation_configs", [])]
+                polygons = [
+                    [[float(x), float(y)] for (x, y) in poly]
+                    for poly in getattr(d, "polygons", [])
+                ]
+                plots = [[int(i) for i in plot] for plot in getattr(d, "plots", [])]
 
                 diagrams_out.append({
-                    "plots": plots_out,
-                    "results": results_out,
+                    "plot_generation_configs": pgcs,
+                    "polygons": polygons,
+                    "plots": plots,
                 })
 
             doc = {
@@ -151,6 +93,5 @@ class SaveStateExporter(metaclass=SingletonMeta):
                 "diagrams": diagrams_out,
             }
             return Success(json.dumps(doc, ensure_ascii=False))
-
         except BaseException as e:
             return Failure(e)

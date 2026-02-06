@@ -8,6 +8,7 @@ from nn_verification_visualisation.controller.input_manager.plot_view_controller
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
 from nn_verification_visualisation.view.plot_view.plot_page import PlotPage
+from nn_verification_visualisation.model.data.storage import Storage
 
 class PlotView(InsertView):
     controller: PlotViewController
@@ -15,6 +16,10 @@ class PlotView(InsertView):
     def __init__(self, change_view: Callable[[], None], parent=None):
         super().__init__(parent)
         self.controller = PlotViewController(self)
+        # restore saved diagram tabs
+        for diagram in Storage().diagrams:
+            self.add_plot_tab(diagram)
+
 
         add_button = self._create_simple_icon_button(self.controller.open_plot_generation_dialog, ":assets/icons/add_icon.svg")
 

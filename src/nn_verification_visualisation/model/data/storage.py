@@ -1,26 +1,21 @@
+from __future__ import annotations
+
+from pathlib import Path
 from typing import List, Callable
 
-#from torch.fx.experimental.proxy_tensor import selective_decompose
+from PySide6.QtCore import QCoreApplication, QTimer
 
 from nn_verification_visualisation.model.data.algorithm import Algorithm
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.save_state import SaveState
-from nn_verification_visualisation.utils.singleton import SingletonMeta
-from pathlib import Path
-
-from PySide6.QtCore import QCoreApplication, QTimer
-
 from nn_verification_visualisation.model.data_exporter.save_state_exporter import SaveStateExporter
 from nn_verification_visualisation.model.data_loader.save_state_loader import SaveStateLoader
-from nn_verification_visualisation.utils.result import Success, Failure, Result
-
+from nn_verification_visualisation.utils.result import Result, Success, Failure
+from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 
 class Storage(metaclass=SingletonMeta):
-    '''
-    This object stores the data of the program. This includes the networks diagrams and the algorithms.
-    '''
     networks: List[NetworkVerificationConfig]
     diagrams: List[DiagramConfig]
     algorithms: List[Algorithm]
@@ -32,17 +27,15 @@ class Storage(metaclass=SingletonMeta):
         self.algorithms = []
         self.algorithm_change_listeners = []
 
-        # SaveState integration
+        # --- SaveState integration ---
         self._save_state_path = str(Path.home() / ".nn_verification_visualisation" / "save_state.json")
         self._autosave_timer: QTimer | None = None
         self._autosave_delay_ms = 600
         self._suppress_autosave = False
 
+    # --- SaveState in-memory ---
     def load_save_state(self, save_state: SaveState):
-        '''
-        """Replace current networks/diagrams with the data from SaveState."""
-        :param save_state: the state that will be loaded
-        '''
+        """Replace current networks/diagrams with data from SaveState."""
         self._suppress_autosave = True
         try:
             if save_state is None:
@@ -55,24 +48,14 @@ class Storage(metaclass=SingletonMeta):
             self._suppress_autosave = False
 
     def get_save_state(self) -> SaveState:
-        '''
-        Create a snapshot of the current state (networks + diagrams).
-        :return: the snapshot
-        '''
+        """Snapshot of current state (networks + diagrams)."""
         return SaveState(loaded_networks=list(self.networks), diagrams=list(self.diagrams))
 
+    # --- SaveState disk IO ---
     def set_save_state_path(self, file_path: str):
-        '''
-        Sets the save state path to a specific path.
-        :param file_path: location of the save state
-        '''
         self._save_state_path = file_path
 
     def load_from_disk(self) -> Result[SaveState]:
-        '''
-        Load SaveState from default path (if exists).
-        :return: true if the load was successful, false otherwise
-        '''
         path = Path(self._save_state_path)
         if not path.exists():
             return Failure(FileNotFoundError(str(path)))
@@ -83,16 +66,11 @@ class Storage(metaclass=SingletonMeta):
         return res
 
     def save_to_disk(self) -> Result[None]:
-        '''
-        Export current state and write it to disk.
-        :return: true if the save was successful, false otherwise
-        '''
         try:
             path = Path(self._save_state_path)
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            state = self.get_save_state()
-            res = SaveStateExporter().export_save_state(state)
+            res = SaveStateExporter().export_save_state(self.get_save_state())
             if not res.is_success:
                 return Failure(res.error)
 
@@ -102,15 +80,12 @@ class Storage(metaclass=SingletonMeta):
             return Failure(e)
 
     def request_autosave(self):
-        '''
-        Call this after any state mutation (network/bounds/diagram changes). Debounced.
-        '''
+        """Debounced autosave. Call this after any mutation of networks/diagrams."""
         if self._suppress_autosave:
             return
 
         app = QCoreApplication.instance()
         if app is None:
-            # no Qt loop -> save immediately
             self.save_to_disk()
             return
 
@@ -121,11 +96,8 @@ class Storage(metaclass=SingletonMeta):
 
         self._autosave_timer.start(self._autosave_delay_ms)
 
+    # --- algorithms list (separate feature) ---
     def remove_algorithm(self, algo_path):
-        '''
-        removes an algorithm from the list of algorithms.
-        :param algo_path: the path of the algorithm to remove.
-        '''
         matching_indeces = [i for i in range(len(self.algorithms)) if self.algorithms[i].path == algo_path]
         if not matching_indeces:
             return
@@ -133,11 +105,6 @@ class Storage(metaclass=SingletonMeta):
         self.__call_listeners()
 
     def modify_algorithm(self, algo_path, new_algorithm):
-        '''
-        Checks if the file of the algorithm have changed.
-        :param algo_path: the watched algorithm
-        :param new_algorithm: the updated algorithm
-        '''
         matching_indices = [i for i in range(len(self.algorithms)) if self.algorithms[i].path == algo_path]
         if not matching_indices:
             return
@@ -145,16 +112,9 @@ class Storage(metaclass=SingletonMeta):
         self.__call_listeners()
 
     def add_algorithm(self, new_algorithm):
-        '''
-        Adds an algorithm to the list of algorithms.
-        :param new_algorithm: the new algorithm
-        '''
         self.algorithms.append(new_algorithm)
         self.__call_listeners()
 
     def __call_listeners(self):
-        '''
-        Notifies all the listeners, that a change has happened.
-        '''
         for listener in self.algorithm_change_listeners:
             listener()
