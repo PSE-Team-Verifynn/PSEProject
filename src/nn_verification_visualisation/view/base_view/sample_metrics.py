@@ -24,7 +24,6 @@ class _NoScrollComboBox(QComboBox):
 
 
 _SUMMARY_MODE_LABELS = {
-    "pre_activation_before_bias": "Pre before bias",
     "pre_activation_after_bias": "Pre after bias",
     "post_activation": "Post activation",
 }

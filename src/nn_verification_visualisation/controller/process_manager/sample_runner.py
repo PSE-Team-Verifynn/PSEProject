@@ -13,12 +13,10 @@ from nn_verification_visualisation.controller.process_manager.network_modifier i
 
 MAX_SAMPLES_PER_RUN = 10000
 SAMPLING_MODE_LABELS = {
-    "pre_activation_before_bias": "Pre-activation before bias",
     "pre_activation_after_bias": "Pre-activation after bias",
     "post_activation": "Post Activation",
 }
 SAMPLING_MODE_SUMMARY_LABELS = {
-    "pre_activation_before_bias": "Pre before bias",
     "pre_activation_after_bias": "Pre after bias",
     "post_activation": "Post activation",
 }
