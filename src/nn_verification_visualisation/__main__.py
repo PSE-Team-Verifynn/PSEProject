@@ -13,6 +13,8 @@ from nn_verification_visualisation.model.data_loader.save_state_loader import Sa
 from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 
+import multiprocessing as mp
+
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
@@ -21,6 +23,7 @@ def main():
     # style_path = Path(__file__).resolve().parent / "style.qss"
     color_manager.load_raw(":src/nn_verification_visualisation/style.qss")
 
+    mp.freeze_support()
     storage = Storage()
     state_path = Path(__file__).resolve().parent / "save_state.json"
     storage.set_save_state_path(str(state_path))
