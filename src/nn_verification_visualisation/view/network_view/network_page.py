@@ -253,8 +253,15 @@ class NetworkPage(Tab):
             return
         bounds = self.configuration.saved_bounds[index]
         result = bounds.get_sample()
-        self.sample_metrics.set_result(result)
-        self.sample_metrics.setVisible(result is not None)
+        # Force a full widget refresh to avoid stale/corrupted summary rendering
+        # when samples are rerun while dialogs are opened/closed.
+        self.sample_metrics.setVisible(False)
+        self.sample_metrics.set_result(None)
+        if result is not None:
+            self.sample_metrics.set_result(result)
+            self.sample_metrics.updateGeometry()
+            self.sample_metrics.update()
+            self.sample_metrics.setVisible(True)
         self.full_results_button.setEnabled(result is not None)
         self.full_results_button.setVisible(result is not None)
 

@@ -12,6 +12,17 @@ from nn_verification_visualisation.controller.process_manager.sample_metric_regi
 from nn_verification_visualisation.controller.process_manager.network_modifier import NetworkModifier
 
 MAX_SAMPLES_PER_RUN = 10000
+SAMPLING_MODE_LABELS = {
+    "pre_activation_before_bias": "Pre-activation before bias",
+    "pre_activation_after_bias": "Pre-activation after bias",
+    "post_activation": "Post Activation",
+}
+SAMPLING_MODE_SUMMARY_LABELS = {
+    "pre_activation_before_bias": "Pre before bias",
+    "pre_activation_after_bias": "Pre after bias",
+    "post_activation": "Post activation",
+}
+DEFAULT_SAMPLING_MODE = "pre_activation_after_bias"
 
 
 def run_samples_for_bounds(
@@ -19,6 +30,7 @@ def run_samples_for_bounds(
     bounds: list[tuple[float, float]],
     num_samples: int,
     metrics: Iterable[str],
+    sampling_mode: str = DEFAULT_SAMPLING_MODE,
 ) -> dict:
     logger = Logger(__name__)
     if num_samples <= 0:
@@ -27,6 +39,9 @@ def run_samples_for_bounds(
     if num_samples > MAX_SAMPLES_PER_RUN:
         logger.error("num_samples exceeds max allowed per run: %s", MAX_SAMPLES_PER_RUN)
         raise ValueError(f"num_samples must be <= {MAX_SAMPLES_PER_RUN}")
+    if sampling_mode not in SAMPLING_MODE_LABELS:
+        logger.error("Invalid sampling_mode: %s", sampling_mode)
+        raise ValueError("Invalid sampling mode")
 
 
     metric_map = get_metric_map()
@@ -36,7 +51,7 @@ def run_samples_for_bounds(
         raise ValueError("No valid metrics selected")
 
     model = onnx.load(network.path)
-    model = NetworkModifier.with_all_outputs(model)
+    model = NetworkModifier.with_all_outputs(model, sampling_mode=sampling_mode)
     session = ort.InferenceSession(model.SerializeToString(), providers=["CPUExecutionProvider"])
     inputs = session.get_inputs()
     if not inputs:
@@ -117,6 +132,8 @@ def run_samples_for_bounds(
 
     return {
         "num_samples": num_samples,
+        "sampling_mode": sampling_mode,
+        "sampling_mode_label": SAMPLING_MODE_SUMMARY_LABELS[sampling_mode],
         "metrics": metric_list,
         "outputs": output_entries,
     }

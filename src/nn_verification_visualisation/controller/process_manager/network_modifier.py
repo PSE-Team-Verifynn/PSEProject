@@ -2,11 +2,22 @@ import copy
 
 from onnx import ModelProto, TensorProto, NodeProto
 import onnx
+
+
 class NetworkModifier:
     @staticmethod
-    def with_all_outputs(static_model: ModelProto) -> ModelProto:
+    def with_all_outputs(
+        static_model: ModelProto,
+        sampling_mode: str = "pre_activation_after_bias",
+    ) -> ModelProto:
         model = copy.deepcopy(static_model)
         existing = {output.name for output in model.graph.output}
+        initializer_names = {init.name for init in model.graph.initializer if init.name}
+        producer_by_output: dict[str, NodeProto] = {}
+        for node in model.graph.node:
+            for output_name in node.output:
+                if output_name:
+                    producer_by_output[output_name] = node
         activation_ops = {
             "Relu",
             "Sigmoid",
@@ -30,7 +41,24 @@ class NetworkModifier:
         for node in model.graph.node:
             if node.op_type not in activation_ops:
                 continue
-            for name in node.input[:1]:
+            names: list[str] = []
+            if sampling_mode == "pre_activation_before_bias":
+                if node.input and node.input[0]:
+                    pre_activation = NetworkModifier._resolve_pre_activation_before_bias(
+                        node.input[0],
+                        producer_by_output,
+                        initializer_names,
+                    )
+                    names.append(pre_activation)
+            elif sampling_mode == "pre_activation_after_bias":
+                if node.input and node.input[0]:
+                    names.append(node.input[0])  # pre-activation after bias
+            elif sampling_mode == "post_activation":
+                if node.output and node.output[0]:
+                    names.append(node.output[0])  # post-activation
+            else:
+                raise ValueError(f"Invalid sampling_mode: {sampling_mode}")
+            for name in names:
                 if not name or name in existing:
                     continue
                 vi = onnx.ValueInfoProto()
@@ -38,6 +66,24 @@ class NetworkModifier:
                 model.graph.output.append(vi)
                 existing.add(name)
         return model
+
+    @staticmethod
+    def _resolve_pre_activation_before_bias(
+        activation_input: str,
+        producer_by_output: dict[str, NodeProto],
+        initializer_names: set[str],
+    ) -> str:
+        producer = producer_by_output.get(activation_input)
+        if producer is None or producer.op_type != "Add" or len(producer.input) < 2:
+            return activation_input
+        left, right = producer.input[0], producer.input[1]
+        left_is_bias = left in initializer_names
+        right_is_bias = right in initializer_names
+        if left_is_bias and not right_is_bias:
+            return right
+        if right_is_bias and not left_is_bias:
+            return left
+        return activation_input
 
     def custom_output_layer(self, static_model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> ModelProto:
         '''

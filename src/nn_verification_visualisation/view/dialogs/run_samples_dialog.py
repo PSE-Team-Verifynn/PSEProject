@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
 
 from nn_verification_visualisation.controller.process_manager.sample_runner import (
     MAX_SAMPLES_PER_RUN,
+    DEFAULT_SAMPLING_MODE,
+    SAMPLING_MODE_LABELS,
     run_samples_for_bounds,
 )
 from nn_verification_visualisation.controller.process_manager.sample_metric_registry import load_metrics
@@ -39,12 +41,14 @@ class _SampleWorker(QObject):
         bounds: list[tuple[float, float]],
         num_samples: int,
         metrics: Iterable[str],
+        sampling_mode: str,
     ):
         super().__init__()
         self._config = config
         self._bounds = bounds
         self._num_samples = num_samples
         self._metrics = list(metrics)
+        self._sampling_mode = sampling_mode
 
     def run(self):
         try:
@@ -53,6 +57,7 @@ class _SampleWorker(QObject):
                 self._bounds,
                 self._num_samples,
                 self._metrics,
+                self._sampling_mode,
             )
             self.finished.emit(result)
         except Exception as exc:
@@ -81,6 +86,7 @@ class RunSamplesDialog(DialogBase):
         self._run_button = QPushButton("Run Samples")
         self._cancel_button = QPushButton("Cancel")
         self._bounds_selector = QComboBox()
+        self._mode_selector = QComboBox()
 
         super().__init__(on_close, "Run Samples", (520, 320))
 
@@ -105,6 +111,20 @@ class RunSamplesDialog(DialogBase):
         bounds_row.addWidget(self._bounds_selector)
         bounds_row.addStretch()
         settings_layout.addLayout(bounds_row)
+
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(QLabel("Activation mode:"))
+        for mode_key, mode_label in SAMPLING_MODE_LABELS.items():
+            self._mode_selector.addItem(mode_label, mode_key)
+        self._mode_selector.setMinimumContentsLength(0)
+        self._mode_selector.setMinimumWidth(0)
+        self._mode_selector.setFixedWidth(200)
+        default_mode_index = self._mode_selector.findData(DEFAULT_SAMPLING_MODE)
+        if default_mode_index >= 0:
+            self._mode_selector.setCurrentIndex(default_mode_index)
+        mode_row.addWidget(self._mode_selector)
+        mode_row.addStretch()
+        settings_layout.addLayout(mode_row)
 
         sample_row = QHBoxLayout()
         sample_row.addWidget(QLabel("Number of samples:"))
@@ -163,11 +183,18 @@ class RunSamplesDialog(DialogBase):
             return
 
         num_samples = self._samples_spin.value()
+        sampling_mode = self._mode_selector.currentData()
 
         self.__set_running_state(True)
 
         self._thread = QThread()
-        self._worker = _SampleWorker(self.config, bounds.get_values(), num_samples, metrics)
+        self._worker = _SampleWorker(
+            self.config,
+            bounds.get_values(),
+            num_samples,
+            metrics,
+            sampling_mode,
+        )
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self.__on_worker_finished)
@@ -198,8 +225,6 @@ class RunSamplesDialog(DialogBase):
             bounds.set_sample(result)
         self.__set_running_state(False)
         self.__set_status("Samples computed and saved.")
-        if self._on_results is not None:
-            self._on_results(result)
         self.__show_results(result)
 
     def __on_worker_failed(self, message: str):
@@ -214,6 +239,7 @@ class RunSamplesDialog(DialogBase):
         self._cancel_button.setEnabled(not running)
         self._samples_spin.setEnabled(not running)
         self._bounds_selector.setEnabled(not running)
+        self._mode_selector.setEnabled(not running)
         for checkbox in self._metric_checks.values():
             checkbox.setEnabled(not running)
         self._status_label.setText("Running samples..." if running else "")
@@ -243,6 +269,8 @@ class RunSamplesDialog(DialogBase):
                 return
             if parent is None or not hasattr(parent, "open_dialog"):
                 return
+            if self._on_results is not None:
+                self._on_results(result)
             results_dialog = SampleResultsDialog(parent.close_dialog, result)
             parent.open_dialog(results_dialog)
 

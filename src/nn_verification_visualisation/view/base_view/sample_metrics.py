@@ -18,6 +18,18 @@ from PySide6.QtWidgets import (
 from nn_verification_visualisation.controller.process_manager.sample_metric_registry import get_metric_map
 
 
+class _NoScrollComboBox(QComboBox):
+    def wheelEvent(self, event):
+        event.ignore()
+
+
+_SUMMARY_MODE_LABELS = {
+    "pre_activation_before_bias": "Pre before bias",
+    "pre_activation_after_bias": "Pre after bias",
+    "post_activation": "Post activation",
+}
+
+
 class SampleMetricsWidget(QGroupBox):
     def __init__(
         self,
@@ -40,6 +52,7 @@ class SampleMetricsWidget(QGroupBox):
         self._summary_metric_keys: list[str] = []
         self._summary_outputs: list[dict] = []
         self._summary_metrics: list[str] = []
+        self._updating_summary_combo = False
 
         self._content = QWidget()
         self._content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
@@ -52,14 +65,17 @@ class SampleMetricsWidget(QGroupBox):
         self._summary_layout.setContentsMargins(0, 0, 0, 0)
         self._summary_layout.setSpacing(4)
         self._summary_samples = QLabel("Samples: —")
+        self._summary_mode = QLabel("Mode: —")
         self._summary_metric_label = QLabel("Metric:")
-        self._summary_metric_combo = QComboBox()
+        self._summary_metric_combo = _NoScrollComboBox()
         self._summary_metric_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._summary_metric_combo.setMinimumHeight(28)
         self._summary_metric_combo.setEnabled(False)
         self._summary_metric_combo.currentIndexChanged.connect(self._on_summary_metric_changed)
-        for label in (self._summary_samples, self._summary_metric_label):
+        for label in (self._summary_samples, self._summary_mode, self._summary_metric_label):
             label.setWordWrap(True)
         self._summary_layout.addWidget(self._summary_samples)
+        self._summary_layout.addWidget(self._summary_mode)
         metric_row = QHBoxLayout()
         metric_row.addWidget(self._summary_metric_label)
         metric_row.addWidget(self._summary_metric_combo)
@@ -99,9 +115,12 @@ class SampleMetricsWidget(QGroupBox):
         self._clear_summary_details()
         if not result:
             self._summary_samples.setText("Samples: —")
+            self._summary_mode.setText("Mode: —")
+            self._updating_summary_combo = True
             self._summary_metric_combo.blockSignals(True)
             self._summary_metric_combo.clear()
             self._summary_metric_combo.blockSignals(False)
+            self._updating_summary_combo = False
             self._summary_metric_combo.setEnabled(False)
             self._summary_metric_keys = []
             self._summary_outputs = []
@@ -113,19 +132,36 @@ class SampleMetricsWidget(QGroupBox):
             return
 
         num_samples = result.get("num_samples", 0)
+        sampling_mode_key = result.get("sampling_mode")
+        sampling_mode_label = str(
+            _SUMMARY_MODE_LABELS.get(str(sampling_mode_key))
+            or result.get("sampling_mode_label")
+            or sampling_mode_key
+            or "—"
+        )
         metrics = list(result.get("metrics", []))
         if not self._include_min:
             metrics = [m for m in metrics if m != "min"]
         outputs = list(result.get("outputs", []))
 
         metric_map = get_metric_map()
-        metric_names = [metric_map[m].name if m in metric_map else m for m in metrics]
+        name_to_key = {metric.name.lower(): metric.key for metric in metric_map.values()}
+        normalized_metrics: list[str] = []
+        for metric in metrics:
+            if metric in metric_map:
+                normalized_metrics.append(metric)
+                continue
+            resolved = name_to_key.get(str(metric).lower())
+            normalized_metrics.append(resolved if resolved is not None else metric)
+        metrics = normalized_metrics
 
         self._summary_samples.setText(f"Samples: {num_samples}")
+        self._summary_mode.setText(f"Mode: {sampling_mode_label}")
         self._summary_outputs = outputs
         self._summary_metrics = metrics
         self._summary_metric_keys = metrics[:]
 
+        self._updating_summary_combo = True
         self._summary_metric_combo.blockSignals(True)
         self._summary_metric_combo.clear()
         for key in metrics:
@@ -139,6 +175,7 @@ class SampleMetricsWidget(QGroupBox):
         if preferred_key in metrics:
             self._summary_metric_combo.setCurrentIndex(metrics.index(preferred_key))
         self._summary_metric_combo.blockSignals(False)
+        self._updating_summary_combo = False
         self._summary_metric_combo.setEnabled(bool(metrics))
 
         summary_metric_key = preferred_key if preferred_key is not None else (metrics[0] if metrics else "mean")
@@ -166,7 +203,10 @@ class SampleMetricsWidget(QGroupBox):
             output_layout.setSpacing(4)
 
             values = output_entry.get("values", {}) or {}
+            first_metric = True
             for metric_key in metrics:
+                if not first_metric:
+                    output_layout.addSpacing(8)
                 metric_title = metric_map.get(metric_key).name if metric_key in metric_map else metric_key
                 metric_values = values.get(metric_key, []) or []
                 metric_layout = self._build_metric_layout(
@@ -176,6 +216,7 @@ class SampleMetricsWidget(QGroupBox):
                     max_items=self._max_items,
                 )
                 output_layout.addLayout(metric_layout)
+                first_metric = False
 
             self._scroll_layout.addWidget(output_group)
 
@@ -213,6 +254,9 @@ class SampleMetricsWidget(QGroupBox):
         if metric_key == "max" and self._detailed_labels:
             display_title = "Maximum absolute activation"
         title = QLabel(f"{display_title}:")
+        title_font = title.font()
+        title_font.setBold(True)
+        title.setFont(title_font)
         title.setObjectName("label")
         title.setWordWrap(True)
         layout.addWidget(title, 0, 0, 1, 2)
@@ -285,7 +329,21 @@ class SampleMetricsWidget(QGroupBox):
         for output_entry, layer_label in labeled_outputs:
             layer_index = resolve_layer_index(layer_label)
             values = output_entry.get("values", {}) or {}
-            metric_values = values.get(metric_key, []) or []
+            resolved_metric_key = None
+            if metric_key in values:
+                resolved_metric_key = metric_key
+            else:
+                metric_key_lower = str(metric_key).lower()
+                for values_key in values.keys():
+                    if str(values_key).lower() == metric_key_lower:
+                        resolved_metric_key = values_key
+                        break
+                if resolved_metric_key is None:
+                    for values_key, values_value in values.items():
+                        if values_value:
+                            resolved_metric_key = values_key
+                            break
+            metric_values = values.get(resolved_metric_key, []) or []
             for idx, value in enumerate(metric_values):
                 activations.append((float(value), layer_label, idx, layer_index))
 
@@ -326,6 +384,8 @@ class SampleMetricsWidget(QGroupBox):
         self._summary_detail_widgets.append(group)
 
     def _on_summary_metric_changed(self, index: int) -> None:
+        if self._updating_summary_combo:
+            return
         if index < 0 or index >= len(self._summary_metric_keys):
             return
         metric_key = self._summary_metric_keys[index]
