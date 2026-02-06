@@ -55,6 +55,7 @@ class ActionMenu(QWidget):
         self.parent.open_dialog(settings_dialog)
 
     def __open_project_action(self):
+        internal_state_path = self.__get_internal_state_path()
         file_path, _ = QFileDialog.getOpenFileName(
             self.parent,
             "Open Project",
@@ -64,28 +65,38 @@ class ActionMenu(QWidget):
         if file_path == "":
             return
 
-        result = SaveStateLoader().load_save_state(file_path)
+        loader = SaveStateLoader()
+        result = loader.load_save_state(file_path)
         if not result.is_success:
             self.parent.open_dialog(InfoPopup(
                 self.parent.close_dialog,
                 f"Could not open project:\n{result.error}",
-                InfoType.ERROR
+                InfoType.WARNING
             ))
             return
 
         storage = Storage()
         storage.load_save_state(result.data)
-        storage.set_save_state_path(file_path)
+        storage.set_save_state_path(str(internal_state_path))
+        storage.save_to_disk()
 
         base_view = self.__find_base_view()
         if base_view is not None:
             base_view.reload_from_storage()
 
-        self.parent.open_dialog(InfoPopup(
-            self.parent.close_dialog,
-            "Project opened successfully.",
-            InfoType.CONFIRMATION
-        ))
+        warnings = loader.get_warnings()
+        if warnings:
+            self.parent.open_dialog(InfoPopup(
+                self.parent.close_dialog,
+                "Project opened with warnings:\n" + "\n".join(f"- {w}" for w in warnings),
+                InfoType.WARNING
+            ))
+        else:
+            self.parent.open_dialog(InfoPopup(
+                self.parent.close_dialog,
+                "Project opened successfully.",
+                InfoType.CONFIRMATION
+            ))
 
     def __export_project_action(self):
         default_name = "project_export.json"
@@ -134,6 +145,9 @@ class ActionMenu(QWidget):
                 return current
             current = current.parent()
         return None
+
+    def __get_internal_state_path(self) -> Path:
+        return Path(__file__).resolve().parents[2] / "save_state.json"
 
     def __exit_action(self):
         """

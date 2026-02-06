@@ -63,6 +63,14 @@ class SaveStateLoader(metaclass=SingletonMeta):
     """
     Class to load SaveState back.
     """
+    _warnings: List[str]
+
+    def __init__(self):
+        self._warnings = []
+
+    def get_warnings(self) -> List[str]:
+        return list(self._warnings)
+
     def load_save_state(self, file_path: str) -> Result[SaveState]:
         """
         Method to load SaveState back.
@@ -70,6 +78,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
         :return: instance of SaveState and result as success or failure.
         """
         try:
+            self._warnings = []
             text = Path(file_path).read_text(encoding="utf-8")
             doc = json.loads(text)
 
@@ -79,12 +88,25 @@ class SaveStateLoader(metaclass=SingletonMeta):
 
             # --- networks ---
             loaded_networks: List[NetworkVerificationConfig] = []
-            for item in doc.get("loaded_networks", []):
+            old_to_new_network_index: dict[int, int] = {}
+            for old_index, item in enumerate(doc.get("loaded_networks", [])):
                 net = item.get("network", {})
                 name = str(net.get("name", ""))
                 path = str(net.get("path", ""))
 
-                model = onnx.load(path)  # ONNX bytes are NOT stored, only the path
+                try:
+                    model = onnx.load(path)  # ONNX bytes are NOT stored, only the path
+                except BaseException as e:
+                    model_label = name or Path(path).name or path
+                    if isinstance(e, FileNotFoundError):
+                        self._warnings.append(
+                            f"Model '{model_label}' could not be loaded: file not found at '{path}'."
+                        )
+                    else:
+                        self._warnings.append(
+                            f"Model '{model_label}' could not be loaded from '{path}': {e}"
+                        )
+                    continue
                 nn = NeuralNetwork(name=name, path=path, model=model)
 
                 layers_dimensions = list(item.get("layers_dimensions", []))
@@ -104,19 +126,27 @@ class SaveStateLoader(metaclass=SingletonMeta):
                     cfg.saved_bounds.append(b)
 
                 loaded_networks.append(cfg)
+                old_to_new_network_index[old_index] = len(loaded_networks) - 1
 
             # --- diagrams ---
             diagrams: List[DiagramConfig] = []
-            for ditem in doc.get("diagrams", []):
+            for diagram_index, ditem in enumerate(doc.get("diagrams", [])):
                 polygons_raw = ditem.get("polygons", []) or []
                 polygons = [
                     [(float(x), float(y)) for (x, y) in poly] for poly in polygons_raw
                 ]
 
                 pgcs: List[PlotGenerationConfig] = []
-                for pgc_data in ditem.get("plot_generation_configs", []) or []:
+                kept_polygon_indices: List[int] = []
+                for pgc_index, pgc_data in enumerate(ditem.get("plot_generation_configs", []) or []):
                     nn_idx = int(pgc_data["nn_index"])
-                    nncfg = loaded_networks[nn_idx]
+                    mapped_network_index = old_to_new_network_index.get(nn_idx)
+                    if mapped_network_index is None:
+                        self._warnings.append(
+                            f"Diagram {diagram_index + 1}, pair {pgc_index + 1} was skipped because its model is missing."
+                        )
+                        continue
+                    nncfg = loaded_networks[mapped_network_index]
 
                     a = pgc_data["algorithm"]
                     alg = Algorithm(
@@ -133,9 +163,30 @@ class SaveStateLoader(metaclass=SingletonMeta):
                         bounds_index=int(pgc_data.get("bounds_index", -1)),
                     )
                     pgcs.append(pgc)
+                    kept_polygon_indices.append(pgc_index)
 
-                diagram = DiagramConfig(plot_generation_configs=pgcs, polygons=polygons)
-                diagram.plots = [[int(i) for i in plot] for plot in ditem.get("plots", []) or []]
+                if not pgcs:
+                    self._warnings.append(f"Diagram {diagram_index + 1} was skipped because no valid pairs remain.")
+                    continue
+
+                filtered_polygons: List[list[tuple[float, float]]] = []
+                for old_polygon_index in kept_polygon_indices:
+                    if 0 <= old_polygon_index < len(polygons):
+                        filtered_polygons.append(polygons[old_polygon_index])
+                    else:
+                        filtered_polygons.append([])
+                        self._warnings.append(
+                            f"Diagram {diagram_index + 1}, pair {old_polygon_index + 1} has no polygon data."
+                        )
+                polygon_index_map = {old_i: new_i for new_i, old_i in enumerate(kept_polygon_indices)}
+
+                diagram = DiagramConfig(plot_generation_configs=pgcs, polygons=filtered_polygons)
+                remapped_plots = []
+                for plot in ditem.get("plots", []) or []:
+                    remapped = [polygon_index_map[i] for i in plot if i in polygon_index_map]
+                    if remapped:
+                        remapped_plots.append(remapped)
+                diagram.plots = remapped_plots
 
                 # fallback: if missing/empty, create one plot per polygon
                 if not diagram.plots:
