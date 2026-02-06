@@ -25,6 +25,9 @@ def _parse_bounds_doc(obj) -> dict:
 
 
 def _restore_bounds(bounds_model, obj) -> None:
+    """
+    Restore bounds + samples.
+    """
     doc = _parse_bounds_doc(obj)
     values = doc.get("values", []) or []
 

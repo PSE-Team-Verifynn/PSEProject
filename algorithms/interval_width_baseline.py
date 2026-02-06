@@ -5,6 +5,11 @@ import numpy as np
 
 
 def _infer_output_size(onnx_model) -> int:
+    """
+    Infer output size from ONNX model.
+    :param onnx_model: network model
+    :return: output_size
+    """
     # Prefer declared graph output shape.
     if onnx_model.graph.output:
         tensor_type = onnx_model.graph.output[0].type.tensor_type
