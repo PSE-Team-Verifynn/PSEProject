@@ -27,7 +27,7 @@ class PlotSettingsWidget(QWidget):
         group = QWidget()
         group_layout = QVBoxLayout(group)
         group_layout.setContentsMargins(6, 6, 6, 6)
-        group_layout.setSpacing(0)
+        group_layout.setSpacing(5)
 
         header = QWidget()
         header_layout = QHBoxLayout(header)

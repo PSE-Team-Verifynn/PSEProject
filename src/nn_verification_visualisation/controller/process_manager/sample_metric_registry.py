@@ -17,13 +17,18 @@ def load_metrics() -> list[SampleMetric]:
     return [
         SampleMetric(
             key="max",
-            name="Max activation",
-            compute=lambda output: np.max(output, axis=0),
+            name="Max Activation",
+            compute=lambda output: np.max(np.abs(output), axis=0),
         ),
         SampleMetric(
             key="mean",
-            name="Mean activation",
+            name="Mean Activation",
             compute=lambda output: np.mean(output, axis=0),
+        ),
+        SampleMetric(
+            key="range",
+            name="Activation Range",
+            compute=lambda output: np.max(output, axis=0) - np.min(output, axis=0),
         ),
     ]
 

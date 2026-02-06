@@ -3,7 +3,7 @@ from collections import defaultdict
 from enum import Enum
 from typing import List, Callable
 from PySide6.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout, QScrollArea, QHBoxLayout
+    QWidget, QLabel, QVBoxLayout, QScrollArea, QHBoxLayout, QSizePolicy
 )
 
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
@@ -19,8 +19,7 @@ class SettingsDialog(DialogBase):
     def get_content(self) -> QWidget:
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-
-        print(f"Settings: {SettingsDialog.settings}")
+        scroll_area.setMinimumSize(500, 350)
 
         groups : dict[str, List[QHBoxLayout]] = defaultdict(list)
 
@@ -44,11 +43,19 @@ class SettingsDialog(DialogBase):
             layout.addWidget(group_label)
             for row in group:
                 layout.addLayout(row)
+            layout.addSpacing(20)
 
         layout.addStretch()
-        scroll_area.setWidget(content_widget)
 
-        return scroll_area
+        scroll_area.setWidget(content_widget)
+        content_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+
+
+        border = QWidget()
+        border_layout = QVBoxLayout(border)
+        border_layout.addWidget(scroll_area)
+
+        return border
 
     @staticmethod
     def add_setting(setting: SettingsOption) -> Callable[[], None]:
