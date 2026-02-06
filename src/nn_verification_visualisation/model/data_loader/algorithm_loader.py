@@ -17,7 +17,6 @@ CalculateFn = Callable[[Any, Any], Any]
 
 
 class AlgorithmLoader(metaclass=SingletonMeta):
-    logger = Logger(__name__)
     # cash: absolute path -> calculate_output_bounds
     _fn_cache: Dict[str, CalculateFn] = {}
 
@@ -67,6 +66,7 @@ class AlgorithmLoader(metaclass=SingletonMeta):
 
     @staticmethod
     def _import_module(file_path: str):
+        logger = Logger(__name__)
         path = Path(file_path)
 
         if not path.is_file():
