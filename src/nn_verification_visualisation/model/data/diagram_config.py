@@ -20,3 +20,6 @@ class DiagramConfig:
         self.plot_generation_configs = plot_generation_configs
         self.polygons = polygons
         self.plots = []
+
+    def get_title(self) -> str:
+        return "Comparison"

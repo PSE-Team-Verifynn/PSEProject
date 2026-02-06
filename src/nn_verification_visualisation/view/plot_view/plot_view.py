@@ -10,6 +10,7 @@ from nn_verification_visualisation.view.base_view.insert_view import InsertView
 from nn_verification_visualisation.view.base_view.tutorial_speech_bubble import TutorialSpeechBubble
 from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
 from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
+from nn_verification_visualisation.view.plot_view.comparison_loading_widget import ComparisonLoadingWidget
 from nn_verification_visualisation.view.plot_view.plot_page import PlotPage
 from nn_verification_visualisation.model.data.storage import Storage
 
@@ -37,12 +38,28 @@ class PlotView(InsertView):
 
         self.set_bar_corner_widgets([add_button, view_toggle_button], Qt.Corner.TopRightCorner, width=110)
 
-    def add_plot_tab(self, diagram_config: DiagramConfig):
+    def add_plot_tab(self, diagram_config: DiagramConfig, index: int = -1):
         '''
         Adds a plot tab to the QTabWidget. Only updates UI, not the backend.
-        :param polygons: Data object of the new tab.
+        :param index: position of the new tab (-1 if last)
+        :param diagram_config: data of the new tab
         '''
-        self.tabs.add_tab(PlotPage(self.controller, diagram_config))
+        self.tabs.add_tab(PlotPage(self.controller, diagram_config), index=index)
+
+    def add_loading_tab(self, widget: ComparisonLoadingWidget):
+        self.tabs.add_tab(widget)
+
+    def close_tab(self, index: int):
+        # If the tab widget has diagram_config (PlotPage), remove it from Storage().diagrams
+        w = self.tabs.widget(index)
+        diagram = getattr(w, "diagram_config", None)
+        if diagram is not None:
+            storage = Storage()
+            if diagram in storage.diagrams:
+                storage.diagrams.remove(diagram)
+                storage.request_autosave()
+        super().close_tab(index)
+
 
     def reload_from_storage(self):
         self.tabs.reset()

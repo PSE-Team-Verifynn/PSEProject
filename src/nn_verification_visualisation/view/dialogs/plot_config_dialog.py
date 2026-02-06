@@ -46,7 +46,7 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
             self.parent_controller.start_computation(self.data)
 
     def get_title(self, item: PlotGenerationConfig) -> str:
-        return "Plot: " + item.algorithm.name
+        return item.get_title()
 
     def on_add_clicked(self):
         logger = Logger(__name__)

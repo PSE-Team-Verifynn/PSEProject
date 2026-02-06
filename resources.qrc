@@ -18,6 +18,7 @@
     <file>assets/icons/plot/unlocked.svg</file>
     <file>assets/icons/plot/fullscreen.svg</file>
     <file>assets/icons/plot/switch.svg</file>
+    <file>assets/icons/plot/hourglass.svg</file>
     <file>src/nn_verification_visualisation/style.qss</file>
   </qresource>
 </RCC>

@@ -1,4 +1,6 @@
 #  crown_autolirpa.py
+from time import sleep
+
 ALGORITHM_NAME = "CROWN (auto_LiRPA)"
 IS_DETERMINISTIC = True
 
@@ -33,4 +35,5 @@ def calculate_output_bounds(onnx_model, input_bounds: np.ndarray) -> np.ndarray:
     out_lb, out_ub = bounded_model.compute_bounds(x=(x,), method="CROWN")
     out_lb = out_lb.reshape(-1).detach().cpu().numpy()
     out_ub = out_ub.reshape(-1).detach().cpu().numpy()
+
     return np.stack([out_lb, out_ub], axis=1)

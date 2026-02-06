@@ -1,4 +1,5 @@
-from typing import List, Callable
+from __future__ import annotations
+from typing import List, Callable, TYPE_CHECKING
 
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtWidgets import (
@@ -14,9 +15,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+if TYPE_CHECKING:
+    from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
-from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
 from nn_verification_visualisation.view.base_view.plot_settings_widget import PlotSettingsWidget
 from nn_verification_visualisation.view.plot_view.plot_widget import PlotWidget
 from nn_verification_visualisation.view.base_view.tab import Tab
@@ -56,7 +58,7 @@ class PlotPage(Tab):
         self.plot_widgets = []
         self.plot_setting_widgets = []
 
-        super().__init__("Example Tab", ":assets/icons/plot/chart.svg")
+        super().__init__(diagram_config.get_title(), ":assets/icons/plot/chart.svg")
 
         # build plots from saved state if present, otherwise create default (one per polygon)
         self.__initializing = True

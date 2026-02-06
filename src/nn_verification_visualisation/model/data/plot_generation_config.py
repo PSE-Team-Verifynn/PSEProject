@@ -24,3 +24,6 @@ class PlotGenerationConfig:
         self.selected_neurons = selected_neurons
         self.parameters = parameters
         self.bounds_index = bounds_index
+
+    def get_title(self) -> str:
+        return "Plot: " + self.algorithm.name

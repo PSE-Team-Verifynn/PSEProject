@@ -18,8 +18,8 @@ def main():
     app.setStyle("Fusion")
 
     color_manager = ColorManager(app)
-    style_path = Path(__file__).resolve().parent / "style.qss"
-    color_manager.load_raw(str(style_path))
+    # style_path = Path(__file__).resolve().parent / "style.qss"
+    color_manager.load_raw(":src/nn_verification_visualisation/style.qss")
 
     storage = Storage()
     state_path = Path(__file__).resolve().parent / "save_state.json"

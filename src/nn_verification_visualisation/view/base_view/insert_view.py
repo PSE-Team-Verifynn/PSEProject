@@ -89,14 +89,6 @@ class InsertView(QWidget):
         self.tabs.setCornerWidget(container, corner)
 
     def close_tab(self, index: int):
-        # If the tab widget has diagram_config (PlotPage), remove it from Storage().diagrams
-        w = self.tabs.widget(index)
-        diagram = getattr(w, "diagram_config", None)
-        if diagram is not None:
-            storage = Storage()
-            if diagram in storage.diagrams:
-                storage.diagrams.remove(diagram)
-                storage.request_autosave()
         self.tabs.close_tab(index)
 
     def open_dialog(self, dialog: DialogBase):

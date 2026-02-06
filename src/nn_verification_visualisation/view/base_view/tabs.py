@@ -58,15 +58,20 @@ class Tabs(QTabWidget):
         else:
             self.setCurrentWidget(self.empty_page)
 
-    def add_tab(self, tab: Tab, add_silent: bool = False):
+    def add_tab(self, tab: Tab, add_silent: bool = False, index: int = -1):
         '''
         Adds a new tab to the tab bar and avoids conflicts with the default tab.
+        :param index: position of the new tab (-1 if last)
+        :param add_silent: if true, the tab does not get focused
         :param tab: tab to add to the QTabWidget
         '''
         if self.has_empty_page and self.count() == 1 and self.widget(0) is self.empty_page:
             self.removeTab(0)
 
-        index = self.addTab(tab, tab.title)
+        if index < 0:
+            index = self.addTab(tab, tab.title)
+        else:
+            self.insertTab(index, tab, tab.title)
 
         # adds the tab's icons if preset
         if tab.icon is not None:
@@ -82,6 +87,12 @@ class Tabs(QTabWidget):
                 index,
                 self.tabBar().ButtonPosition.LeftSide,
                 wrapper
+            )
+        if tab.remove_close_button:
+            self.tabBar().setTabButton(
+                self.indexOf(tab),
+                self.tabBar().ButtonPosition.RightSide,
+                None
             )
 
         if not add_silent:
