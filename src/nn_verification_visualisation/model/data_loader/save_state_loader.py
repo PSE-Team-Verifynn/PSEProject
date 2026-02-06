@@ -1,17 +1,8 @@
-from __future__ import annotations
-
-import base64
-import gzip
-import io
 import json
-import pickle
-from logging import Logger
-from typing import Dict, List, Tuple
+from pathlib import Path
+from typing import List, Tuple
 
 import onnx
-import numpy as np
-import matplotlib.image as mpimg
-from matplotlib.figure import Figure
 
 from nn_verification_visualisation.model.data.save_state import SaveState
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
@@ -19,75 +10,45 @@ from nn_verification_visualisation.model.data.network_verification_config import
 from nn_verification_visualisation.model.data.neural_network import NeuralNetwork
 from nn_verification_visualisation.model.data.algorithm import Algorithm
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
-from nn_verification_visualisation.model.data.plot import Plot
 from nn_verification_visualisation.model.data.input_bounds import InputBounds
 
-from nn_verification_visualisation.utils.result import Result, Success, Failure, Success as RSuccess, Failure as RFailure
+from nn_verification_visualisation.utils.result import Result, Success, Failure
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 
-def _b64_gzip_load_bytes(s: str) -> bytes:
-    return gzip.decompress(base64.b64decode(s.encode("ascii")))
+def _fill_input_bounds(bounds_model, pairs: List[Tuple[float, float]]) -> None:
+    """Write [(lo, hi), ...] into InputBounds using common APIs."""
+    pairs = [(float(lo), float(hi)) for (lo, hi) in pairs]
 
-def _restore_input_bounds(values: List[Tuple[float, float]]) -> InputBounds:
-    b = InputBounds(len(values))
+    if hasattr(bounds_model, "load_list"):
+        bounds_model.load_list(pairs)
+        return
 
-    if hasattr(b, "load_list"):
-        b.load_list([(float(lo), float(hi)) for (lo, hi) in values])
-        return b
+    if hasattr(bounds_model, "load_bounds"):
+        bounds_model.load_bounds({i: pairs[i] for i in range(len(pairs))})
+        return
 
-    if hasattr(b, "load_bounds"):
-        b.load_bounds({i: (float(lo), float(hi)) for i, (lo, hi) in enumerate(values)})
-        return b
-
-    # fallback: try to write directly (last resort)
-    setattr(b, "_InputBounds__value", [(float(lo), float(hi)) for (lo, hi) in values])
-    return b
-
-
-def _load_figure(fig_obj: Dict[str, str]) -> Figure:
-    logger = Logger(__name__)
-    kind = fig_obj.get("kind")
-    raw = _b64_gzip_load_bytes(fig_obj.get("data", ""))
-
-    if kind == "pickle":
-        return pickle.loads(raw)
-
-    if kind == "png":
-        img = mpimg.imread(io.BytesIO(raw), format="png")
-        fig = Figure()
-        ax = fig.add_subplot(111)
-        ax.imshow(img)
-        ax.axis("off")
-        return fig
-    logger.error(f"Unknown figure kind: {kind}")
-    raise ValueError(f"Unknown figure kind: {kind}")
+    setattr(bounds_model, "_InputBounds__value", pairs)
 
 
 class SaveStateLoader(metaclass=SingletonMeta):
     def load_save_state(self, file_path: str) -> Result[SaveState]:
-        logger = Logger(__name__)
-        """
-        Loads SaveState from JSON file.
-        Important: ONNX-модель isn't saved in SaveState -> load it from network.path.
-        """
         try:
-            text = open(file_path, "r", encoding="utf-8").read()
+            text = Path(file_path).read_text(encoding="utf-8")
             doc = json.loads(text)
 
             if doc.get("format") != "nnvv_save_state":
-                logger.error(f"Unsupported format: {doc['format']}")
                 raise ValueError("Not a nnvv_save_state file.")
             _ = int(doc.get("version", 1))
 
             # --- networks ---
             loaded_networks: List[NetworkVerificationConfig] = []
             for item in doc.get("loaded_networks", []):
-                net = item["network"]
+                net = item.get("network", {})
                 name = str(net.get("name", ""))
                 path = str(net.get("path", ""))
 
-                model = onnx.load(path)
+                model = onnx.load(path)  # ONNX bytes are NOT stored, only the path
                 nn = NeuralNetwork(name=name, path=path, model=model)
 
                 layers_dimensions = list(item.get("layers_dimensions", []))
@@ -96,27 +57,26 @@ class SaveStateLoader(metaclass=SingletonMeta):
                 cfg.activation_values = list(item.get("activation_values", []))
                 cfg.selected_bounds_index = int(item.get("selected_bounds_index", -1))
 
-                cfg.bounds = _restore_input_bounds(item.get("bounds", []))
-                cfg.saved_bounds = [_restore_input_bounds(v) for v in item.get("saved_bounds", [])]
+                _fill_input_bounds(cfg.bounds, item.get("bounds", []))
+
+                cfg.saved_bounds = []
+                for sb in item.get("saved_bounds", []):
+                    b = InputBounds(len(sb))
+                    _fill_input_bounds(b, sb)
+                    cfg.saved_bounds.append(b)
 
                 loaded_networks.append(cfg)
 
             # --- diagrams ---
             diagrams: List[DiagramConfig] = []
             for ditem in doc.get("diagrams", []):
-                dc = DiagramConfig()
-                # IMPORTANT: DiagramConfig has class-level dicts; ensure instance dicts
-                dc.plots = {}
-                dc.results = {}
+                polygons_raw = ditem.get("polygons", []) or []
+                polygons = [
+                    [(float(x), float(y)) for (x, y) in poly] for poly in polygons_raw
+                ]
 
-                plots_in = ditem.get("plots", {}) or {}
-                for plot_id_str, pobj in plots_in.items():
-                    fig = _load_figure(pobj["figure"])
-                    dc.plots[int(plot_id_str)] = Plot(name=str(pobj["name"]), data=fig)
-
-                results_in = ditem.get("results", []) or []
-                for entry in results_in:
-                    pgc_data = entry["pgc"]
+                pgcs: List[PlotGenerationConfig] = []
+                for pgc_data in ditem.get("plot_generation_configs", []) or []:
                     nn_idx = int(pgc_data["nn_index"])
                     nncfg = loaded_networks[nn_idx]
 
@@ -132,18 +92,18 @@ class SaveStateLoader(metaclass=SingletonMeta):
                         algorithm=alg,
                         selected_neurons=[(int(x), int(y)) for (x, y) in pgc_data.get("selected_neurons", [])],
                         parameters=[str(p) for p in pgc_data.get("parameters", [])],
+                        bounds_index=int(pgc_data.get("bounds_index", -1)),
                     )
+                    pgcs.append(pgc)
 
-                    if bool(entry.get("is_success")) and entry.get("output_bounds") is not None:
-                        bounds = np.asarray(entry["output_bounds"], dtype=float)
-                        dc.results[pgc] = RSuccess(bounds)
-                    else:
-                        msg = entry.get("error") or "Unknown error"
-                        if bool(entry.get("is_success")) and entry.get("output_bounds") is None:
-                            msg = "Missing output_bounds in save file"
-                        dc.results[pgc] = RFailure(RuntimeError(str(msg)))
+                diagram = DiagramConfig(plot_generation_configs=pgcs, polygons=polygons)
+                diagram.plots = [[int(i) for i in plot] for plot in ditem.get("plots", []) or []]
 
-                diagrams.append(dc)
+                # fallback: if missing/empty, create one plot per polygon
+                if not diagram.plots:
+                    diagram.plots = [[i] for i in range(len(diagram.polygons))]
+
+                diagrams.append(diagram)
 
             return Success(SaveState(loaded_networks=loaded_networks, diagrams=diagrams))
 

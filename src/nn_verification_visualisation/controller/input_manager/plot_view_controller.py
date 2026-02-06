@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from logging import Logger
 from typing import TYPE_CHECKING
+from nn_verification_visualisation.model.data.storage import Storage
 
 import numpy as np
 
@@ -54,6 +55,7 @@ class PlotViewController:
             selection.discard(pair_index)
 
     def start_computation(self, plot_generation_configs: list[PlotGenerationConfig]):
+        logger = Logger(__name__)
         polygons = []
         for plot_generation_config in plot_generation_configs:
             execution_res = AlgorithmExecutor.execute_algorithm(AlgorithmExecutor(), plot_generation_config)
@@ -75,6 +77,7 @@ class PlotViewController:
         print("Generated Diagram Config")
         storage = Storage()
         storage.diagrams.append(diagram_config)
+        storage.request_autosave()
         self.current_plot_view.add_plot_tab(diagram_config)
 
     def change_tab(self, index: int):
