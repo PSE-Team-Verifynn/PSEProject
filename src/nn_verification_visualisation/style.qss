@@ -162,27 +162,34 @@ QDoubleSpinBox {
 
 QCheckBox {
     spacing: 1px;
-    background-color: transparent;
     color: @bgt;
 }
 
-QCheckBox:hover {
-    background-color: transparent;
-}
-
 QCheckBox::indicator {
-    width: 16px;
-    height: 16px;
-    border: 2px solid @bgt;
-    background: @bg0;
-    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: @component;
+    border-radius: 5px;
+    margin-right: 5px;
 }
 
 QCheckBox::indicator:checked {
-    background: @success;
+    width: 16px;
+    height: 16px;
+    background: @fg1;
+    border: 2px solid @component;
 }
 
+QScrollArea {
+    background-color: transparent;
+    border-radius: 10px;
+}
+
+
+
 QComboBox {
+    width: 120px;
     border: none;
     border-radius: 6px;
     padding: 4px 10px;
@@ -191,10 +198,7 @@ QComboBox {
 }
 QComboBox::drop-down {
     subcontrol-origin: border;
-    width: 24px;
-    background-color: @compoent;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
+    width: 0px;
 }
 
 QComboBox QAbstractItemView {

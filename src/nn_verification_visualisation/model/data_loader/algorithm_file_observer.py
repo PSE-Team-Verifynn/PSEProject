@@ -13,10 +13,10 @@ class AlgorithmFileObserver(FileSystemEventHandler):
     """
     Handles the algorithm file changes. This allows the program to dynamically react to the user editing the 'algorithms' directory.
     """
-    logger = Logger(__name__)
     ALLOWED_EXTENSIONS = (".py",)
 
     def __init__(self):
+        logger = Logger(__name__)
         # figuring out the algorithms directory
         current_dir = Path(__file__).parent.resolve()
         self.watch_dir = (current_dir.parents[3] / "algorithms")
@@ -37,6 +37,7 @@ class AlgorithmFileObserver(FileSystemEventHandler):
         """
         Helper method to handle the logic for all event types.
         """
+        logger = Logger(__name__)
         if event.is_directory:
             return
 
@@ -69,6 +70,7 @@ class AlgorithmFileObserver(FileSystemEventHandler):
 
     def __initial_sync(self):
         # Creating the storage if it doesn't exist yet
+        logger = Logger(__name__)
         storage = Storage()
 
         for file_path in self.watch_dir.rglob("*"):

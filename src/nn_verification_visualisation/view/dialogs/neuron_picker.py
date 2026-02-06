@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor, QIcon
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QWidget, QSplitter, QLabel, QHBoxLayout,
-                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout)
+                               QVBoxLayout, QComboBox, QSpinBox, QPushButton, QLayout, QScrollArea, QSizePolicy)
 
 # Assuming these imports exist in your project structure
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
@@ -110,7 +110,7 @@ class NeuronPicker(DialogBase):
 
         if preset is not None:
             self.__load_from_config(preset)
-            
+
     def __compute_bounds_index_label_width(self, input_count: int) -> int:
         if self.bounds_display_group is None:
             return 36
@@ -150,8 +150,11 @@ class NeuronPicker(DialogBase):
 
         side_bar = QWidget()
         side_bar.setObjectName("dialog-sidebar")
-        side_bar.setMinimumWidth(270)
-        side_bar.setLayout(self.__get_side_bar_content())
+        side_bar.setMinimumWidth(290)
+
+        side_bar_content = QWidget()
+        side_bar_content.setObjectName("dialog-sidebar")
+        side_bar_content.setLayout(self.__get_side_bar_content())
 
         self.network_presentation = QVBoxLayout()
         network_widget_container = QWidget()
@@ -167,6 +170,22 @@ class NeuronPicker(DialogBase):
             self.current_algorithm = Storage().algorithms[0].name
 
         self.network_presentation.addLayout(self.__get_button_row())  # Buttons
+
+        side_bar_scroll = NoHScrollArea()
+        side_bar_scroll.setWidget(side_bar_content)
+        side_bar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        side_bar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        side_bar_scroll.setContentsMargins(0, 0, 0, 0)
+        side_bar_scroll.setWidgetResizable(True)
+
+        side_bar_content.setSizePolicy(
+            QSizePolicy.Policy.Preferred,
+            QSizePolicy.Policy.Expanding,
+        )
+
+        base_layout = QVBoxLayout()
+        side_bar.setLayout(base_layout)
+        base_layout.addWidget(side_bar_scroll)
 
         splitter.setMinimumHeight(500)
         splitter.addWidget(side_bar)
@@ -340,7 +359,7 @@ class NeuronPicker(DialogBase):
             neuron_spin.blockSignals(False)
 
         # Reset stored choices
-        self.current_neurons = [(0, min(i, self.max_neuron_num_per_layer[i] -1)) for i in range(self.num_neurons)]
+        self.current_neurons = [(0, min(i, self.max_neuron_num_per_layer[i] - 1)) for i in range(self.num_neurons)]
 
         # Visual update
         if self.network_presentation.count() > 0:
@@ -495,12 +514,14 @@ class NeuronPicker(DialogBase):
         # --- Network Selector ---
         network_group = QHBoxLayout()
         network_group.addWidget(QLabel("Network:"))
+        network_group.addStretch()
         network_group.addWidget(self.network_selector)
 
         # --- Algorithm Selector ---
         algorithm_group = QHBoxLayout()
         algorithm_group.addWidget(QLabel("Algorithm:"))
         self.update_algorithms()
+        algorithm_group.addStretch()
         algorithm_group.addWidget(self.algorithm_selector)
 
         layout.addLayout(network_group)
@@ -510,6 +531,7 @@ class NeuronPicker(DialogBase):
         bounds_group = QHBoxLayout()
         bounds_group.setSpacing(8)
         bounds_group.addWidget(QLabel("Bounds:"))
+        bounds_group.addStretch()
         self.bounds_selector = QComboBox()
         self.__populate_bounds_selector(self.current_network)
         self.bounds_selector.currentIndexChanged.connect(self.__on_bounds_changed)
@@ -616,7 +638,6 @@ class NeuronPicker(DialogBase):
         self.full_results_button.setEnabled(False)
         self.full_results_button.clicked.connect(self.__on_full_results_clicked)
         layout.addWidget(self.full_results_button)
-
         layout.addStretch()
 
         print("Sidebar loaded")
@@ -693,3 +714,11 @@ class NeuronPicker(DialogBase):
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
         self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
         self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
+
+
+class NoHScrollArea(QScrollArea):
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        w = self.viewport().width()
+        self.widget().setFixedWidth(w)
+        # self.widget().setMinimumHeight(self.viewport().height())

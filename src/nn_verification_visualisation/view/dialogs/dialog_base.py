@@ -17,6 +17,8 @@ class DialogBase(QWidget):
 
     def __init__(self, on_close: Callable[[], None], title: str, size: tuple[int, int] | None = None, has_title: bool = True):
         super().__init__()
+
+
         self.on_close = on_close
         self.size = size
         self.title = title
@@ -26,6 +28,13 @@ class DialogBase(QWidget):
 
         self.dialog = QWidget()
         self.dialog.setObjectName("dialog-pane")
+
+        if size is not None:
+            self.dialog.setSizePolicy(
+                QSizePolicy.Policy.Preferred,
+                QSizePolicy.Policy.Preferred
+            )
+            self.dialog.sizeHint = lambda: QSize(size[0], size[1])
 
         outer_layout = QVBoxLayout()
         outer_layout.setContentsMargins(0,0,0,0)
@@ -42,13 +51,6 @@ class DialogBase(QWidget):
         layout.addStretch()
 
         layout.addWidget(self.get_content())
-
-        if size is not None:
-            self.dialog.setSizePolicy(
-                QSizePolicy.Policy.Preferred,
-                QSizePolicy.Policy.Preferred
-            )
-            self.dialog.sizeHint = lambda: QSize(size[0], size[1])
 
     def get_title_bar(self) -> QWidget:
         bar = QWidget()

@@ -58,7 +58,7 @@ class Tabs(QTabWidget):
         else:
             self.setCurrentWidget(self.empty_page)
 
-    def add_tab(self, tab: Tab):
+    def add_tab(self, tab: Tab, add_silent: bool = False):
         '''
         Adds a new tab to the tab bar and avoids conflicts with the default tab.
         :param tab: tab to add to the QTabWidget
@@ -84,8 +84,8 @@ class Tabs(QTabWidget):
                 wrapper
             )
 
-        # self.show()
-
+        if not add_silent:
+            self.setCurrentWidget(tab)
     def close_tab(self, index: int):
         '''
         Closes the tab at the given index. Shows the default tab when the last tab is closed.
