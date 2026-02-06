@@ -26,7 +26,6 @@ class AlgorithmExecutor:
                 raise fn_res.error
             directions = AlgorithmExecutor.calculate_directions(self,Storage().num_directions)
             modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, config.selected_neurons, directions)
-            onnx.save_model(modified_model, "Test_Model","protobuf",save_as_external_data=True)
             output_bounds = fn_res.data(modified_model, input_bounds)
             return Success((output_bounds, directions))
 

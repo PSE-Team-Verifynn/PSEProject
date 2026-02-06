@@ -107,9 +107,14 @@ class NetworkModifier:
                 else:
                     if layer != model.graph.initializer.__len__() - 2:
                         model.graph.initializer[layer].float_data.append(0)
-        for neuron_ind in range(0, neurons.__len__()): # changes the last initializer to match the output
-            for direction in directions:
-                model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.append(direction[neuron_ind])
+        for neuron_ind in range(0, neurons.__len__()):# changes the last initializer to match the output
+            if 2 * neurons[neuron_ind][0] == model.graph.initializer.__len__() - 2:
+                for direction in range(0, directions.__len__()):
+                    model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.remove(0)
+                    model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.insert(2* neurons[neuron_ind][1] + direction,directions[direction][neuron_ind])
+            else:
+                for direction in directions:
+                    model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.append(direction[neuron_ind])
         return model
 
     def create_initalizers(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> tuple[TensorProto, TensorProto]:
