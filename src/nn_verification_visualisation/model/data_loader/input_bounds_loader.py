@@ -1,7 +1,7 @@
 import re
 from logging import Logger
 from pathlib import Path
-from typing import Dict, List, Iterable, Any, Tuple
+from typing import Dict, List, Any, Tuple
 from venv import logger
 
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
@@ -12,8 +12,17 @@ from nn_verification_visualisation.utils.result import Result
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 class InputBoundsLoader(metaclass=SingletonMeta):
+    """
+    Class to load input bounds csv/vnnlib file
+    """
     logger = Logger(__name__)
     def load_input_bounds(self, file_path: str, network_config: NetworkVerificationConfig) -> Result[Dict[int, tuple[float, float]]]:
+        """
+        Method to load input bounds csv/vnnlib file.
+        :param file_path: path to input bounds csv/vnnlib file.
+        :param network_config: network configuration
+        :return: Dictionary of input bounds.
+        """
         ending = file_path.split('.')[-1]
         is_csv = (ending == 'csv')
         is_vnnlib = (ending == 'vnnlib')
@@ -38,6 +47,12 @@ class InputBoundsLoader(metaclass=SingletonMeta):
         return network_config.bounds[0]
 
     def __parse_csv(self, file_path: str, input_count: int) -> Result[Dict[int, tuple[float, float]]]:
+        """
+        Parses input bounds in csv file.
+        :param file_path: path to input bounds csv file.
+        :param input_count: amount of input.
+        :return: parsed input bounds.
+        """
         rows = []
         try:
             with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
@@ -71,7 +86,6 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 f"{file_path} has {str(len(rows))} rows. It needs the same number of inputs as the network ({input_count})"))
 
         bounds : Dict[int, tuple[float, float]] = {}
-        enumeration : List[tuple[int, List[str]]] = []
         # allow custom ordering of bounds
         if field_count == 3:
             parsed_rows = []
@@ -109,25 +123,29 @@ class InputBoundsLoader(metaclass=SingletonMeta):
 
         return Success(bounds)
 
-    """
-    Extract only input bounds (X_i) from vnnlib
-    
-    Structure:
-        - assert with (and...) / (or...) / atoms (<= X_0 0.5), (>= X_1 -0.2), (= X_2 0.0)
-        - if OR gives multiple regions, return bounding box (min lo, max hi), cause InputBounds can save only one rectangle
-    """
+
     def __parse_vnnlib(self, file_path: str, input_count: int) -> Result[Dict[int, tuple[float, float]]]:
+        """
+            Extracts only input bounds (X_i) from vnnlib.
+            Structure:
+                - assert with (and...) / (or...) / atoms (<= X_0 0.5), (>= X_1 -0.2), (= X_2 0.0)
+                - if OR gives multiple regions, return bounding box (min lo, max hi), cause InputBounds can save only one rectangle
+        """
         text = Path(file_path).read_text(encoding="utf-8", errors="replace")
         bounds_dict = self.__extract_input_bounds_from_vnnlib(text, input_count)
         return Success(bounds_dict)
 
-    """
-    Parser:
-     - tokenize
-     - build nested lists
-     - extract form asserts constraints for X_i
-    """
+
     def __extract_input_bounds_from_vnnlib(self, text: str, input_count: int) -> Dict[int, tuple[float, float]]:
+        """
+            Parser:
+             - tokenize
+             - build nested lists
+             - extract form asserts constraints for X_i
+             :param text: input text
+             :param input_count: input count
+             :return: bounds dictionary
+            """
         #delete comments
         text = re.sub(r";[^\n]*", "", text)
         #tokens: (,),atom
@@ -156,16 +174,16 @@ class InputBoundsLoader(metaclass=SingletonMeta):
             logger.error("Invalid expression.")
             raise ValueError("Invalid expression.")
 
-        """X_0 or X0"""
         def is_x(sym: Any) -> bool:
+            """X_0 or X0"""
             return isinstance(sym, str) and re.fullmatch(r"X_?\d+", sym) is not None
 
-        """X_12 -> 12, X12 -> 12"""
         def x_idx(sym : str) -> int:
+            """X_12 -> 12, X12 -> 12"""
             return int(sym.split("_")[-1]) if "_" in sym else int(sym[1:])
 
-        """Atom to float"""
         def to_float(v: Any) -> float | None:
+            """Atom to float"""
             if not isinstance(v, str):
                 return None
             try:
@@ -175,8 +193,8 @@ class InputBoundsLoader(metaclass=SingletonMeta):
 
         region = Dict[int, Tuple[float | None, float | None]]
 
-        """Constraints conjunction"""
         def merge(r1 : region, r2 : region) -> region | None:
+            """Constraints conjunction"""
             outer = dict(r1)
             for j, (lo2, hi2) in r2.items():
                 lo1, hi1 = outer.get(j, (None, None))
@@ -194,13 +212,14 @@ class InputBoundsLoader(metaclass=SingletonMeta):
                 outer[j] = (low, high)
 
             return outer
-        """
-        Atomic comparison:
-         - (<= X_0 0.5) -> X_0 <= 0.5
-         - (<= 0.5 X_0) -> X_0 >= 0.5
-         - (= X_0 1.2) -> X_0 == 1.2
-        """
+
         def atomic(exp: Any) -> region | None:
+            """
+            Atomic comparison:
+                - (<= X_0 0.5) -> X_0 <= 0.5
+                - (<= 0.5 X_0) -> X_0 >= 0.5
+                - (= X_0 1.2) -> X_0 == 1.2
+            """
             if not (isinstance(exp, list) and len(exp) == 3):
                 return None
 
@@ -231,20 +250,20 @@ class InputBoundsLoader(metaclass=SingletonMeta):
 
             return None
 
-        """Ignor asserts for Y"""
         def contains_x(exp: Any) -> bool:
+            """Ignor asserts for Y"""
             if is_x(exp):
                 return True
             if isinstance(exp, list):
                 return any(contains_x(e) for e in exp)
             return False
 
-        """Returns regions list:
-            - and: multiply regions
-            - or: combine regions
-            - atom: one region 
-        """
         def regions(exp:Any) -> List[region]:
+            """Returns regions list:
+                - and: multiply regions
+                - or: combine regions
+                - atom: one region
+            """
             if not contains_x(exp):
                 return [{}]
             if not isinstance(exp, list) or not exp:

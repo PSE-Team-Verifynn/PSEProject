@@ -15,19 +15,22 @@ from nn_verification_visualisation.utils.result import Result, Success, Failure
 
 
 class AlgorithmExecutor:
-    def execute_algorithm(self, model: ModelProto, input_bounds: np.ndarray, algorithm_path: str,
-                          selected_neurons: list[tuple[int, int]]) -> Result[
-        tuple[np.ndarray, list[tuple[float, float]]]]:
-
+    """
+    Class to execute algorithm.
+    """
+    def execute_algorithm(self, config: PlotGenerationConfig) -> Result[tuple[np.ndarray, list[tuple[float, float]]]]:
+        """
+        Execute previously loaded and cached algorithm.
+        :param config: characteristics of algorithm.
+        :return: output_bounds, directions and result as success or failure.
+        """
         try:
             # InputBounds (QAbstractTableModel) -> np.ndarray (N, 2)
             fn_res = AlgorithmLoader.load_calculate_output_bounds(algorithm_path)
             if not fn_res.is_success:
                 raise fn_res.error
-            directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions)
-            modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, selected_neurons,
-                                                                 directions)
-            onnx.save_model(modified_model, "Test_Model", "protobuf", save_as_external_data=True)
+            directions = AlgorithmExecutor.calculate_directions(self,Storage().num_directions)
+            modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, config.selected_neurons, directions)
             output_bounds = fn_res.data(modified_model, input_bounds)
             return Success((output_bounds, directions))
 
@@ -37,8 +40,9 @@ class AlgorithmExecutor:
     @staticmethod
     def input_bounds_to_numpy(bounds_model) -> np.ndarray:
         """
-        bounds_model: InputBounds (QAbstractTableModel)
-        Returns np.ndarray shape (N, 2) with [lower, upper].
+        InputBounds (QAbstractTableModel) -> np.ndarray (N, 2) converter.
+        :param bounds_model: InputBounds (QAbstractTableModel)
+        :return: np.ndarray shape (N, 2) with [lower, upper]
         """
 
         logger = Logger(__name__)
@@ -60,6 +64,11 @@ class AlgorithmExecutor:
         return arr
 
     def calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
+        """
+        Calculate directions given number of directions.
+        :param num_directions: amount of directions.
+        :return: directions.
+        """
         directions = []
         for i in range(0, num_directions):
             directions.append((numpy.sin(numpy.pi * i / num_directions), numpy.cos(numpy.pi * i / num_directions)))

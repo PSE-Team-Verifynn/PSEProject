@@ -7,6 +7,7 @@ from PySide6.QtGui import QIcon
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.view.base_view.insert_view import InsertView
+from nn_verification_visualisation.view.base_view.tutorial_speech_bubble import TutorialSpeechBubble
 from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog
 from nn_verification_visualisation.view.dialogs.settings_option import SettingsOption
 from nn_verification_visualisation.view.plot_view.comparison_loading_widget import ComparisonLoadingWidget
@@ -59,6 +60,16 @@ class PlotView(InsertView):
                 storage.request_autosave()
         super().close_tab(index)
 
+
+    def reload_from_storage(self):
+        self.tabs.reset()
+        for diagram in Storage().diagrams:
+            self.add_plot_tab(diagram)
+
+    def get_default_tab(self) -> QWidget | None:
+        text = "1. Use the edit icon in the top right corner to add new comparisons.\n\n2. Select different neuron pairs with networks, algorithms and specific nodes.\n\n3. Let the algorithms calculate the output bounds from the given pairs.\n\n4. View the results and compare them."
+        return TutorialSpeechBubble("Quick Tutorial", text)
+
     def showEvent(self, event, /):
         super().showEvent(event)
         self.settings_remover = SettingsDialog.add_setting(
@@ -73,8 +84,6 @@ class PlotView(InsertView):
     def get_num_directions_changer(self) -> QWidget:
         def on_change(value):
             Storage().num_directions = value
-            print(f"Changed num directions to {value}")
-            print(changer.value())
 
         changer = QSpinBox()
         changer.setRange(0, 10000)

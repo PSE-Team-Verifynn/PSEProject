@@ -69,7 +69,9 @@ class AlgorithmFileObserver(FileSystemEventHandler):
             storage.add_algorithm(new_algorithm)
 
     def __initial_sync(self):
-        # Creating the storage if it doesn't exist yet
+        """
+        Creating the storage if it doesn't exist yet
+        """
         logger = Logger(__name__)
         storage = Storage()
 

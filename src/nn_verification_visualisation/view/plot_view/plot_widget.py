@@ -150,8 +150,6 @@ class PlotWidget(QWidget):
         if polygons is None:
             polygons = []
 
-        print(f"Given polygons: {polygons}")
-
         self.axes.cla()
         self.axes.grid(True, alpha=0.2)
         self.axes.set_title(self.title, fontsize=9)
@@ -175,7 +173,6 @@ class PlotWidget(QWidget):
             edge_color = face_color.darker(150)
             all_points.extend(polygon_points)
             poly_array = np.array(polygon_points)
-            print(f"Adding polygon {index}, {polygon_points}")
             polygon = Polygon(poly_array, closed=True, facecolor=face_color.getRgbF(), edgecolor=edge_color.getRgbF(), alpha=0.6)
             self.axes.add_patch(polygon)
             legend_handles.append(polygon)

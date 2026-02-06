@@ -109,6 +109,15 @@ class Tabs(QTabWidget):
             self._add_default_tab()
             self.setCurrentWidget(self.empty_page)
 
+    def reset(self):
+        """
+        Remove all tabs and restore default empty page if configured.
+        """
+        self.clear()
+        if self.has_empty_page:
+            self._add_default_tab()
+            self.setCurrentWidget(self.empty_page)
+
 
 class PersistentTabBar(QTabBar):
     '''

@@ -21,6 +21,9 @@ if TYPE_CHECKING:
 
 
 class NetworkViewController:
+    """
+    Class representing a network view.
+    """
     current_network_view: NetworkView
     current_tab: int
 
@@ -141,6 +144,9 @@ class NetworkViewController:
         pass
 
     def save_bounds(self, config: NetworkVerificationConfig) -> int:
+        """
+        Saves the bounds of the network.
+        """
         bounds = config.bounds.get_values()
         saved = InputBounds(config.layers_dimensions[0])
         saved.load_list(bounds)
@@ -151,6 +157,9 @@ class NetworkViewController:
         return config.selected_bounds_index
 
     def select_bounds(self, config: NetworkVerificationConfig, bounds_index: int | None):
+        """
+        Selects the bounds of the network.
+        """
         if bounds_index is None:
             config.selected_bounds_index = -1
             config.bounds.load_list(self._get_draft_bounds(config))
@@ -173,6 +182,9 @@ class NetworkViewController:
         Storage().request_autosave()
 
     def remove_bounds(self, config: NetworkVerificationConfig, bounds_index: int) -> bool:
+        """
+        Removes the bounds of the network.
+        """
         if bounds_index < 0 or bounds_index >= len(config.saved_bounds):
             return False
         del config.saved_bounds[bounds_index]
@@ -187,6 +199,9 @@ class NetworkViewController:
         return True
 
     def _apply_loaded_bounds(self, config: NetworkVerificationConfig, bounds: dict[int, tuple[float, float]]):
+        """
+        Applies the loaded bounds to the network.
+        """
         bounds_list = [bounds[i] for i in range(config.layers_dimensions[0])]
         if config.selected_bounds_index == -1:
             config.bounds.load_list(bounds_list)
@@ -207,3 +222,7 @@ class NetworkViewController:
 
     def _set_draft_bounds(self, config: NetworkVerificationConfig, bounds: list[tuple[float, float]]):
         self._draft_bounds_by_config[config] = bounds
+
+    def connect_all_bounds_autosave(self):
+        for config in Storage().networks:
+            self._connect_bounds_autosave(config)

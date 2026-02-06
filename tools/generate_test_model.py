@@ -7,6 +7,9 @@ from onnx import helper, TensorProto
 
 
 def _init_tensor(name: str, shape: list[int], rng: np.random.Generator) -> onnx.TensorProto:
+    """
+    Initialize a tensor from the given shape.
+    """
     values = rng.standard_normal(np.prod(shape)).astype(np.float32)
     return helper.make_tensor(name, TensorProto.FLOAT, shape, values.flatten().tolist())
 
@@ -18,6 +21,9 @@ def build_model(
     seed: int,
     hidden_dim2: int | None = None,
 ) -> onnx.ModelProto:
+    """
+    Build a simple ONNX model.
+    """
     rng = np.random.default_rng(seed)
 
     input_value = helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, input_dim])

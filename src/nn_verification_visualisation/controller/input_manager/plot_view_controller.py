@@ -57,21 +57,21 @@ def execute_algorithm_wrapper(index, queue, model: ModelProto, input_bounds: np.
 
 
 class PlotViewController:
+    """
+    Class representing a plot view.
+    """
     logger = Logger(__name__)
     current_plot_view: PlotView
-    current_tab: int
     card_size: int
     plot_titles: list[str]
     diagram_selections: dict[str, set[int]]
 
     def __init__(self, current_plot_view: PlotView):
         self.current_plot_view = current_plot_view
-        self.current_tab = 0
         self.card_size = 420
         self.plot_titles = []
         self.node_pairs = []
         self.node_pair_bounds = []
-        self.node_pair_colors = []
         self.diagram_selections = {}
 
         # start listening for algorithm changes
@@ -94,6 +94,10 @@ class PlotViewController:
             selection.discard(pair_index)
 
     def start_computation(self, plot_generation_configs: list[PlotGenerationConfig]):
+        """
+        Starts the main calculation.
+        :param plot_generation_configs: plot configs
+        """
         logger = Logger(__name__)
 
         polygons: list[list[tuple[float, float]] | None] = [None] * len(plot_generation_configs)
@@ -185,12 +189,22 @@ class PlotViewController:
         dialog = PlotConfigDialog(self)
         self.current_plot_view.open_dialog(dialog)
 
+    def open_plot_generation_editing_dialog(self, configs: list[PlotGenerationConfig], plot_page):
+        close_callback = lambda: self.current_plot_view.close_tab(self.current_plot_view.tabs.indexOf(plot_page))
+        dialog = PlotConfigDialog(self, (configs, close_callback))
+        self.current_plot_view.open_dialog(dialog)
+
     def set_card_size(self, value: int):
         self.card_size = value
 
     def compute_polygon(
-            self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[
-        tuple[float, float]]:
+        self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        """
+        Computes the polygon.
+        :param bounds: bounds
+        :param directions: directions
+        :return: polygon list
+        """
         def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
             def inside(p: tuple[float, float]) -> bool:
                 return a * p[0] + b * p[1] <= c + 1e-9

@@ -183,11 +183,17 @@ class PlotPage(Tab):
         self.__plots_sidebar_layout.setSpacing(8)
         layout.addLayout(self.__plots_sidebar_layout)
 
+        layout.addStretch(1)
+
         add_diagram_button = QPushButton("Add Diagram")
         add_diagram_button.clicked.connect(lambda: self.__add_plot([0]))
-        layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        add_diagram_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        layout.addWidget(add_diagram_button, alignment=Qt.AlignmentFlag.AlignBottom)
 
-        layout.addStretch(1)
+        edit_nodes_button = QPushButton("Edit Nodes")
+        edit_nodes_button.clicked.connect(lambda: self.__start_edit())
+        edit_nodes_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        layout.addWidget(edit_nodes_button, alignment=Qt.AlignmentFlag.AlignBottom)
 
         return container
 
@@ -264,6 +270,9 @@ class PlotPage(Tab):
             target_ax.set_ylim(ylim)
             target_canvas.draw_idle()
         self.__syncing = False
+
+    def __start_edit(self):
+        self.controller.open_plot_generation_editing_dialog(self.diagram_config.plot_generation_configs, self)
 
     def eventFilter(self, watched, event):
         if watched is self.__scroll_area.viewport() and event.type() == QEvent.Type.Resize:

@@ -38,10 +38,10 @@ class NetworkView(InsertView):
             self.add_network_tab(network)
 
     def get_default_tab(self) -> QWidget | None:
-        text = "1. Use the Edit-Icon in the top right corner to add new Neural Networks.\n\n\
-2. Enter or import the desired Input Bounds of the Network.\n\n\
-3. Use the switch in the top right corner to switch to the Plot View.\n\n\
-4. Use the Add-Icon to configure a new Diagram."
+        text = "1. Use the edit icon in the top right corner to add new neural networks.\n\n\
+2. Enter or import the desired input bounds of the network.\n\n\
+3. Use the switch in the top right corner to switch to the plot view.\n\n\
+4. See the plot view tutorial to learn how to proceed."
         return TutorialSpeechBubble("Quick Tutorial", text)
 
     def add_network_tab(self, network: NetworkVerificationConfig):
@@ -50,6 +50,12 @@ class NetworkView(InsertView):
         :param network: Data object of the new tab.
         '''
         self.tabs.add_tab(NetworkPage(self.controller, network))
+
+    def reload_from_storage(self):
+        self.tabs.reset()
+        self.controller.connect_all_bounds_autosave()
+        for network in Storage().networks:
+            self.add_network_tab(network)
 
     def close_network_tab(self, index: int):
         '''
