@@ -1,4 +1,5 @@
 import os
+import sys
 from logging import Logger
 from pathlib import Path
 from watchdog.events import FileSystemEventHandler
@@ -18,11 +19,15 @@ class AlgorithmFileObserver(FileSystemEventHandler):
     def __init__(self):
         logger = Logger(__name__)
         # figuring out the algorithms directory
-        current_dir = Path(__file__).parent.resolve()
-        self.watch_dir = (current_dir.parents[3] / "algorithms")
+        if getattr(sys, 'frozen', False):
+            current_dir = Path(sys.executable).parent
+        else:
+            current_dir = Path(__file__).parents[4]
+
+        self.watch_dir = current_dir / "algorithms"
 
         if not self.watch_dir.exists():
-            self.logger.error(f"Could not find algorithm directory at: {self.watch_dir}")
+            logger.error(f"Could not find algorithm directory at: {self.watch_dir}")
             print(f"Could not find algorithm directory at: {self.watch_dir}")
             return
 
