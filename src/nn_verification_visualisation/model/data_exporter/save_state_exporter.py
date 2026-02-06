@@ -6,6 +6,11 @@ from nn_verification_visualisation.model.data.plot_generation_config import Plot
 from nn_verification_visualisation.utils.result import Result, Success, Failure
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
+def _serialize_bounds(bounds_model) -> dict:
+    return {
+        "values": _input_bounds_to_list(bounds_model),
+        "sample": bounds_model.get_sample() if hasattr(bounds_model, "get_sample") else None,
+    }
 
 def _input_bounds_to_list(bounds_model) -> List[Tuple[float, float]]:
     """
@@ -67,8 +72,8 @@ class SaveStateExporter(metaclass=SingletonMeta):
                     "layers_dimensions": list(getattr(cfg, "layers_dimensions", [])),
                     "activation_values": list(getattr(cfg, "activation_values", [])),
                     "selected_bounds_index": int(getattr(cfg, "selected_bounds_index", -1)),
-                    "bounds": _input_bounds_to_list(cfg.bounds),
-                    "saved_bounds": [_input_bounds_to_list(b) for b in getattr(cfg, "saved_bounds", [])],
+                    "bounds": _serialize_bounds(cfg.bounds),
+                    "saved_bounds": [_serialize_bounds(b) for b in cfg.saved_bounds],
                 })
 
             diagrams_out: List[Dict[str, Any]] = []

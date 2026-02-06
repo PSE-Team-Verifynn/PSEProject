@@ -15,6 +15,31 @@ from nn_verification_visualisation.model.data.input_bounds import InputBounds
 from nn_verification_visualisation.utils.result import Result, Success, Failure
 from nn_verification_visualisation.utils.singleton import SingletonMeta
 
+def _parse_bounds_doc(obj) -> dict:
+    # Backward compatible:
+    # old: [[lo, hi], ...]
+    # new: {"values": [[lo, hi], ...], "sample": {...}|None}
+    if isinstance(obj, dict):
+        return obj
+    return {"values": obj, "sample": None}
+
+
+def _restore_bounds(bounds_model, obj) -> None:
+    doc = _parse_bounds_doc(obj)
+    values = doc.get("values", []) or []
+
+    # fill values
+    if hasattr(bounds_model, "load_list"):
+        bounds_model.load_list([(float(lo), float(hi)) for (lo, hi) in values])
+    elif hasattr(bounds_model, "load_bounds"):
+        bounds_model.load_bounds({i: (float(lo), float(hi)) for i, (lo, hi) in enumerate(values)})
+    else:
+        setattr(bounds_model, "_InputBounds__value", [(float(lo), float(hi)) for (lo, hi) in values])
+
+    # restore sample
+    sample = doc.get("sample", None)
+    if sample is not None and hasattr(bounds_model, "set_sample"):
+        bounds_model.set_sample(sample)
 
 def _fill_input_bounds(bounds_model, pairs: List[Tuple[float, float]]) -> None:
     """Write [(lo, hi), ...] into InputBounds using common APIs."""
@@ -57,12 +82,14 @@ class SaveStateLoader(metaclass=SingletonMeta):
                 cfg.activation_values = list(item.get("activation_values", []))
                 cfg.selected_bounds_index = int(item.get("selected_bounds_index", -1))
 
-                _fill_input_bounds(cfg.bounds, item.get("bounds", []))
+                _restore_bounds(cfg.bounds, item.get("bounds", []))
 
                 cfg.saved_bounds = []
-                for sb in item.get("saved_bounds", []):
-                    b = InputBounds(len(sb))
-                    _fill_input_bounds(b, sb)
+                for sb_obj in item.get("saved_bounds", []):
+                    sb_doc = _parse_bounds_doc(sb_obj)
+                    vals = sb_doc.get("values", []) or []
+                    b = InputBounds(len(vals))
+                    _restore_bounds(b, sb_obj)
                     cfg.saved_bounds.append(b)
 
                 loaded_networks.append(cfg)
