@@ -58,7 +58,15 @@ def _serialize_pgc(pgc: PlotGenerationConfig, nn_index_map: Dict[int, int]) -> D
 
 
 class SaveStateExporter(metaclass=SingletonMeta):
+    """
+    Class to export SaveState objects into JSON.
+    """
     def export_save_state(self, save_state: SaveState) -> Result[str]:
+        """
+        Method to export SaveState objects into JSON.
+        :param save_state: save state object.
+        :return: string to store as json.
+        """
         try:
             nn_index_map = {id(cfg): i for i, cfg in enumerate(save_state.loaded_networks)}
 

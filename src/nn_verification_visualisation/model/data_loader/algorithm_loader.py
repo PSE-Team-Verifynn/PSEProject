@@ -17,6 +17,9 @@ CalculateFn = Callable[[Any, Any], Any]
 
 
 class AlgorithmLoader(metaclass=SingletonMeta):
+    """
+    Class to load an algorithm.
+    """
     # cash: absolute path -> calculate_output_bounds
     _fn_cache: Dict[str, CalculateFn] = {}
 
@@ -25,6 +28,8 @@ class AlgorithmLoader(metaclass=SingletonMeta):
         """
         Validates algorithm file and returns metadata Algorithm.
         Parallel cashes calculate_output_bounds (not to import second time).
+        :param file_path: path to algorithm file.
+        :return: Algorithm instance with result as success or failure.
         """
         try:
             module = AlgorithmLoader._import_module(file_path)
@@ -50,6 +55,8 @@ class AlgorithmLoader(metaclass=SingletonMeta):
         """
         Returns callable calculate_output_bounds for algorithm.
         If algorithm was loaded with load_algorithm — use from cash.
+        :param file_path: path to the bounds file.
+        :return: callable calculate_output_bounds for algorithm.
         """
         try:
             abs_path = str(Path(file_path).resolve())
@@ -66,6 +73,11 @@ class AlgorithmLoader(metaclass=SingletonMeta):
 
     @staticmethod
     def _import_module(file_path: str):
+        """
+        Import algorithm module.
+        :param file_path: path to algorithm file.
+        :return: module.
+        """
         logger = Logger(__name__)
         path = Path(file_path)
 
@@ -96,6 +108,12 @@ class AlgorithmLoader(metaclass=SingletonMeta):
 
     @staticmethod
     def _get_calculate_output_bounds(module) -> CalculateFn:
+        """
+        Returns callable calculate_output_bounds for algorithm.
+        :param module: imported module.
+        :return:
+        """
+        logger = Logger(__name__)
         fn = getattr(module, "calculate_output_bounds", None)
         if fn is None or not callable(fn):
             logger.error("Algorithm has no calculate_output_bounds(onnx_model, input_bounds) function")

@@ -57,7 +57,15 @@ def _fill_input_bounds(bounds_model, pairs: List[Tuple[float, float]]) -> None:
 
 
 class SaveStateLoader(metaclass=SingletonMeta):
+    """
+    Class to load SaveState back.
+    """
     def load_save_state(self, file_path: str) -> Result[SaveState]:
+        """
+        Method to load SaveState back.
+        :param file_path: path to json save state file.
+        :return: instance of SaveState and result as success or failure.
+        """
         try:
             text = Path(file_path).read_text(encoding="utf-8")
             doc = json.loads(text)

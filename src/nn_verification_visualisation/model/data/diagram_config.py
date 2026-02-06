@@ -11,7 +11,7 @@ class DiagramConfig:
     '''
     Data object for a single plot page. Contains plot figures and algorithm output bounds.
     :param plot_generation_configs: the configurations with which the algorithm was executed.
-        :param polygons: list of the polygons, which are represented by their vertices
+    :param polygons: list of the polygons, which are represented by their vertices
     '''
     plot_generation_configs : list[PlotGenerationConfig]
     polygons : list[list[tuple[float, float]]]

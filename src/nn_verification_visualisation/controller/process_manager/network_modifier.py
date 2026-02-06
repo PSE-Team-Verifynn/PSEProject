@@ -5,6 +5,10 @@ import onnx
 
 
 class NetworkModifier:
+    """
+    Class to modify a network.
+    """
+
     @staticmethod
     def with_all_outputs(
         static_model: ModelProto,

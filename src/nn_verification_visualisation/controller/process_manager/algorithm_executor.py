@@ -4,7 +4,6 @@ from logging import Logger
 
 import numpy
 import numpy as np
-import onnx
 
 from nn_verification_visualisation.controller.process_manager.network_modifier import NetworkModifier
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
@@ -14,8 +13,15 @@ from nn_verification_visualisation.utils.result import Result, Success, Failure
 
 
 class AlgorithmExecutor:
+    """
+    Class to execute algorithm.
+    """
     def execute_algorithm(self, config: PlotGenerationConfig) -> Result[tuple[np.ndarray, list[tuple[float, float]]]]:
-
+        """
+        Execute previously loaded and cached algorithm.
+        :param config: characteristics of algorithm.
+        :return: output_bounds, directions and result as success or failure.
+        """
         try:
             model = config.nnconfig.network.model
 
@@ -35,8 +41,9 @@ class AlgorithmExecutor:
     @staticmethod
     def _input_bounds_to_numpy(bounds_model) -> np.ndarray:
         """
-        bounds_model: InputBounds (QAbstractTableModel)
-        Returns np.ndarray shape (N, 2) with [lower, upper].
+        InputBounds (QAbstractTableModel) -> np.ndarray (N, 2) converter.
+        :param bounds_model: InputBounds (QAbstractTableModel)
+        :return: np.ndarray shape (N, 2) with [lower, upper]
         """
 
         logger = Logger(__name__)
@@ -56,7 +63,13 @@ class AlgorithmExecutor:
             arr[r, 0] = float(lo)
             arr[r, 1] = float(hi)
         return arr
-    def   calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
+
+    def calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
+        """
+        Calculate directions given number of directions.
+        :param num_directions: amount of directions.
+        :return: directions.
+        """
         directions = []
         for i in range(0, num_directions):
             directions.append((numpy.sin(numpy.pi * i / num_directions), numpy.cos(numpy.pi * i / num_directions)))

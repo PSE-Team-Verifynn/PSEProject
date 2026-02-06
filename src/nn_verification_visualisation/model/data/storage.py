@@ -16,6 +16,9 @@ from nn_verification_visualisation.utils.singleton import SingletonMeta
 
 
 class Storage(metaclass=SingletonMeta):
+    """
+    Class representing work with the disk.
+    """
     networks: List[NetworkVerificationConfig]
     diagrams: List[DiagramConfig]
     algorithms: List[Algorithm]
@@ -39,7 +42,10 @@ class Storage(metaclass=SingletonMeta):
 
     # --- SaveState in-memory ---
     def load_save_state(self, save_state: SaveState):
-        """Replace current networks/diagrams with data from SaveState."""
+        """
+        Replace current networks/diagrams with data from SaveState.
+        :param save_state: SaveState object.
+        """
         self._suppress_autosave = True
         try:
             if save_state is None:
@@ -52,7 +58,9 @@ class Storage(metaclass=SingletonMeta):
             self._suppress_autosave = False
 
     def get_save_state(self) -> SaveState:
-        """Snapshot of current state (networks + diagrams)."""
+        """
+        Snapshot of current state (networks + diagrams).
+        """
         return SaveState(loaded_networks=list(self.networks), diagrams=list(self.diagrams))
 
     # --- SaveState disk IO ---
@@ -60,6 +68,10 @@ class Storage(metaclass=SingletonMeta):
         self._save_state_path = file_path
 
     def load_from_disk(self) -> Result[SaveState]:
+        """
+        Load state from disk.
+        :return: save state object.
+        """
         path = Path(self._save_state_path)
         if not path.exists():
             return Failure(FileNotFoundError(str(path)))
@@ -70,6 +82,10 @@ class Storage(metaclass=SingletonMeta):
         return res
 
     def save_to_disk(self) -> Result[None]:
+        """
+        Save state to disk.
+        :return: result.
+        """
         try:
             path = Path(self._save_state_path)
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -84,7 +100,9 @@ class Storage(metaclass=SingletonMeta):
             return Failure(e)
 
     def request_autosave(self):
-        """Debounced autosave. Call this after any mutation of networks/diagrams."""
+        """
+        Debounced autosave. Call this after any mutation of networks/diagrams.
+        """
         if self._suppress_autosave:
             return
 
@@ -102,6 +120,10 @@ class Storage(metaclass=SingletonMeta):
 
     # --- algorithms list (separate feature) ---
     def remove_algorithm(self, algo_path):
+        """
+        Remove the algorithm.
+        :param algo_path: path to algorithm.
+        """
         matching_indeces = [i for i in range(len(self.algorithms)) if self.algorithms[i].path == algo_path]
         if not matching_indeces:
             return
@@ -109,6 +131,11 @@ class Storage(metaclass=SingletonMeta):
         self.__call_listeners()
 
     def modify_algorithm(self, algo_path, new_algorithm):
+        """
+        Modify the algorithm.
+        :param algo_path: path to algorithm.
+        :param new_algorithm: path to new algorithm.
+        """
         matching_indices = [i for i in range(len(self.algorithms)) if self.algorithms[i].path == algo_path]
         if not matching_indices:
             return
@@ -116,9 +143,16 @@ class Storage(metaclass=SingletonMeta):
         self.__call_listeners()
 
     def add_algorithm(self, new_algorithm):
+        """
+        Add the algorithm.
+        :param new_algorithm: path to algorithm.
+        """
         self.algorithms.append(new_algorithm)
         self.__call_listeners()
 
     def __call_listeners(self):
+        """
+        Call all listeners.
+        """
         for listener in self.algorithm_change_listeners:
             listener()
