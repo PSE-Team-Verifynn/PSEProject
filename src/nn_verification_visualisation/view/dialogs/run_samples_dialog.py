@@ -29,6 +29,7 @@ from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
+from nn_verification_visualisation.model.data.storage import Storage
 
 
 class _SampleWorker(QObject):
@@ -223,6 +224,7 @@ class RunSamplesDialog(DialogBase):
         bounds = self.__get_selected_bounds()
         if bounds is not None:
             bounds.set_sample(result)
+            Storage().request_autosave()
         self.__set_running_state(False)
         self.__set_status("Samples computed and saved.")
         self.__show_results(result)
