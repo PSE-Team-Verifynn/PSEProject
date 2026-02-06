@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     from nn_verification_visualisation.view.plot_view.plot_view import PlotView
 
 class PlotViewController:
+    """
+    Class representing a plot view.
+    """
     logger = Logger(__name__)
     current_plot_view: PlotView
     card_size: int
@@ -52,6 +55,10 @@ class PlotViewController:
             selection.discard(pair_index)
 
     def start_computation(self, plot_generation_configs: list[PlotGenerationConfig]):
+        """
+        Starts the main calculation.
+        :param plot_generation_configs: plot configs
+        """
         logger = Logger(__name__)
         polygons = []
         for plot_generation_config in plot_generation_configs:
@@ -114,6 +121,12 @@ class PlotViewController:
 
     def compute_polygon(
         self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        """
+        Computes the polygon.
+        :param bounds: bounds
+        :param directions: directions
+        :return: polygon list
+        """
         def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
             def inside(p: tuple[float, float]) -> bool:
                 return a * p[0] + b * p[1] <= c + 1e-9
