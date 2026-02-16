@@ -30,7 +30,7 @@ class AlgorithmExecutor:
                 raise fn_res.error
             directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions)
             modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, selected_neurons,
-                                                                 directions)
+                                                             directions)
             output_bounds = fn_res.data(modified_model, input_bounds)
             return Success((output_bounds, directions))
         except BaseException as e:
