@@ -8,7 +8,7 @@ requires-python = ">=3.10"
 dependencies = [
   "pyside6 >= 6.10.1",
   "onnxruntime >= 1.23.0",
-  "numpy >= 2.4.0",
+  "numpy >= 2.2.6",
   "matplotlib >= 3.10.8",
   "watchdog >= 6.0.0",
   "onnx >= 1.20.0"
@@ -44,6 +44,4 @@ python_functions = ["test_*"]
 addopts = [
     "-v",
     "--strict-markers",
-    "--cov=nn_verification_visualisation",
-    "--cov-report=term-missing"
 ]

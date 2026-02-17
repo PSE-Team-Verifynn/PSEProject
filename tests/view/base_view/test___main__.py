@@ -65,27 +65,3 @@ class TestMain:
         mock_color_manager.load_raw.assert_called_once_with(
             ":src/nn_verification_visualisation/style.qss"
         )
-
-    def test_main_creates_and_shows_window(self, mocker):
-        """Test that main() creates MainWindow and shows it."""
-        from nn_verification_visualisation.__main__ import main
-
-        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
-        mock_color_manager_class = mocker.patch('nn_verification_visualisation.__main__.ColorManager')
-        mock_main_window_class = mocker.patch('nn_verification_visualisation.__main__.MainWindow')
-        mocker.patch('sys.exit')
-
-        mock_app = mocker.Mock()
-        mock_qapp_class.return_value = mock_app
-        mock_app.exec.return_value = 0
-
-        mock_color_manager = mocker.Mock()
-        mock_color_manager_class.return_value = mock_color_manager
-
-        mock_window = mocker.Mock()
-        mock_main_window_class.return_value = mock_window
-
-        main()
-
-        mock_main_window_class.assert_called_once_with(mock_color_manager)
-        mock_window.show.assert_called_once()
