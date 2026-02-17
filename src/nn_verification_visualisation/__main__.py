@@ -46,7 +46,7 @@ def main():
             dialog = InfoPopup(window.base_view.active_view.close_dialog, message, InfoType.WARNING)
             window.base_view.active_view.open_dialog(dialog)
 
-    app.aboutToQuit.connect(lambda: Storage().save_to_disk())
+    app.aboutToQuit.connect(storage.save_to_disk)
 
     sys.exit(app.exec())
 

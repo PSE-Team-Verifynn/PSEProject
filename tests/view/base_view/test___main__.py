@@ -26,6 +26,7 @@ class TestMain:
         # Verify
         mock_qapp_class.assert_called_once_with(sys.argv)
 
+
     def test_main_sets_fusion_style(self, mocker):
         """Test that main() sets the Fusion style."""
         from nn_verification_visualisation.__main__ import main
@@ -65,3 +66,112 @@ class TestMain:
         mock_color_manager.load_raw.assert_called_once_with(
             ":src/nn_verification_visualisation/style.qss"
         )
+
+    def test_main_storage_initialization(self, mocker):
+        """Test that main() initializes Storage."""
+        from nn_verification_visualisation.__main__ import main
+
+        mocker_storage_class = mocker.patch('nn_verification_visualisation.__main__.Storage')
+        mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
+        mocker.patch('sys.exit')
+
+        main()
+
+        mocker_storage_class.assert_called_once()
+
+    def test_main_storage_save_state_path_set(self, mocker):
+        """Test that main() sets the save state path into Storage."""
+        from nn_verification_visualisation.__main__ import main
+
+        mocker_storage_class = mocker.patch('nn_verification_visualisation.__main__.Storage')
+        mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
+        mocker.patch('sys.exit')
+
+        mocker_storage_instance = mocker.Mock()
+        mocker_storage_class.return_value = mocker_storage_instance
+
+        main()
+
+        mocker_storage_instance.set_save_state_path.assert_called_once()
+        assert mocker_storage_instance.set_save_state_path.call_count == 1
+        actual_path = mocker_storage_instance.set_save_state_path.call_args[0][0]
+        assert actual_path.endswith("save_state.json")
+
+    def test_main_storage_save_state_tried_to_load_from_disk_set(self, mocker):
+        """Test that main() tries to load a saved project into Storage."""
+        from nn_verification_visualisation.__main__ import main
+
+        mocker_storage_class = mocker.patch('nn_verification_visualisation.__main__.Storage')
+        mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
+        mocker.patch('sys.exit')
+
+        mocker_storage_instance = mocker.Mock()
+        mocker_storage_class.return_value = mocker_storage_instance
+
+        main()
+
+        mocker_storage_instance.load_from_disk.assert_called_once()
+
+    def test_main_activates_freeze_support(self, mocker):
+        """Test that main() activates freeze support for multiprocessing."""
+        from nn_verification_visualisation.__main__ import main
+
+        mocker_mp_class = mocker.patch('nn_verification_visualisation.__main__.mp')
+        mocker.patch('nn_verification_visualisation.__main__.Storage')
+        mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
+        mocker.patch('sys.exit')
+
+        main()
+
+        mocker_mp_class.freeze_support.assert_called_once()
+
+    def test_main_creates_and_shows_window(self, mocker):
+        """Test that main() creates MainWindow and shows it."""
+        from nn_verification_visualisation.__main__ import main
+
+        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mock_color_manager_class = mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mock_main_window_class = mocker.patch('nn_verification_visualisation.__main__.MainWindow')
+        mocker.patch('nn_verification_visualisation.__main__.Storage')
+        mocker.patch('sys.exit')
+
+        mock_app = mocker.Mock()
+        mock_qapp_class.return_value = mock_app
+        mock_app.exec.return_value = 0
+
+        mock_color_manager = mocker.Mock()
+        mock_color_manager_class.return_value = mock_color_manager
+
+        mock_window = mocker.Mock()
+        mock_main_window_class.return_value = mock_window
+
+        main()
+
+        mock_main_window_class.assert_called_once_with(mock_color_manager)
+        mock_window.showMaximized.assert_called_once()
+
+    def test_main_connect_to_about_to_quit(self, mocker):
+        """Test that main() saves the state on application exit."""
+        from nn_verification_visualisation.__main__ import main
+
+        mock_qapp_class = mocker.patch('nn_verification_visualisation.__main__.QApplication')
+        mocker.patch('nn_verification_visualisation.__main__.Storage')
+        mocker.patch('nn_verification_visualisation.__main__.ColorManager')
+        mocker.patch('nn_verification_visualisation.__main__.MainWindow')
+        mocker.patch('sys.exit')
+
+        mock_app = mocker.Mock()
+        mock_qapp_class.return_value = mock_app
+        mock_app.exec.return_value = 0
+
+        main()
+
+        mock_app.aboutToQuit.connect.assert_called_once()
