@@ -1,8 +1,7 @@
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtCore import Qt, QFile, QIODevice
-
 
 class ColorManager:
     '''
@@ -10,6 +9,7 @@ class ColorManager:
     Works by reading the stylesheet from disk and replacing its colors with the colors of the active theme.
     Sets a new stylesheet at every theme change.
     '''
+    main_window: QWidget
     app: QApplication
     raw_stylesheet: str
 
@@ -53,20 +53,23 @@ class ColorManager:
         "component": "#CFCFD1"
     }
 
+    def __init__(self, app: QApplication):
+        self.app = app
+
+
     def load_raw(self, path_str: str):
         file = QFile(path_str)
         file.open(QIODevice.ReadOnly | QIODevice.Text)
         self.raw_stylesheet = file.readAll().data().decode("utf-8")
         file.close()
 
-    def set_colors(self, colors: dict[str, str]):
-        '''
-        Changes the color theme of the application. A new stylesheet gets created from self.raw_stylesheet by replacing its colors.
-        The QPalette of the app is changed to update the colors of all default QWidgets.
-        :param colors:
-        :return:
-        '''
 
+
+        stylesheet, palette = self.__get_color_objects(ColorManager.NETWORK_COLORS)
+        self.app.setPalette(palette)
+        self.app.setStyleSheet(stylesheet)
+
+    def __get_color_objects(self, colors: dict[str, str]) -> tuple[str, QPalette]:
         # Replace colors of style sheet
         stylesheet = self.raw_stylesheet
         for (key, val) in colors.items():
@@ -87,9 +90,17 @@ class ColorManager:
         palette.setColor(QPalette.Highlight, QColor("#0078d7"))
         palette.setColor(QPalette.HighlightedText, Qt.GlobalColor.white)
 
-        # Update app
-        self.app.setPalette(palette)
-        self.app.setStyleSheet(stylesheet)
+        return stylesheet, palette
 
-    def __init__(self, app: QApplication):
-        self.app = app
+    def set_colors(self, colors: dict[str, str]):
+        '''
+        Changes the color theme of the application. A new stylesheet gets created from self.raw_stylesheet by replacing its colors.
+        The QPalette of the app is changed to update the colors of all default QWidgets.
+        :param colors:
+        :return:
+        '''
+
+        stylesheet, palette = self.__get_color_objects(colors)
+
+        self.main_window.setPalette(palette)
+        # self.main_window.setStyleSheet(stylesheet)
