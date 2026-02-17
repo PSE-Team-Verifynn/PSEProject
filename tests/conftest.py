@@ -3,6 +3,9 @@ import pytest
 from PySide6.QtWidgets import QApplication
 from unittest.mock import Mock, patch
 
+from nn_verification_visualisation.view.base_view.color_manager import ColorManager
+
+
 @pytest.fixture(scope="session")
 def qapp():
     """Create QApplication once per test session."""
@@ -32,3 +35,8 @@ def sample_network_config():
     config.saved_bounds = []
     config.selected_bounds_index = -1
     return config
+
+@pytest.fixture
+def mock_color_manager():
+    """Mocks the ColorManager."""
+    return Mock(spec=ColorManager)
