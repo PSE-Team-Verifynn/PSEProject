@@ -70,5 +70,5 @@ class AlgorithmExecutor:
         """
         directions = []
         for i in range(0, num_directions):
-            directions.append((numpy.sin(numpy.pi * i / num_directions), numpy.cos(numpy.pi * i / num_directions)))
+            directions.append((numpy.sin(numpy.pi * i / num_directions) + 1e-9, numpy.cos(numpy.pi * i / num_directions) + 1e-9))
         return directions
