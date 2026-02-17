@@ -66,15 +66,21 @@ class NetworkModifier:
         :return: the new model
         '''
         model = copy.deepcopy(static_model)     #deepcopies so the original model does not change
-        model.graph.node[model.graph.node.__len__() - 1].output.remove("output")
+
+        output_names = model.graph.node[-1].output
+        if output_names.__len__() != 1:
+            raise RuntimeError("The last layer of the network must have exactly one output")
+
+        model.graph.node[model.graph.node.__len__() - 1].output.remove(output_names[0])
         model.graph.node[model.graph.node.__len__() - 1].output.append("old_output")    #redirects the old output layer
+
         initializers = NetworkModifier.create_initalizers(self, model, neurons, directions)
         model.graph.initializer.append(initializers[0])
         model.graph.initializer.append(initializers[1])     # adds the new initializers
         new_node = NetworkModifier.create_new_layer(self, model, neurons, initializers)
         model.graph.node.append(new_node)   # adds the new node
         model = NetworkModifier.add_bridge_neurons(self, model, neurons, directions)
-        model.graph.output[0].type.tensor_type.shape.dim[1].dim_value =  directions.__len__()       #modifies the output dim, so it matches with the initializers
+        model.graph.output[0].type.tensor_type.shape.dim[-1].dim_value =  directions.__len__()       #modifies the output dim, so it matches with the initializers
         return model
 
     @staticmethod
