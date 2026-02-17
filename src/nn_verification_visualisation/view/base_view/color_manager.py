@@ -103,4 +103,4 @@ class ColorManager:
         stylesheet, palette = self.__get_color_objects(colors)
 
         self.main_window.setPalette(palette)
-        # self.main_window.setStyleSheet(stylesheet)
+        self.main_window.setStyleSheet(stylesheet)
