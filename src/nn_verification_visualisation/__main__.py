@@ -32,6 +32,8 @@ def main():
     load_res = storage.load_from_disk()
 
     window = MainWindow(color_manager)
+    color_manager.main_window = window
+    color_manager.set_colors(ColorManager.NETWORK_COLORS)
 
     window.showMaximized()
 
