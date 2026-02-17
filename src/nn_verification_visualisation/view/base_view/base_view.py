@@ -1,3 +1,4 @@
+from __future__ import annotations
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout
 
 from nn_verification_visualisation.view.base_view.color_manager import ColorManager
@@ -15,7 +16,6 @@ class BaseView(QWidget):
     def __init__(self, color_manager: ColorManager, parent=None):
         super().__init__(parent)
         self.color_manager = color_manager
-        self.color_manager.set_colors(ColorManager.NETWORK_COLORS)
 
         self.plot_view = PlotView(self.change_active_view, parent=self)
         self.network_view = NetworkView(self.change_active_view, parent=self)
