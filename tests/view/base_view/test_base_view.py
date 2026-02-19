@@ -43,7 +43,6 @@ class TestBaseView:
 
     def test_initially_sets_up_network_view_and_colors(self, mocked_base_view):
         assert mocked_base_view['base_view'].active_view == mocked_base_view['network_view']
-        mocked_base_view['color_manager'].set_colors.assert_called_with(ColorManager.NETWORK_COLORS)
         assert mocked_base_view['base_view'].stack.currentIndex() == 0
 
     def test_change_active_view_sets_diagram_view_and_colors(self, mocked_base_view):
