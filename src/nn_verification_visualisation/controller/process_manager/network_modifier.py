@@ -57,7 +57,7 @@ class NetworkModifier:
                 existing.add(name)
         return model
 
-    def custom_output_layer(self, static_model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> ModelProto:
+    def custom_output_layer(self, static_model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, ...]]) -> ModelProto:
         '''
 
         :param static_model: the whole network, which is not changed in this function
@@ -84,7 +84,7 @@ class NetworkModifier:
         return model
 
     @staticmethod
-    def add_bridge_neurons(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> ModelProto:
+    def add_bridge_neurons(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, ...]]) -> ModelProto:
         '''
 
         :param model: the whole network
@@ -129,7 +129,7 @@ class NetworkModifier:
         return model
 
     @staticmethod
-    def create_initalizers(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, float]]) -> tuple[TensorProto, TensorProto]:
+    def create_initalizers(self, model: ModelProto, neurons: list[tuple[int, int]], directions: list[tuple[float, ...]]) -> tuple[TensorProto, TensorProto]:
         '''
 
         :param model: the whole network

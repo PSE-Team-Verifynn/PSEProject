@@ -68,6 +68,7 @@ class NeuronPicker(DialogBase):
     network_presentation: QVBoxLayout
     algorithm_selector: QComboBox
     network_selector: QComboBox
+    visualization_selector: QComboBox
     bounds_selector: QComboBox | None
     max_bounds_display_inputs: int
 
@@ -76,18 +77,21 @@ class NeuronPicker(DialogBase):
         self.current_algorithm = ""
 
         if preset is not None:
-            self.num_neurons = len(preset.selected_neurons)
+            preset_dimension = len(preset.selected_neurons)
+            self.num_neurons = 2 if preset_dimension == 2 else 3
         else:
-            self.num_neurons = num_neurons
+            self.num_neurons = 2 if num_neurons == 2 else 3
 
-        self.current_neurons = [(0, 0) for _ in range(self.num_neurons)]
+        self.max_neuron_slots = 3
+        self.current_neurons = [(0, 0) for _ in range(self.max_neuron_slots)]
 
         self.network_widget = None
         self.node_spin_boxes = []
+        self.neuron_rows = []
         self.max_neuron_num_per_layer = []
         self.parameters = []
         self.neuron_selection_index = 0
-        self.neuron_colors = get_neuron_colors(self.num_neurons)
+        self.neuron_colors = get_neuron_colors(self.max_neuron_slots)
 
         self.network_selector = QComboBox()
         for network in Storage().networks:
@@ -242,7 +246,15 @@ class NeuronPicker(DialogBase):
 
         bounds_index = self.bounds_selector.currentIndex()
 
-        return Success(PlotGenerationConfig(network, algorithm, self.current_neurons, [], bounds_index=bounds_index))
+        return Success(
+            PlotGenerationConfig(
+                network,
+                algorithm,
+                self.current_neurons[:self.num_neurons],
+                [],
+                bounds_index=bounds_index,
+            )
+        )
 
     def __load_from_config(self, config: PlotGenerationConfig):
         def __sync_ui_to_internal_state():
@@ -306,20 +318,19 @@ class NeuronPicker(DialogBase):
         self.algorithm_selector.blockSignals(False)
         self.__on_change_algorithm(algo_index)
 
-        self.current_neurons = []
-        for i, (layer, neuron) in enumerate(config.selected_neurons):
+        self.current_neurons = [(0, 0) for _ in range(self.max_neuron_slots)]
+        for i, (layer, neuron) in enumerate(config.selected_neurons[:self.max_neuron_slots]):
             if layer < len(self.max_neuron_num_per_layer):
                 max_nodes = self.max_neuron_num_per_layer[layer]
                 valid_neuron = min(neuron, max_nodes - 1) if max_nodes > 0 else 0
-                self.current_neurons.append((layer, valid_neuron))
-            else:
-                self.current_neurons.append((0, 0))
+                self.current_neurons[i] = (layer, valid_neuron)
 
         print("Loading bounds: " + str(config.bounds_index))
         if self.bounds_selector and 0 <= config.bounds_index < self.bounds_selector.count():
             self.bounds_selector.setCurrentIndex(config.bounds_index)
 
         __sync_ui_to_internal_state()
+        self.__apply_visualization_mode()
 
     def __on_change_network(self, index: int):
         if not Storage().networks:
@@ -359,7 +370,8 @@ class NeuronPicker(DialogBase):
             neuron_spin.blockSignals(False)
 
         # Reset stored choices
-        self.current_neurons = [(0, min(i, self.max_neuron_num_per_layer[i] - 1)) for i in range(self.num_neurons)]
+        first_layer_size = self.max_neuron_num_per_layer[0] if self.max_neuron_num_per_layer else 1
+        self.current_neurons = [(0, min(i, first_layer_size - 1)) for i in range(self.max_neuron_slots)]
 
         # Visual update
         if self.network_presentation.count() > 0:
@@ -371,9 +383,11 @@ class NeuronPicker(DialogBase):
         self.network_presentation.insertWidget(0, self.network_widget)
 
         for i, (layer, neuron) in enumerate(self.current_neurons):
-            self.network_widget.select_node(layer, neuron, self.neuron_colors[i])
+            if i < self.num_neurons:
+                self.network_widget.select_node(layer, neuron, self.neuron_colors[i])
             self.node_spin_boxes[i][0].setValue(layer)
             self.node_spin_boxes[i][1].setValue(neuron)
+        self.__apply_visualization_mode()
 
     def __on_change_algorithm(self, index: int):
         if Storage().algorithms:
@@ -474,6 +488,8 @@ class NeuronPicker(DialogBase):
         self.__update_sample_results()
 
     def __on_node_selection_change(self, layer_index: int, node_index: int) -> QColor | None:
+        if self.num_neurons <= 0:
+            return None
         old_layer, old_node = self.current_neurons[self.neuron_selection_index]
 
         is_still_selected = any(
@@ -503,6 +519,32 @@ class NeuronPicker(DialogBase):
 
         return self.neuron_colors[former_index]
 
+    def __on_change_visualization_mode(self, index: int):
+        self.num_neurons = 2 if index == 0 else 3
+        self.__apply_visualization_mode()
+
+    def __apply_visualization_mode(self):
+        if self.num_neurons > 0:
+            self.neuron_selection_index %= self.num_neurons
+        for i, row in enumerate(self.neuron_rows):
+            row.setVisible(i < self.num_neurons)
+
+        if not self.network_widget:
+            return
+
+        for i, (layer, neuron) in enumerate(self.current_neurons):
+            if i < self.num_neurons:
+                self.network_widget.select_node(layer, neuron, self.neuron_colors[i])
+                continue
+
+            is_used_by_active_selection = any(
+                l == layer and n == neuron
+                for active_i, (l, n) in enumerate(self.current_neurons[:self.num_neurons])
+                if active_i != i
+            )
+            if not is_used_by_active_selection:
+                self.network_widget.unselect_node(layer, neuron)
+
     def __get_side_bar_content(self) -> QVBoxLayout:
         layout = QVBoxLayout()
 
@@ -524,8 +566,19 @@ class NeuronPicker(DialogBase):
         algorithm_group.addStretch()
         algorithm_group.addWidget(self.algorithm_selector)
 
+        visualization_group = QHBoxLayout()
+        visualization_group.addWidget(QLabel("Visualization:"))
+        visualization_group.addStretch()
+        self.visualization_selector = QComboBox()
+        self.visualization_selector.addItem("2D")
+        self.visualization_selector.addItem("3D")
+        self.visualization_selector.setCurrentIndex(0 if self.num_neurons == 2 else 1)
+        self.visualization_selector.currentIndexChanged.connect(self.__on_change_visualization_mode)
+        visualization_group.addWidget(self.visualization_selector)
+
         layout.addLayout(network_group)
         layout.addLayout(algorithm_group)
+        layout.addLayout(visualization_group)
 
         # --- Bounds Selector ---
         bounds_group = QHBoxLayout()
@@ -556,8 +609,8 @@ class NeuronPicker(DialogBase):
         self.__rebuild_bounds_display_rows()
 
         # --- Sample Results ---
-        # --- Neuron Pair Selectors ---
-        for i in range(0, self.num_neurons):
+        # --- Neuron Selectors ---
+        for i in range(0, self.max_neuron_slots):
             neuron_group = QHBoxLayout()
             label = QLabel(f"Neuron {i + 1}")
             label.setAlignment(Qt.AlignmentFlag.AlignBottom)
@@ -617,7 +670,10 @@ class NeuronPicker(DialogBase):
             neuron_group.addLayout(node_box)
             neuron_group.addWidget(eye_button, alignment=Qt.AlignmentFlag.AlignBottom)
 
-            layout.addLayout(neuron_group)
+            neuron_row = QWidget()
+            neuron_row.setLayout(neuron_group)
+            self.neuron_rows.append(neuron_row)
+            layout.addWidget(neuron_row)
 
         layout.addSpacing(12)
         layout.addWidget(self.bounds_display_group)
@@ -638,6 +694,7 @@ class NeuronPicker(DialogBase):
         self.full_results_button.setEnabled(False)
         self.full_results_button.clicked.connect(self.__on_full_results_clicked)
         layout.addWidget(self.full_results_button)
+        self.__apply_visualization_mode()
         layout.addStretch()
 
         print("Sidebar loaded")

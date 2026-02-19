@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import combinations
 from typing import Callable, List
 
 import numpy as np
@@ -10,6 +11,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from nn_verification_visualisation.model.data.plot import Plot
 from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QSizePolicy, QFrame, QHBoxLayout, QLabel, QLayout, \
@@ -143,12 +145,61 @@ class PlotWidget(QWidget):
         else:
             lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
 
-    def render_plot(self, polygons: list[list[tuple[float, float]]], colors: list[QColor], polygon_names: list[str]) -> None:
-        if self.axes is None or self.canvas is None:
+    def __ensure_axes(self, dimension: int):
+        if self.figure is None:
+            return
+        is_current_3d = getattr(self.axes, "name", "") == "3d"
+        needs_3d = dimension == 3
+        if is_current_3d == needs_3d:
+            return
+
+        self.figure.clf()
+        if needs_3d:
+            self.axes = self.figure.add_subplot(111, projection="3d")
+        else:
+            self.axes = self.figure.add_subplot(111)
+        self.__attach_name_change_callback()
+
+    def __compute_hull_triangles(self, vertices: np.ndarray, tol: float = 1e-8) -> list[tuple[int, int, int]]:
+        triangles: list[tuple[int, int, int]] = []
+        n = len(vertices)
+        if n < 4:
+            return triangles
+
+        for i, j, k in combinations(range(n), 3):
+            p1 = vertices[i]
+            p2 = vertices[j]
+            p3 = vertices[k]
+            normal = np.cross(p2 - p1, p3 - p1)
+            norm = np.linalg.norm(normal)
+            if norm < tol:
+                continue
+
+            distances = np.dot(vertices - p1, normal)
+            pos = np.any(distances > tol)
+            neg = np.any(distances < -tol)
+            if pos and neg:
+                continue
+
+            triangles.append((i, j, k))
+
+        return triangles
+
+    def render_plot(self, polygons: list[list[tuple[float, ...]]], colors: list[QColor], polygon_names: list[str]) -> None:
+        if self.canvas is None:
             return
 
         if polygons is None:
             polygons = []
+
+        dimension = 2
+        for points in polygons:
+            if points:
+                dimension = len(points[0])
+                break
+        self.__ensure_axes(dimension)
+        if self.axes is None:
+            return
 
         self.axes.cla()
         self.axes.grid(True, alpha=0.2)
@@ -158,34 +209,79 @@ class PlotWidget(QWidget):
 
         self.__attach_limit_callbacks()
 
-        all_points: list[tuple[float, float]] = []
+        all_points: list[tuple[float, ...]] = []
         legend_handles = []
         legend_labels = []
 
         for index, polygon_points in enumerate(polygons):
-            if not polygon_points or len(polygon_points) < 3:
+            if not polygon_points:
                 continue
             if len(colors) < len(polygons):
-                for i in range(len(polygons) - len(colors)):
-                    colors.append("0x00000")
+                for _ in range(len(polygons) - len(colors)):
+                    colors.append(QColor("#000000"))
 
             face_color = colors[index]
             edge_color = face_color.darker(150)
             all_points.extend(polygon_points)
-            poly_array = np.array(polygon_points)
-            polygon = Polygon(poly_array, closed=True, facecolor=face_color.getRgbF(), edgecolor=edge_color.getRgbF(), alpha=0.6)
-            self.axes.add_patch(polygon)
-            legend_handles.append(polygon)
-            legend_labels.append(polygon_names[index] if polygon_names[index] is not None else "")
+            poly_array = np.array(polygon_points, dtype=float)
+
+            if dimension == 3:
+                if len(poly_array) == 1:
+                    self.axes.scatter(poly_array[:, 0], poly_array[:, 1], poly_array[:, 2], color=face_color.getRgbF())
+                else:
+                    triangles = self.__compute_hull_triangles(poly_array)
+                    if triangles:
+                        faces = [[poly_array[i], poly_array[j], poly_array[k]] for i, j, k in triangles]
+                        surface = Poly3DCollection(
+                            faces,
+                            facecolors=face_color.getRgbF(),
+                            edgecolors=edge_color.getRgbF(),
+                            linewidths=0.5,
+                            alpha=0.25,
+                        )
+                        self.axes.add_collection3d(surface)
+                        legend_handles.append(surface)
+                    else:
+                        points = self.axes.scatter(
+                            poly_array[:, 0],
+                            poly_array[:, 1],
+                            poly_array[:, 2],
+                            color=face_color.getRgbF(),
+                            alpha=0.7,
+                        )
+                        legend_handles.append(points)
+                legend_labels.append(polygon_names[index] if polygon_names[index] is not None else "")
+            else:
+                if len(poly_array) < 3:
+                    continue
+                polygon = Polygon(
+                    poly_array,
+                    closed=True,
+                    facecolor=face_color.getRgbF(),
+                    edgecolor=edge_color.getRgbF(),
+                    alpha=0.6
+                )
+                self.axes.add_patch(polygon)
+                legend_handles.append(polygon)
+                legend_labels.append(polygon_names[index] if polygon_names[index] is not None else "")
 
         if len(all_points) != 0:
-            xs = [p[0] for p in all_points]
-            ys = [p[1] for p in all_points]
+            data = np.array(all_points, dtype=float)
+            mins = np.min(data, axis=0)
+            maxs = np.max(data, axis=0)
+            spans = np.maximum(maxs - mins, 1e-3)
+            padding = spans * 0.1 + 0.3
 
-            self.axes.set_xlim(min(xs) - 0.5, max(xs) + 0.5)
-            self.axes.set_ylim(min(ys) - 0.5, max(ys) + 0.5)
+            self.axes.set_xlim(mins[0] - padding[0], maxs[0] + padding[0])
+            self.axes.set_ylim(mins[1] - padding[1], maxs[1] + padding[1])
+            if dimension == 3:
+                self.axes.set_zlim(mins[2] - padding[2], maxs[2] + padding[2])
+                self.axes.set_xlabel("x")
+                self.axes.set_ylabel("y")
+                self.axes.set_zlabel("z")
 
-        self.axes.legend(legend_handles, legend_labels, loc="upper right", fontsize=7, frameon=True)
+        if legend_handles:
+            self.axes.legend(legend_handles, legend_labels, loc="upper right", fontsize=7, frameon=True)
 
         self.canvas.draw_idle()
 
@@ -208,4 +304,6 @@ class PlotWidget(QWidget):
             self.axes.callbacks.connect("xlim_changed", lambda _ax: self.__on_limits_changed(self)),
             self.axes.callbacks.connect("ylim_changed", lambda _ax: self.__on_limits_changed(self)),
         ]
+        if getattr(self.axes, "name", "") == "3d":
+            cids.append(self.axes.callbacks.connect("zlim_changed", lambda _ax: self.__on_limits_changed(self)))
         self.limit_callback_ids = cids

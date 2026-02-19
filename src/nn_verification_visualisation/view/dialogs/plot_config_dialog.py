@@ -29,7 +29,7 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
             config = preset[0].copy()
             self.on_accept = preset[1]
 
-        super().__init__(controller.current_plot_view.close_dialog, "Create Neuron Pairs", config, True)
+        super().__init__(controller.current_plot_view.close_dialog, "Create Neuron Selections", config, True)
 
     def on_confirm_clicked(self):
         self.on_close()

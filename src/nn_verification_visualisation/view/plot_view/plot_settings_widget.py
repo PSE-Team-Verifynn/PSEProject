@@ -47,7 +47,7 @@ class PlotSettingsWidget(QWidget):
         self.__checkboxes = []
 
         for i, conf in enumerate(base_config.plot_generation_configs):
-            check_box = QCheckBox(f"Pair {i + 1}")
+            check_box = QCheckBox(f"Selection {i + 1}")
             self.__checkboxes.append(check_box)
             group_layout.addWidget(check_box)
             check_box.stateChanged.connect(lambda x: self.__send_selection_change())

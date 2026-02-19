@@ -14,9 +14,9 @@ class DiagramConfig:
     :param polygons: list of the polygons, which are represented by their vertices
     '''
     plot_generation_configs : list[PlotGenerationConfig]
-    polygons : list[list[tuple[float, float]]]
+    polygons : list[list[tuple[float, ...]]]
     plots: list[list[int]]
-    def __init__(self, plot_generation_configs: list[PlotGenerationConfig], polygons: list[list[tuple[float,float]]]) -> None:
+    def __init__(self, plot_generation_configs: list[PlotGenerationConfig], polygons: list[list[tuple[float, ...]]]) -> None:
         self.plot_generation_configs = plot_generation_configs
         self.polygons = polygons
         self.plots = []

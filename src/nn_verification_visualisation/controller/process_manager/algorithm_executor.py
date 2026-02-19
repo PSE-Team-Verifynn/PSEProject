@@ -21,14 +21,15 @@ class AlgorithmExecutor:
 
     def execute_algorithm(self, model: ModelProto, input_bounds: np.ndarray, algorithm_path: str,
                           selected_neurons: list[tuple[int, int]]) -> Result[
-        tuple[np.ndarray, list[tuple[float, float]]]]:
+        tuple[np.ndarray, list[tuple[float, ...]]]]:
 
         try:
             # InputBounds (QAbstractTableModel) -> np.ndarray (N, 2)
             fn_res = AlgorithmLoader.load_calculate_output_bounds(algorithm_path)
             if not fn_res.is_success:
                 raise fn_res.error
-            directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions)
+            projection_dimension = max(1, len(selected_neurons))
+            directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions, projection_dimension)
             modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, selected_neurons,
                                                              directions)
             output_bounds = fn_res.data(modified_model, input_bounds)
@@ -62,13 +63,27 @@ class AlgorithmExecutor:
             arr[r, 1] = float(hi)
         return arr
 
-    def calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
+    def calculate_directions(self, num_directions: int, dimension: int) -> list[tuple[float, ...]]:
         """
-        Calculate directions given number of directions.
+        Calculate projection directions for an arbitrary dimension.
         :param num_directions: amount of directions.
+        :param dimension: dimensionality of each direction vector.
         :return: directions.
         """
-        directions = []
-        for i in range(0, num_directions):
-            directions.append((numpy.sin(numpy.pi * i / num_directions) + 1e-9, numpy.cos(numpy.pi * i / num_directions) + 1e-9))
+        if num_directions <= 0:
+            return []
+        if dimension <= 1:
+            return [(-1.0,), (1.0,)] if num_directions > 1 else [(1.0,)]
+
+        rng = numpy.random.default_rng(0)
+        directions: list[tuple[float, ...]] = []
+        for _ in range(num_directions):
+            vec = rng.normal(size=dimension)
+            norm = numpy.linalg.norm(vec)
+            if norm < 1e-12:
+                vec = numpy.zeros(dimension)
+                vec[0] = 1.0
+            else:
+                vec = vec / norm
+            directions.append(tuple(float(v) for v in vec))
         return directions

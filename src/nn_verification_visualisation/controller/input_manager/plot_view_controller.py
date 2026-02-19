@@ -1,12 +1,10 @@
 from __future__ import annotations
 
+import itertools
 from logging import Logger
 import threading
-from time import sleep
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QTimer, SignalInstance, QMetaObject, Qt
-from PySide6.QtWidgets import QApplication
 from onnx import ModelProto
 
 import numpy as np
@@ -18,11 +16,10 @@ from nn_verification_visualisation.model.data_loader.algorithm_file_observer imp
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
 from nn_verification_visualisation.model.data.plot_generation_config import PlotGenerationConfig
 from nn_verification_visualisation.model.data.storage import Storage
-from nn_verification_visualisation.utils.result import Result, Failure, Success
+from nn_verification_visualisation.utils.result import Failure, Success
 from nn_verification_visualisation.view.dialogs.plot_config_dialog import PlotConfigDialog
 from nn_verification_visualisation.view.plot_view.comparison_loading_widget import ComparisonLoadingWidget
 from nn_verification_visualisation.view.plot_view.plot_page import PlotPage
-from nn_verification_visualisation.view.plot_view.status import Status
 
 if TYPE_CHECKING:
     from nn_verification_visualisation.view.plot_view.plot_view import PlotView
@@ -100,7 +97,7 @@ class PlotViewController:
         """
         logger = Logger(__name__)
 
-        polygons: list[list[tuple[float, float]] | None] = [None] * len(plot_generation_configs)
+        polygons: list[list[tuple[float, ...]] | None] = [None] * len(plot_generation_configs)
 
         result_queue = Queue()
         algorithm_processes: list[Process | None] = []
@@ -135,7 +132,7 @@ class PlotViewController:
                 if result.is_success:
                     bounds_list, directions_list = result.data
 
-                    polygons[result_index] = self.compute_polygon(bounds_list, directions_list)
+                    polygons[result_index] = self.compute_polytope_vertices(bounds_list, directions_list)
                 else:
                     logger.error(f"Algorithm {result_index} failed: {result.error}")
 
@@ -150,7 +147,11 @@ class PlotViewController:
         # start algorithm processes
         for index, plot_generation_config in enumerate(plot_generation_configs):
             model: ModelProto = plot_generation_config.nnconfig.network.model
-            input_bounds: np.ndarray = AlgorithmExecutor.input_bounds_to_numpy(plot_generation_config.nnconfig.bounds)
+            nn_config = plot_generation_config.nnconfig
+            bounds_model = nn_config.bounds
+            if 0 <= plot_generation_config.bounds_index < len(nn_config.saved_bounds):
+                bounds_model = nn_config.saved_bounds[plot_generation_config.bounds_index]
+            input_bounds: np.ndarray = AlgorithmExecutor.input_bounds_to_numpy(bounds_model)
             algorithm_path: str = plot_generation_config.algorithm.path
             selected_neurons: list[tuple[int, int]] = plot_generation_config.selected_neurons
 
@@ -197,53 +198,59 @@ class PlotViewController:
     def set_card_size(self, value: int):
         self.card_size = value
 
-    def compute_polygon(
-        self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    def compute_polytope_vertices(
+        self, bounds: list[tuple[float, float]], directions: list[tuple[float, ...]]) -> list[tuple[float, ...]]:
         """
-        Computes the polygon.
-        :param bounds: bounds
-        :param directions: directions
-        :return: polygon list
+        Computes vertices of a convex polytope from directional lower/upper bounds.
         """
-        def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
-            def inside(p: tuple[float, float]) -> bool:
-                return a * p[0] + b * p[1] <= c + 1e-9
+        if not bounds or not directions:
+            return []
 
-            def intersect(p1: tuple[float, float], p2: tuple[float, float]):
-                x1, y1 = p1
-                x2, y2 = p2
-                dx = x2 - x1
-                dy = y2 - y1
-                denom = a * dx + b * dy
-                if abs(denom) < 1e-12:
-                    return p2
-                t = (c - a * x1 - b * y1) / denom
-                return (x1 + t * dx, y1 + t * dy)
+        dimension = len(directions[0])
+        if dimension <= 0:
+            return []
 
-            out: list[tuple[float, float]] = []
-            for i in range(len(poly)):
-                curr = poly[i]
-                prev = poly[i - 1]
-                curr_in = inside(curr)
-                prev_in = inside(prev)
-                if curr_in:
-                    if not prev_in:
-                        out.append(intersect(prev, curr))
-                    out.append(curr)
-                elif prev_in:
-                    out.append(intersect(prev, curr))
-            return out
+        eps = 1e-8
+        inequalities: list[tuple[np.ndarray, float]] = []
+        for low_high, direction in zip(bounds, directions):
+            low, high = low_high
+            d = np.asarray(direction, dtype=float)
+            inequalities.append((d, float(high)))
+            inequalities.append((-d, float(-low)))
 
         max_bound = max(abs(v) for (low, high) in bounds for v in (low, high))
-        m = max(5.0, max_bound * 2.0 + 1.0)
-        poly: list[tuple[float, float]] = [(-m, -m), (m, -m), (m, m), (-m, m)]
+        outer = max(5.0, max_bound * 2.0 + 1.0)
+        for axis in range(dimension):
+            unit = np.zeros(dimension, dtype=float)
+            unit[axis] = 1.0
+            inequalities.append((unit, outer))
+            inequalities.append((-unit, outer))
 
-        for i, (low, high) in enumerate(bounds):
-            a, b = directions[i]
-            poly = clip_polygon(poly, a, b, high)
-            if not poly:
-                break
-            poly = clip_polygon(poly, -a, -b, -low)
-            if not poly:
-                break
-        return poly
+        vertices: list[np.ndarray] = []
+        for combo in itertools.combinations(range(len(inequalities)), dimension):
+            a_eq = np.stack([inequalities[idx][0] for idx in combo], axis=0)
+            c_eq = np.asarray([inequalities[idx][1] for idx in combo], dtype=float)
+
+            if np.linalg.matrix_rank(a_eq) < dimension:
+                continue
+            try:
+                x = np.linalg.solve(a_eq, c_eq)
+            except np.linalg.LinAlgError:
+                continue
+
+            if all(float(np.dot(a, x)) <= c + eps for a, c in inequalities):
+                vertices.append(x)
+
+        if not vertices:
+            return []
+
+        unique: list[tuple[float, ...]] = []
+        seen = set()
+        for v in vertices:
+            key = tuple(np.round(v, 7))
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(tuple(float(x) for x in v))
+
+        return unique

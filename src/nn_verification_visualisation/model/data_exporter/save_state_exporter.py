@@ -103,7 +103,7 @@ class SaveStateExporter(metaclass=SingletonMeta):
                         ensure_network_index(cfg)
                     pgcs.append(_serialize_pgc(pgc, nn_index_map))
                 polygons = [
-                    [[float(x), float(y)] for (x, y) in poly]
+                    [[float(value) for value in point] for point in poly]
                     for poly in getattr(d, "polygons", [])
                 ]
                 plots = [[int(i) for i in plot] for plot in getattr(d, "plots", [])]

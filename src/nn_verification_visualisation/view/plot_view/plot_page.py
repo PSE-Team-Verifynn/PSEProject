@@ -92,7 +92,7 @@ class PlotPage(Tab):
         self.plot_widgets[index].render_plot(
             [self.diagram_config.polygons[i] for i in sel],
             [colors[i] for i in sel],
-            [f"Pair {i + 1}" for i in sel],
+            [f"Selection {i + 1}" for i in sel],
         )
 
     def __delete_plot(self, widget: PlotSettingsWidget):
@@ -257,6 +257,8 @@ class PlotPage(Tab):
             return
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
+        has_z = getattr(ax, "name", "") == "3d"
+        zlim = ax.get_zlim() if has_z else None
 
         self.__syncing = True
         for widget in self.plot_widgets:
@@ -268,6 +270,8 @@ class PlotPage(Tab):
                 continue
             target_ax.set_xlim(xlim)
             target_ax.set_ylim(ylim)
+            if has_z and getattr(target_ax, "name", "") == "3d" and zlim is not None:
+                target_ax.set_zlim(zlim)
             target_canvas.draw_idle()
         self.__syncing = False
 

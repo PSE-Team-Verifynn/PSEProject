@@ -67,7 +67,7 @@ class PlotView(InsertView):
             self.add_plot_tab(diagram)
 
     def get_default_tab(self) -> QWidget | None:
-        text = "1. Use the edit icon in the top right corner to add new comparisons.\n\n2. Select different neuron pairs with networks, algorithms and specific nodes.\n\n3. Let the algorithms calculate the output bounds from the given pairs.\n\n4. View the results and compare them."
+        text = "1. Use the edit icon in the top right corner to add new comparisons.\n\n2. Select neuron triples with networks, algorithms and specific nodes.\n\n3. Let the algorithms calculate the output bounds from the given selections.\n\n4. View the results and compare them."
         return TutorialSpeechBubble("Quick Tutorial", text)
 
     def showEvent(self, event, /):

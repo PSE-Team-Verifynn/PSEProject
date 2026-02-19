@@ -133,7 +133,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
             for diagram_index, ditem in enumerate(doc.get("diagrams", [])):
                 polygons_raw = ditem.get("polygons", []) or []
                 polygons = [
-                    [(float(x), float(y)) for (x, y) in poly] for poly in polygons_raw
+                    [tuple(float(value) for value in point) for point in poly] for poly in polygons_raw
                 ]
 
                 pgcs: List[PlotGenerationConfig] = []
@@ -169,7 +169,7 @@ class SaveStateLoader(metaclass=SingletonMeta):
                     self._warnings.append(f"Diagram {diagram_index + 1} was skipped because no valid pairs remain.")
                     continue
 
-                filtered_polygons: List[list[tuple[float, float]]] = []
+                filtered_polygons: List[list[tuple[float, ...]]] = []
                 for old_polygon_index in kept_polygon_indices:
                     if 0 <= old_polygon_index < len(polygons):
                         filtered_polygons.append(polygons[old_polygon_index])
