@@ -28,7 +28,7 @@ class AlgorithmExecutor:
             fn_res = AlgorithmLoader.load_calculate_output_bounds(algorithm_path)
             if not fn_res.is_success:
                 raise fn_res.error
-            directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions)
+            directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions, len(selected_neurons))
             modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, selected_neurons,
                                                              directions)
             output_bounds = fn_res.data(modified_model, input_bounds)
@@ -62,13 +62,20 @@ class AlgorithmExecutor:
             arr[r, 1] = float(hi)
         return arr
 
-    def calculate_directions(self, num_directions: int) -> list[tuple[float, float]]:
+    def calculate_directions(self, num_directions: int, num_neurons: int = 2) -> list[tuple[float, float]]:
         """
         Calculate directions given number of directions.
         :param num_directions: amount of directions.
+        :param num_neurons: amount of neurons (determines 2D vs. 3D).
         :return: directions.
         """
         directions = []
-        for i in range(0, num_directions):
-            directions.append((numpy.sin(numpy.pi * i / num_directions) + 1e-9, numpy.cos(numpy.pi * i / num_directions) + 1e-9))
+        if num_neurons == 3:
+            for i in range(num_directions):
+                theta = numpy.arccos(1 - 2 * (i + 0.5) / num_directions)
+                phi = numpy.pi * (1 + numpy.sqrt(5)) * i
+                directions.append((numpy.sin(theta) * numpy.cos(phi), numpy.sin(theta) * numpy.sin(phi), numpy.cos(theta)))
+        else:
+            for i in range(0, num_directions):
+                directions.append((numpy.sin(numpy.pi * i / num_directions) + 1e-9, numpy.cos(numpy.pi * i / num_directions) + 1e-9))
         return directions

@@ -198,52 +198,242 @@ class PlotViewController:
         self.card_size = value
 
     def compute_polygon(
-        self, bounds: list[tuple[float, float]], directions: list[tuple[float, float]]) -> list[tuple[float, float]]:
+            self,
+            bounds: list[tuple[float, float]],
+            directions: list[tuple[float, ...]],
+    ) -> list[tuple[float, float]] | list[list[tuple[float, float, float]]]:
         """
-        Computes the polygon.
-        :param bounds: bounds
-        :param directions: directions
-        :return: polygon list
+        Computes the polytope defined by the half-space constraints derived from
+        directions and bounds.
+
+        For 2 neurons (2D directions) returns a flat polygon:
+            list[tuple[float, float]]
+
+        For 3 neurons (3D directions) returns a list of triangular faces,
+        each face being a list of three 3-D vertices:
+            list[list[tuple[float, float, float]]]
+
+        :param bounds:      list of (low, high) scalar bounds, one per direction
+        :param directions:  list of direction vectors (length == number of neurons)
+        :return:            polygon (2D) or triangulated polyhedron faces (3D)
         """
-        def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
-            def inside(p: tuple[float, float]) -> bool:
-                return a * p[0] + b * p[1] <= c + 1e-9
+        if not bounds or not directions:
+            return []
 
-            def intersect(p1: tuple[float, float], p2: tuple[float, float]):
-                x1, y1 = p1
-                x2, y2 = p2
-                dx = x2 - x1
-                dy = y2 - y1
-                denom = a * dx + b * dy
-                if abs(denom) < 1e-12:
-                    return p2
-                t = (c - a * x1 - b * y1) / denom
-                return (x1 + t * dx, y1 + t * dy)
+        dim = len(directions[0])
 
-            out: list[tuple[float, float]] = []
-            for i in range(len(poly)):
-                curr = poly[i]
-                prev = poly[i - 1]
-                curr_in = inside(curr)
-                prev_in = inside(prev)
-                if curr_in:
-                    if not prev_in:
+        # ------------------------------------------------------------------ 2D --
+        if dim == 2:
+            def clip_polygon(poly: list[tuple[float, float]], a: float, b: float, c: float):
+                def inside(p: tuple[float, float]) -> bool:
+                    return a * p[0] + b * p[1] <= c + 1e-9
+
+                def intersect(p1: tuple[float, float], p2: tuple[float, float]):
+                    x1, y1 = p1
+                    x2, y2 = p2
+                    dx, dy = x2 - x1, y2 - y1
+                    denom = a * dx + b * dy
+                    if abs(denom) < 1e-12:
+                        return p2
+                    t = (c - a * x1 - b * y1) / denom
+                    return (x1 + t * dx, y1 + t * dy)
+
+                out: list[tuple[float, float]] = []
+                for i in range(len(poly)):
+                    curr, prev = poly[i], poly[i - 1]
+                    curr_in, prev_in = inside(curr), inside(prev)
+                    if curr_in:
+                        if not prev_in:
+                            out.append(intersect(prev, curr))
+                        out.append(curr)
+                    elif prev_in:
                         out.append(intersect(prev, curr))
-                    out.append(curr)
-                elif prev_in:
-                    out.append(intersect(prev, curr))
-            return out
+                return out
 
-        max_bound = max(abs(v) for (low, high) in bounds for v in (low, high))
-        m = max(5.0, max_bound * 2.0 + 1.0)
-        poly: list[tuple[float, float]] = [(-m, -m), (m, -m), (m, m), (-m, m)]
+            max_bound = max(abs(v) for (low, high) in bounds for v in (low, high))
+            m = max(5.0, max_bound * 2.0 + 1.0)
+            poly: list[tuple[float, float]] = [(-m, -m), (m, -m), (m, m), (-m, m)]
+            for i, (low, high) in enumerate(bounds):
+                a, b = directions[i]
+                poly = clip_polygon(poly, a, b, high)
+                if not poly:
+                    break
+                poly = clip_polygon(poly, -a, -b, -low)
+                if not poly:
+                    break
+            return poly
 
-        for i, (low, high) in enumerate(bounds):
-            a, b = directions[i]
-            poly = clip_polygon(poly, a, b, high)
-            if not poly:
-                break
-            poly = clip_polygon(poly, -a, -b, -low)
-            if not poly:
-                break
-        return poly
+        # ------------------------------------------------------------------ 3D --
+        if dim == 3:
+
+            def find_interior_point(
+                    hs_normals: np.ndarray, hs_offsets: np.ndarray
+            ) -> np.ndarray | None:
+                """
+                Find a point strictly inside all half-spaces  n·x <= d.
+                Uses a least-squares seed then iteratively pushes away from
+                violated constraints.  Returns None if the system is infeasible.
+                """
+                try:
+                    x, _, _, _ = np.linalg.lstsq(hs_normals, hs_offsets, rcond=None)
+                except Exception:
+                    x = np.zeros(3)
+
+                for _ in range(300):
+                    violations = hs_normals @ x - hs_offsets  # positive => violated
+                    if np.all(violations <= -1e-8):
+                        return x
+                    worst = int(np.argmax(violations))
+                    x = x - (violations[worst] + 0.1) * hs_normals[worst]
+
+                violations = hs_normals @ x - hs_offsets
+                return x if np.all(violations <= 1e-6) else None
+
+            def triangulate_convex_hull(
+                    pts: np.ndarray,
+            ) -> list[list[int]]:
+                """
+                Incremental convex hull (Beneath-Beyond algorithm).
+                Returns triangular faces as lists of vertex indices,
+                with outward-facing winding order.
+                pts: np.ndarray shape (N, 3)
+                """
+
+                def make_face(
+                        i: int, j: int, k: int, interior: np.ndarray
+                ) -> tuple[list[int], np.ndarray, float] | None:
+                    a, b, c = pts[i], pts[j], pts[k]
+                    normal = np.cross(b - a, c - a).astype(float)
+                    nn = np.linalg.norm(normal)
+                    if nn < 1e-12:
+                        return None
+                    normal /= nn
+                    offset = float(normal @ a)
+                    if normal @ interior > offset:
+                        # flip so interior is on the n·x < offset side
+                        normal, offset = -normal, -offset
+                        return ([i, k, j], normal, offset)
+                    return ([i, j, k], normal, offset)
+
+                def find_initial_tetra() -> tuple[int, int, int, int] | None:
+                    p0 = pts[0]
+                    dists = np.linalg.norm(pts - p0, axis=1)
+                    i1 = int(np.argmax(dists))
+                    if dists[i1] < 1e-10:
+                        return None
+                    crosses = np.cross(pts - p0, pts[i1] - p0)
+                    i2 = int(np.argmax(np.linalg.norm(crosses, axis=1)))
+                    if np.linalg.norm(crosses[i2]) < 1e-10 or i2 == i1:
+                        return None
+                    tri_normal = np.cross(pts[i1] - p0, pts[i2] - p0).astype(float)
+                    tri_normal /= np.linalg.norm(tri_normal)
+                    dists_plane = np.abs((pts - p0) @ tri_normal)
+                    i3 = int(np.argmax(dists_plane))
+                    if dists_plane[i3] < 1e-10 or i3 in (0, i1, i2):
+                        return None
+                    return (0, i1, i2, i3)
+
+                n = len(pts)
+                if n < 4:
+                    return []
+
+                tetra = find_initial_tetra()
+                if tetra is None:
+                    return []
+
+                i0, i1, i2, i3 = tetra
+                interior = pts[[i0, i1, i2, i3]].mean(axis=0)
+
+                faces: list[tuple[list[int], np.ndarray, float]] = []
+                for (a, b, c) in [(i0, i1, i2), (i0, i1, i3), (i0, i2, i3), (i1, i2, i3)]:
+                    f = make_face(a, b, c, interior)
+                    if f is not None:
+                        faces.append(f)
+
+                processed = {i0, i1, i2, i3}
+
+                for idx in range(n):
+                    if idx in processed:
+                        continue
+                    p = pts[idx]
+
+                    # Faces visible from the new point
+                    visible = [f for f in faces if f[1] @ p > f[2] + 1e-9]
+                    if not visible:
+                        processed.add(idx)
+                        continue
+
+                    # Horizon: edges shared by exactly one visible face
+                    edge_count: dict[tuple[int, int], int] = {}
+                    for verts, _, _ in visible:
+                        for k in range(3):
+                            edge = tuple(sorted((verts[k], verts[(k + 1) % 3])))
+                            edge_count[edge] = edge_count.get(edge, 0) + 1
+                    horizon = [e for e, cnt in edge_count.items() if cnt == 1]
+
+                    faces = [f for f in faces if f not in visible]
+                    for (a, b) in horizon:
+                        f = make_face(a, b, idx, interior)
+                        if f is not None:
+                            faces.append(f)
+
+                    processed.add(idx)
+
+                return [verts for (verts, _, _) in faces]
+
+            # Build half-space system:  n·x <= d
+            hs_normals_list: list[np.ndarray] = []
+            hs_offsets_list: list[float] = []
+            for (low, high), d in zip(bounds, directions):
+                hs_normals_list.append(np.array(d, dtype=float))
+                hs_offsets_list.append(float(high))
+                hs_normals_list.append(-np.array(d, dtype=float))
+                hs_offsets_list.append(float(-low))
+
+            hs_normals = np.array(hs_normals_list)
+            hs_offsets = np.array(hs_offsets_list)
+
+            interior = find_interior_point(hs_normals, hs_offsets)
+            if interior is None:
+                return []  # infeasible / empty polytope
+
+            # Vertices: intersect every triple of bounding planes,
+            # keep only those satisfying all other half-spaces.
+            n_hs = len(hs_normals)
+            candidate_vertices: list[np.ndarray] = []
+            for i in range(n_hs):
+                for j in range(i + 1, n_hs):
+                    for k in range(j + 1, n_hs):
+                        A = np.array([hs_normals[i], hs_normals[j], hs_normals[k]])
+                        b_vec = np.array([hs_offsets[i], hs_offsets[j], hs_offsets[k]])
+                        if abs(np.linalg.det(A)) < 1e-10:
+                            continue
+                        try:
+                            pt = np.linalg.solve(A, b_vec)
+                        except np.linalg.LinAlgError:
+                            continue
+                        if np.all(hs_normals @ pt <= hs_offsets + 1e-8):
+                            candidate_vertices.append(pt)
+
+            if len(candidate_vertices) < 4:
+                return []
+
+            # Deduplicate vertices
+            unique: list[np.ndarray] = [candidate_vertices[0]]
+            for v in candidate_vertices[1:]:
+                if all(np.linalg.norm(v - u) > 1e-8 for u in unique):
+                    unique.append(v)
+            if len(unique) < 4:
+                return []
+
+            pts_array = np.array(unique)
+            face_indices = triangulate_convex_hull(pts_array)
+
+            return [
+                [tuple(pts_array[vi].tolist()) for vi in face]
+                for face in face_indices
+            ]
+
+        raise ValueError(
+            f"compute_polygon only supports 2D or 3D directions, got dim={dim}"
+        )

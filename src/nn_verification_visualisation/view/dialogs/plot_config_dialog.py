@@ -83,7 +83,10 @@ class PlotConfigDialog(ListDialogBase[PlotGenerationConfig]):
                 self.data.insert(index, edited_config_res.data)
                 self.list_widget.setCurrentRow(index)
 
-        neuron_picker = NeuronPicker(on_neuron_picker_close, preset=item)
+        # Pass the neuron count from the existing config so the picker opens
+        # with the correct number of spinboxes (2 for 2-D, 3 for 3-D).
+        num_neurons = len(item.selected_neurons)
+        neuron_picker = NeuronPicker(on_neuron_picker_close, num_neurons=num_neurons, preset=item)
         self.parent_controller.current_plot_view.open_dialog(neuron_picker)
 
         return None

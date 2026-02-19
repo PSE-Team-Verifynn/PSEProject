@@ -29,7 +29,7 @@ class NetworkWidget(QGraphicsView):
     radius = 18.0
 
     # Thresholds
-    performance_mode_edge_threshold: int = 25000  # Triggers block edges + LOD Nodes
+    performance_mode_edge_threshold: int = 10000  # Triggers block edges + LOD Nodes
     weighted_mode_edge_threshold: int = 500  # Triggers individual weighted edges
     use_performance_mode: bool
     use_weighted_mode: bool

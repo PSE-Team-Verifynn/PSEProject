@@ -2,34 +2,73 @@ from __future__ import annotations
 
 from typing import Callable, List
 
-import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QColor
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from matplotlib.patches import Polygon
 
 from nn_verification_visualisation.model.data.plot import Plot
-from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QSizePolicy, QFrame, QHBoxLayout, QLabel, QLayout, \
-    QPushButton
+from PySide6.QtWidgets import (
+    QWidget, QDialog, QVBoxLayout, QSizePolicy,
+    QFrame, QHBoxLayout, QLabel, QLayout, QPushButton,
+)
 
 
 class PlotWidget(QWidget):
+    """
+    Abstract base class for 2-D and 3-D plot cards.
+
+    Responsibilities:
+    - Qt card layout (frame, toolbar slot, canvas slot, footer)
+    - Lock / fullscreen buttons
+    - Shared state: title, locked, _syncing, limit_callback_ids
+    - _on_limits_changed callback (accessible to subclasses)
+    - _disconnect_callbacks / _rebuild_axes lifecycle helpers
+
+    Subclasses must implement:
+    - render_plot(polygons, colors, names)
+    - get_view_state() -> dict
+    - apply_view_state(state: dict)
+    - fullscreen()
+    - _attach_callbacks()          called at the end of each render
+    - _setup_axes()                called once in __init__ to create self.axes
+    """
+
     plot: Plot
     figure: Figure
-    axes: Axes
+    axes: Axes          # set by subclass via _setup_axes()
     canvas: FigureCanvas
     locked: bool
     toolbar: NavigationToolbar
     plot_layout: QLayout
     title: str
-
-    __on_limits_changed: Callable[[PlotWidget], None]
+    _syncing: bool
     limit_callback_ids: List[int]
 
-    def __init__(self, on_limits_changed: Callable[[PlotWidget], None], title: str = "", parent=None):
+    # Single underscore so subclasses can call it
+    _on_limits_changed: Callable[[PlotWidget], None]
+
+    @staticmethod
+    def make_plot_widget(
+        on_limits_changed: Callable[[PlotWidget], None],
+        title: str = "",
+        parent=None,
+        is_3d: bool = False,
+    ) -> PlotWidget:
+        if is_3d:
+            from nn_verification_visualisation.view.plot_view.plot_widget_3d import PlotWidget3D
+            return PlotWidget3D(on_limits_changed, title, parent)
+        from nn_verification_visualisation.view.plot_view.plot_widget_2d import PlotWidget2D
+        return PlotWidget2D(on_limits_changed, title, parent)
+
+    def __init__(
+        self,
+        on_limits_changed: Callable[[PlotWidget], None],
+        title: str = "",
+        parent=None,
+    ):
         super().__init__(parent)
 
         self.setObjectName("plot-card")
@@ -39,10 +78,13 @@ class PlotWidget(QWidget):
         self.title = title
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-        self.__on_limits_changed = on_limits_changed
+        self._on_limits_changed = on_limits_changed
         self.limit_callback_ids = []
+        self.locked = False
+        self._syncing = False
+        self.polygon_points = []
 
-
+        # ---- card layout ----
         card_layout = QVBoxLayout()
         card_layout.setContentsMargins(8, 8, 8, 8)
         card_layout.setSpacing(6)
@@ -50,33 +92,31 @@ class PlotWidget(QWidget):
         plot_placeholder = QFrame()
         plot_placeholder.setObjectName("plot-container")
         plot_placeholder.setFrameShape(QFrame.Shape.StyledPanel)
-        plot_placeholder.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        plot_placeholder.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         plot_layout = QVBoxLayout(plot_placeholder)
         plot_layout.setContentsMargins(4, 4, 4, 4)
         plot_layout.setSpacing(4)
 
         figure = Figure(figsize=(3.2, 2.4))
         canvas = FigureCanvas(figure)
-
         canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         toolbar = NavigationToolbar(canvas, plot_placeholder)
 
-        ax = figure.add_subplot(111)
         self.figure = figure
-        self.axes = ax
         self.canvas = canvas
         self.toolbar = toolbar
         self.plot_layout = plot_layout
-        self.locked = False
-        self.polygon_points = []
-        ax.set_title(title, fontsize=9)
-        ax.grid(True, alpha=0.2)
-        ax.set_aspect("auto")
+
+        # Subclass creates self.axes via _setup_axes()
+        self._setup_axes()
 
         plot_layout.addWidget(toolbar)
         plot_layout.addWidget(canvas, stretch=1)
         card_layout.addWidget(plot_placeholder)
 
+        # ---- footer ----
         self.title_widget = QLabel(title)
         self.title_widget.setObjectName("heading")
 
@@ -88,124 +128,92 @@ class PlotWidget(QWidget):
         footer_layout.addWidget(self.title_widget)
         footer_layout.addStretch(1)
 
-        lock_button = QPushButton()
-        lock_button.setObjectName("icon-button-tight")
-        lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
-        lock_button.clicked.connect(lambda: self.__toggle_lock(lock_button))
-        footer_layout.addWidget(lock_button)
+        self._lock_button = QPushButton()
+        self._lock_button.setObjectName("icon-button-tight")
+        self._lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
+        self._lock_button.clicked.connect(
+            lambda: self._toggle_lock(self._lock_button)
+        )
+        footer_layout.addWidget(self._lock_button)
 
         fullscreen_button = QPushButton()
         fullscreen_button.setObjectName("icon-button-tight")
         fullscreen_button.setIcon(QIcon(":assets/icons/plot/fullscreen.svg"))
-        fullscreen_button.clicked.connect(lambda: self.fullscreen())
+        fullscreen_button.clicked.connect(self.fullscreen)
         footer_layout.addWidget(fullscreen_button)
 
-        self.__attach_name_change_callback()
-
         card_layout.addWidget(footer)
-
         self.setLayout(card_layout)
 
+        self._attach_name_change_callback()
 
-    def fullscreen(self):
-        if self.canvas is None or self.toolbar is None or self.plot_layout is None:
-            return
+    # ---------------------------------------------------------------- abstract interface --
+    # Subclasses must override all of these.
 
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Fullscreen Plot")
-        dialog_layout = QVBoxLayout(dialog)
-        dialog_layout.setContentsMargins(6, 6, 6, 6)
-        dialog_layout.setSpacing(6)
+    def _setup_axes(self) -> None:
+        """Create self.axes on self.figure. Called once from __init__."""
+        raise NotImplementedError
 
-        self.plot_layout.removeWidget(self.toolbar)
-        self.plot_layout.removeWidget(self.canvas)
-        self.toolbar.setParent(dialog)
-        self.canvas.setParent(dialog)
-        dialog_layout.addWidget(self.toolbar)
-        dialog_layout.addWidget(self.canvas, stretch=1)
+    def render_plot(
+        self,
+        polygons: list,
+        colors: list[QColor],
+        polygon_names: list[str],
+    ) -> None:
+        raise NotImplementedError
 
-        def restore():
-            dialog_layout.removeWidget(self.toolbar)
-            dialog_layout.removeWidget(self.canvas)
-            self.toolbar.setParent(self)
-            self.canvas.setParent(self)
-            self.plot_layout.addWidget(self.toolbar)
-            self.plot_layout.addWidget(self.canvas, stretch=1)
+    def get_view_state(self) -> dict:
+        raise NotImplementedError
 
-        dialog.finished.connect(restore)
-        dialog.showMaximized()
+    def apply_view_state(self, state: dict) -> None:
+        raise NotImplementedError
 
+    def fullscreen(self) -> None:
+        raise NotImplementedError
 
-    def __toggle_lock(self, lock_button: QPushButton):
+    def _attach_callbacks(self) -> None:
+        """Register axes/canvas callbacks after each render. Called by subclass."""
+        raise NotImplementedError
+
+    # ---------------------------------------------------------------- shared helpers --
+
+    def _toggle_lock(self, lock_button: QPushButton) -> None:
         self.locked = not self.locked
-        if self.locked:
-            lock_button.setIcon(QIcon(":assets/icons/plot/locked.svg"))
-        else:
-            lock_button.setIcon(QIcon(":assets/icons/plot/unlocked.svg"))
+        icon = (
+            ":assets/icons/plot/locked.svg"
+            if self.locked
+            else ":assets/icons/plot/unlocked.svg"
+        )
+        lock_button.setIcon(QIcon(icon))
 
-    def render_plot(self, polygons: list[list[tuple[float, float]]], colors: list[QColor], polygon_names: list[str]) -> None:
-        if self.axes is None or self.canvas is None:
-            return
+    def _disconnect_callbacks(self) -> None:
+        """Disconnect all currently registered axes/canvas callbacks."""
+        for cid in self.limit_callback_ids:
+            try:
+                self.canvas.mpl_disconnect(cid)
+            except Exception:
+                pass
+            try:
+                self.axes.callbacks.disconnect(cid)
+            except Exception:
+                pass
+        self.limit_callback_ids = []
 
-        if polygons is None:
-            polygons = []
+    def _rebuild_axes(self) -> None:
+        """
+        Clear the figure and recreate axes via _setup_axes().
+        Subclass should call this when it needs a fresh axes object,
+        then re-attach the title callback.
+        """
+        self._disconnect_callbacks()
+        self.figure.clear()
+        self._setup_axes()
+        self._attach_name_change_callback()
 
-        self.axes.cla()
-        self.axes.grid(True, alpha=0.2)
-        self.axes.set_title(self.title, fontsize=9)
+    def _attach_name_change_callback(self) -> None:
+        # matplotlib Artist callbacks receive the artist as their argument,
+        # not the new value — read get_title() inside the callback instead.
+        self.axes.title.add_callback(self._on_title_changed)
 
-        self.title_widget.setText(self.title)
-
-        self.__attach_limit_callbacks()
-
-        all_points: list[tuple[float, float]] = []
-        legend_handles = []
-        legend_labels = []
-
-        for index, polygon_points in enumerate(polygons):
-            if not polygon_points or len(polygon_points) < 3:
-                continue
-            if len(colors) < len(polygons):
-                for i in range(len(polygons) - len(colors)):
-                    colors.append("0x00000")
-
-            face_color = colors[index]
-            edge_color = face_color.darker(150)
-            all_points.extend(polygon_points)
-            poly_array = np.array(polygon_points)
-            polygon = Polygon(poly_array, closed=True, facecolor=face_color.getRgbF(), edgecolor=edge_color.getRgbF(), alpha=0.6)
-            self.axes.add_patch(polygon)
-            legend_handles.append(polygon)
-            legend_labels.append(polygon_names[index] if polygon_names[index] is not None else "")
-
-        if len(all_points) != 0:
-            xs = [p[0] for p in all_points]
-            ys = [p[1] for p in all_points]
-
-            self.axes.set_xlim(min(xs) - 0.5, max(xs) + 0.5)
-            self.axes.set_ylim(min(ys) - 0.5, max(ys) + 0.5)
-
-        self.axes.legend(legend_handles, legend_labels, loc="upper right", fontsize=7, frameon=True)
-
-        self.canvas.draw_idle()
-
-    def __attach_name_change_callback(self):
-        self.axes.title.add_callback(self.__on_name_changed)
-
-    def __on_name_changed(self, new_title):
-        self.title = new_title
-
-    def __attach_limit_callbacks(self):
-        if self.axes is None:
-            return
-        if self.limit_callback_ids:
-            for cid in self.limit_callback_ids:
-                try:
-                    self.axes.callbacks.disconnect(cid)
-                except Exception:
-                    pass
-        cids = [
-            self.axes.callbacks.connect("xlim_changed", lambda _ax: self.__on_limits_changed(self)),
-            self.axes.callbacks.connect("ylim_changed", lambda _ax: self.__on_limits_changed(self)),
-        ]
-        self.limit_callback_ids = cids
+    def _on_title_changed(self, _artist) -> None:
+        self.title = self.axes.get_title()

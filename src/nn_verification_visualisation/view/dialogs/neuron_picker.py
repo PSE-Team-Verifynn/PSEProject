@@ -71,7 +71,7 @@ class NeuronPicker(DialogBase):
     bounds_selector: QComboBox | None
     max_bounds_display_inputs: int
 
-    def __init__(self, on_close: Callable[[], None], num_neurons: int = 2, preset: PlotGenerationConfig | None = None):
+    def __init__(self, on_close: Callable[[], None], num_neurons: int = 3, preset: PlotGenerationConfig | None = None):
         self.current_network = 0
         self.current_algorithm = ""
 
@@ -511,6 +511,29 @@ class NeuronPicker(DialogBase):
 
         layout.addWidget(title)
 
+        # --- Neuron Count Toggle ---
+        neuron_count_group = QHBoxLayout()
+        neuron_count_group.addWidget(QLabel("Mode:"))
+        neuron_count_group.addStretch()
+
+        self._mode_2d_button = QPushButton("2D")
+        self._mode_3d_button = QPushButton("3D")
+        for btn in (self._mode_2d_button, self._mode_3d_button):
+            btn.setCheckable(True)
+            btn.setFixedWidth(48)
+            btn.setFixedHeight(24)
+            btn.setStyleSheet("font-size: 10px;")
+
+        self._mode_2d_button.setChecked(self.num_neurons == 2)
+        self._mode_3d_button.setChecked(self.num_neurons == 3)
+
+        self._mode_2d_button.clicked.connect(lambda: self.__set_num_neurons(2))
+        self._mode_3d_button.clicked.connect(lambda: self.__set_num_neurons(3))
+
+        neuron_count_group.addWidget(self._mode_2d_button)
+        neuron_count_group.addWidget(self._mode_3d_button)
+        layout.addLayout(neuron_count_group)
+
         # --- Network Selector ---
         network_group = QHBoxLayout()
         network_group.addWidget(QLabel("Network:"))
@@ -714,6 +737,52 @@ class NeuronPicker(DialogBase):
             input_count = Storage().networks[self.current_network].layers_dimensions[0]
         self._bounds_index_label_width = self.__compute_bounds_index_label_width(input_count)
         self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
+
+    def __set_num_neurons(self, n: int) -> None:
+        if n == self.num_neurons:
+            # Re-enforce the toggle state in case the user clicked the active button
+            self._mode_2d_button.setChecked(self.num_neurons == 2)
+            self._mode_3d_button.setChecked(self.num_neurons == 3)
+            return
+
+        self.num_neurons = n
+        self._mode_2d_button.setChecked(n == 2)
+        self._mode_3d_button.setChecked(n == 3)
+
+        # Grow or shrink current_neurons, preserving existing selections
+        while len(self.current_neurons) < n:
+            self.current_neurons.append((0, 0))
+        if len(self.current_neurons) > n:
+            # Unselect the neurons that are being dropped
+            if self.network_widget:
+                for layer, node in self.current_neurons[n:]:
+                    still_used = any(
+                        l == layer and nd == node
+                        for l, nd in self.current_neurons[:n]
+                    )
+                    if not still_used:
+                        self.network_widget.unselect_node(layer, node)
+            self.current_neurons = self.current_neurons[:n]
+
+        self.neuron_colors = get_neuron_colors(n)
+        self.neuron_selection_index = min(self.neuron_selection_index, n - 1)
+
+        # Rebuild only the neuron spinbox rows — close and re-open the dialog
+        # would be heavy; instead we signal to the parent to recreate the picker.
+        # The lightest approach that avoids rebuilding the whole dialog is to
+        # close and reopen with the current state as a preset.
+        current_config_result = self.construct_config()
+        if current_config_result.is_success:
+            # Patch num_neurons into the config so the new picker picks it up
+            preset = current_config_result.data
+            preset.selected_neurons = list(self.current_neurons)
+        else:
+            preset = None
+
+        parent = self.parent()
+        if parent is not None and hasattr(parent, "open_dialog") and hasattr(parent, "close_dialog"):
+            parent.close_dialog()
+            parent.open_dialog(NeuronPicker(self.on_close, num_neurons=n, preset=preset))
 
 
 class NoHScrollArea(QScrollArea):
