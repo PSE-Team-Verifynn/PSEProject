@@ -13,6 +13,12 @@ To run the provided tests, follow these steps:
 1. Run `pip install -e .[dev]` to install development dependencies
 2. Run `pytest` to run the tests
 
+### Algorithms
+A lot of algorithms need external libraries to run. To set up the most common libraries, follow these steps:
+1. Install Python 3.13 on your system
+2. torch: pip install torch==2.8.0
+3. auto_LiRPA: pip install git+"https://github.com/Verified-Intelligence/auto_LiRPA" (requires torch)
+
 ## Authors
 - Alexander Mikhaylov
 - Cedric Linde
