@@ -14,6 +14,8 @@ What the script does:
 Measured quality values:
 - containment_pass: whether all sampled values stay inside the computed bounds
 - containment_ratio: share of directions for which the sampled values stay inside the computed bounds
+- bounded_directions: number of directions in which containment holds
+- checked_directions: total number of checked directions
 - avg_bound_width: average width of the computed bounds
 - avg_sample_width: average width observed from sampling
 - avg_tightness_ratio: sample width divided by computed bound width
@@ -29,6 +31,7 @@ Quality cases:
 - NN1_BoxIBP
 - NN1_Zonotope
 - NN2_BoxIBP
+- NN2_Zonotope
 
 Result files:
 - TestResults/QUALITY_QS/quality_results.json

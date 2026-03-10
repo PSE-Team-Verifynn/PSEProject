@@ -64,6 +64,14 @@ def run_quality_checks() -> list[dict]:
             "selected_neurons": [(0, 99), (0, 199)],
             "samples": 1000,
         },
+        {
+            "case": "NN2_Zonotope",
+            "network": ROOT / "TestFiles" / "NN2.onnx",
+            "bounds": ROOT / "TestFiles" / "B1.csv",
+            "algorithm": ROOT / "algorithms" / "simple_zonotope.py",
+            "selected_neurons": [(0, 99), (0, 199)],
+            "samples": 1000,
+        },
     ]
 
     results = []
@@ -111,6 +119,8 @@ def run_quality_checks() -> list[dict]:
                 "avg_sample_width": round(float(actual_width.mean()), 6),
                 "avg_tightness_ratio": round(float(tightness.mean()), 6),
                 "sample_metric_outputs": len(sample_summary["outputs"]),
+                "bounded_directions": int(contained.sum()),
+                "checked_directions": int(len(contained)),
             }
         )
 
@@ -124,7 +134,7 @@ def main() -> None:
     write_csv(
         QUALITY_OUT_DIR / "quality_metrics.csv",
         rows,
-        ["case", "runtime_ms", "memory_delta_kb", "containment_pass", "containment_ratio", "avg_bound_width", "avg_sample_width", "avg_tightness_ratio", "sample_metric_outputs"],
+        ["case", "runtime_ms", "memory_delta_kb", "containment_pass", "containment_ratio", "avg_bound_width", "avg_sample_width", "avg_tightness_ratio", "sample_metric_outputs", "bounded_directions", "checked_directions"],
     )
     write_quality_plot(rows)
     print({"quality_cases": len(rows)})

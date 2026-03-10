@@ -1,4 +1,5 @@
-case,runtime_ms,memory_delta_kb,containment_pass,containment_ratio,avg_bound_width,avg_sample_width,avg_tightness_ratio,sample_metric_outputs
-NN1_BoxIBP,270.503,14716,False,0.0,0.634573,0.93733,1.477746,5
-NN1_Zonotope,230.439,32428,False,0.0,0.634573,0.923102,1.456338,5
-NN2_BoxIBP,79.657,0,True,1.0,0.0,0.0,0.0,2
+case,runtime_ms,memory_delta_kb,containment_pass,containment_ratio,avg_bound_width,avg_sample_width,avg_tightness_ratio,sample_metric_outputs,bounded_directions,checked_directions
+NN1_BoxIBP,243.255,14948,False,0.0,0.634573,0.93733,1.477746,5,0,16
+NN1_Zonotope,313.493,32532,False,0.0,0.634573,0.923102,1.456338,5,0,16
+NN2_BoxIBP,115.04,0,True,1.0,0.0,0.0,0.0,2,16,16
+NN2_Zonotope,1342.159,594008,True,1.0,0.0,0.0,0.0,2,16,16

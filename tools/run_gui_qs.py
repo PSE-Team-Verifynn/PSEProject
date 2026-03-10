@@ -37,6 +37,20 @@ def run_gui_smoke_tests() -> list[dict]:
         }
     )
 
+    results.append(
+        {
+            "check": "window_layout",
+            "passed": window.centralWidget() is window.base_view
+            and window.base_view.network_view is not None
+            and window.base_view.plot_view is not None,
+            "details": {
+                "has_central_widget": window.centralWidget() is window.base_view,
+                "network_view_type": window.base_view.network_view.__class__.__name__,
+                "plot_view_type": window.base_view.plot_view.__class__.__name__,
+            },
+        }
+    )
+
     window.base_view.change_active_view()
     plot_ok = window.base_view.active_view is window.base_view.plot_view and window.base_view.stack.currentIndex() == 1
     window.base_view.change_active_view()
@@ -46,6 +60,16 @@ def run_gui_smoke_tests() -> list[dict]:
             "check": "view_switching",
             "passed": plot_ok and back_ok,
             "details": {"plot_ok": plot_ok, "back_ok": back_ok},
+        }
+    )
+
+    results.append(
+        {
+            "check": "tab_container_present",
+            "passed": hasattr(window.base_view.plot_view, "tabs") and window.base_view.plot_view.tabs is not None,
+            "details": {
+                "tabs_type": window.base_view.plot_view.tabs.__class__.__name__,
+            },
         }
     )
 
@@ -98,6 +122,16 @@ def run_gui_smoke_tests() -> list[dict]:
                 "stored_diagrams": len(Storage().diagrams),
                 "remaining_polygons": len(Storage().diagrams[0].polygons),
                 "tab_widget": replaced_widget.__class__.__name__,
+            },
+        }
+    )
+
+    results.append(
+        {
+            "check": "diagram_selection_state",
+            "passed": Storage().diagrams[0].plots == [[0]],
+            "details": {
+                "plots": Storage().diagrams[0].plots,
             },
         }
     )

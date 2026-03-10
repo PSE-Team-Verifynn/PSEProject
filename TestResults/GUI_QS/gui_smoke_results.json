@@ -8,11 +8,27 @@
     }
   },
   {
+    "check": "window_layout",
+    "passed": true,
+    "details": {
+      "has_central_widget": true,
+      "network_view_type": "NetworkView",
+      "plot_view_type": "PlotView"
+    }
+  },
+  {
     "check": "view_switching",
     "passed": true,
     "details": {
       "plot_ok": true,
       "back_ok": true
+    }
+  },
+  {
+    "check": "tab_container_present",
+    "passed": true,
+    "details": {
+      "tabs_type": "Tabs"
     }
   },
   {
@@ -22,6 +38,17 @@
       "stored_diagrams": 1,
       "remaining_polygons": 1,
       "tab_widget": "PlotPage"
+    }
+  },
+  {
+    "check": "diagram_selection_state",
+    "passed": true,
+    "details": {
+      "plots": [
+        [
+          0
+        ]
+      ]
     }
   }
 ]

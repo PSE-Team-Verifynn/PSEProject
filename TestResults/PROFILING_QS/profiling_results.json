@@ -1,22 +1,27 @@
 [
   {
     "case": "simple_3_layer_x10",
-    "runtime_ms": 4.574,
-    "maxrss_kb": 107128
+    "runtime_ms": 4.832,
+    "maxrss_kb": 107100
   },
   {
     "case": "simple_3_layer_x50",
-    "runtime_ms": 18.721,
-    "maxrss_kb": 111816
+    "runtime_ms": 31.195,
+    "maxrss_kb": 107492
   },
   {
     "case": "simple_3_layer_x100",
-    "runtime_ms": 109.557,
-    "maxrss_kb": 129588
+    "runtime_ms": 160.192,
+    "maxrss_kb": 129644
+  },
+  {
+    "case": "NN2",
+    "runtime_ms": 121.3,
+    "maxrss_kb": 110992
   },
   {
     "case": "NN1_small",
-    "runtime_ms": 154.528,
-    "maxrss_kb": 142056
+    "runtime_ms": 231.519,
+    "maxrss_kb": 142244
   }
 ]

@@ -2,8 +2,11 @@ GUI test plan execution
 
 Executed checks:
 - window_init: passed
+- window_layout: passed
 - view_switching: passed
+- tab_container_present: passed
 - diagram_tab_creation: passed
+- diagram_selection_state: passed
 
 Manual scenario references:
 - TS1 in TestResults/TS1/ts1.txt

@@ -61,6 +61,12 @@ def run_profiling_checks() -> list[dict]:
             "selected_neurons": [(0, 0), (0, 1)],
         },
         {
+            "case": "NN2",
+            "network": ROOT / "TestFiles" / "NN2.onnx",
+            "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
+            "selected_neurons": [(0, 99), (0, 199)],
+        },
+        {
             "case": "NN1_small",
             "network": ROOT / "TestFiles" / "NN1.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
