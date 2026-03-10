@@ -33,7 +33,6 @@ class Storage(metaclass=SingletonMeta):
         self.algorithm_change_listeners = []
 
         self.num_directions = 32
-
         # --- SaveState integration ---
         self._save_state_path = str(Path.home() / ".nn_verification_visualisation" / "save_state.json")
         self._autosave_timer: QTimer | None = None

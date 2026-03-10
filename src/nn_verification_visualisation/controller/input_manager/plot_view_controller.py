@@ -29,11 +29,11 @@ if TYPE_CHECKING:
 
 
 def execute_algorithm_wrapper(index, queue, model: ModelProto, input_bounds: np.ndarray, algorithm_path: str,
-                              selected_neurons: list[tuple[int, int]]) -> None:
+                              selected_neurons: list[tuple[int, int]], num_directions: int) -> None:
     try:
         executor = AlgorithmExecutor()
         execution_res = executor.execute_algorithm(model, input_bounds, algorithm_path,
-                                                   selected_neurons)
+                                                   selected_neurons, num_directions)
 
         if not execution_res.is_success:
             queue.put((index, Failure(execution_res.error)))
@@ -153,9 +153,10 @@ class PlotViewController:
             input_bounds: np.ndarray = AlgorithmExecutor.input_bounds_to_numpy(plot_generation_config.nnconfig.saved_bounds[plot_generation_config.bounds_index])
             algorithm_path: str = plot_generation_config.algorithm.path
             selected_neurons: list[tuple[int, int]] = plot_generation_config.selected_neurons
+            num_directions: int = Storage().num_directions
 
             new_process = Process(target=execute_algorithm_wrapper,
-                                  args=(index, result_queue, model, input_bounds, algorithm_path, selected_neurons), )
+                                  args=(index, result_queue, model, input_bounds, algorithm_path, selected_neurons, num_directions), )
             algorithm_processes.append(new_process)
             new_process.start()
 
