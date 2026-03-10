@@ -1,0 +1,10 @@
+GUI test plan execution
+
+Executed checks:
+- window_init: passed
+- view_switching: passed
+- diagram_tab_creation: passed
+
+Manual scenario references:
+- TS1 in TestResults/TS1/ts1.txt
+- TS2 in TestResults/TS2/ts2.txt

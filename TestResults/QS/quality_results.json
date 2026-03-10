@@ -1,0 +1,35 @@
+[
+  {
+    "case": "NN1_BoxIBP",
+    "runtime_ms": 153.915,
+    "memory_delta_kb": 14032,
+    "containment_pass": false,
+    "containment_ratio": 0.0,
+    "avg_bound_width": 0.634573,
+    "avg_sample_width": 0.93733,
+    "avg_tightness_ratio": 1.477746,
+    "sample_metric_outputs": 5
+  },
+  {
+    "case": "NN1_Zonotope",
+    "runtime_ms": 183.611,
+    "memory_delta_kb": 32708,
+    "containment_pass": false,
+    "containment_ratio": 0.0,
+    "avg_bound_width": 0.634573,
+    "avg_sample_width": 0.923102,
+    "avg_tightness_ratio": 1.456338,
+    "sample_metric_outputs": 5
+  },
+  {
+    "case": "NN2_BoxIBP",
+    "runtime_ms": 79.937,
+    "memory_delta_kb": 0,
+    "containment_pass": true,
+    "containment_ratio": 1.0,
+    "avg_bound_width": 0.0,
+    "avg_sample_width": 0.0,
+    "avg_tightness_ratio": 0.0,
+    "sample_metric_outputs": 2
+  }
+]

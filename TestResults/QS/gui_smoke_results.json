@@ -1,0 +1,27 @@
+[
+  {
+    "check": "window_init",
+    "passed": true,
+    "details": {
+      "title": "PSE Neuron App",
+      "stack_index": 0
+    }
+  },
+  {
+    "check": "view_switching",
+    "passed": true,
+    "details": {
+      "plot_ok": true,
+      "back_ok": true
+    }
+  },
+  {
+    "check": "diagram_tab_creation",
+    "passed": true,
+    "details": {
+      "stored_diagrams": 1,
+      "remaining_polygons": 1,
+      "tab_widget": "PlotPage"
+    }
+  }
+]
