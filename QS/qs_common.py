@@ -19,10 +19,10 @@ import onnx
 import onnxruntime as ort
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_RESULTS_DIR = ROOT / "TestResults"
-GUI_OUT_DIR = TEST_RESULTS_DIR / "GUI_QS"
-QUALITY_OUT_DIR = TEST_RESULTS_DIR / "QUALITY_QS"
-PROFILING_OUT_DIR = TEST_RESULTS_DIR / "PROFILING_QS"
+QS_DIR = ROOT / "QS"
+GUI_OUT_DIR = QS_DIR / "GUI"
+QUALITY_OUT_DIR = QS_DIR / "QUALITY"
+PROFILING_OUT_DIR = QS_DIR / "PROFILING"
 
 
 def ensure_output_dir(path: Path) -> None:
@@ -118,6 +118,6 @@ def write_gui_testplan(rows: list[dict]) -> None:
         lines.append(f"- {row['check']}: {status}")
     lines.append("")
     lines.append("Manual scenario references:")
-    lines.append("- TS1 in TestResults/TS1/ts1.txt")
-    lines.append("- TS2 in TestResults/TS2/ts2.txt")
+    lines.append("- TS1 in QS/TS1/ts1.txt")
+    lines.append("- TS2 in QS/TS2/ts2.txt")
     (GUI_OUT_DIR / "gui_testplan.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")

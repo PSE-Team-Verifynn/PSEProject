@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from unittest.mock import patch
 
 from PySide6.QtWidgets import QApplication, QWidget
@@ -11,6 +13,8 @@ from nn_verification_visualisation.model.data.plot_generation_config import Plot
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.base_view.color_manager import ColorManager
 from nn_verification_visualisation.view.base_view.main_window import MainWindow
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from qs_common import GUI_OUT_DIR, ensure_output_dir, write_gui_testplan, write_json
 

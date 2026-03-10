@@ -1,7 +1,7 @@
 Quality QS information
 
 Command used:
-mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python tools/run_quality_qs.py
+mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python QS/QUALITY/run_quality_qs.py
 
 What the script does:
 - Loads selected ONNX networks and their input bounds
@@ -34,6 +34,6 @@ Quality cases:
 - NN2_Zonotope
 
 Result files:
-- TestResults/QUALITY_QS/quality_results.json
-- TestResults/QUALITY_QS/quality_metrics.csv
-- TestResults/QUALITY_QS/quality_metrics.png
+- QS/QUALITY/quality_results.json
+- QS/QUALITY/quality_metrics.csv
+- QS/QUALITY/quality_metrics.png

@@ -1,8 +1,8 @@
 [
   {
     "case": "NN1_BoxIBP",
-    "runtime_ms": 243.255,
-    "memory_delta_kb": 14948,
+    "runtime_ms": 237.146,
+    "memory_delta_kb": 14852,
     "containment_pass": false,
     "containment_ratio": 0.0,
     "avg_bound_width": 0.634573,
@@ -14,8 +14,8 @@
   },
   {
     "case": "NN1_Zonotope",
-    "runtime_ms": 313.493,
-    "memory_delta_kb": 32532,
+    "runtime_ms": 293.477,
+    "memory_delta_kb": 32668,
     "containment_pass": false,
     "containment_ratio": 0.0,
     "avg_bound_width": 0.634573,
@@ -27,7 +27,7 @@
   },
   {
     "case": "NN2_BoxIBP",
-    "runtime_ms": 115.04,
+    "runtime_ms": 126.112,
     "memory_delta_kb": 0,
     "containment_pass": true,
     "containment_ratio": 1.0,
@@ -40,8 +40,8 @@
   },
   {
     "case": "NN2_Zonotope",
-    "runtime_ms": 1342.159,
-    "memory_delta_kb": 594008,
+    "runtime_ms": 1448.54,
+    "memory_delta_kb": 552668,
     "containment_pass": true,
     "containment_ratio": 1.0,
     "avg_bound_width": 0.0,

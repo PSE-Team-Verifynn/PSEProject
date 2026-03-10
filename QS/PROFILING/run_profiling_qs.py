@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from multiprocessing import get_context
 from pathlib import Path
@@ -10,6 +11,8 @@ from nn_verification_visualisation.controller.process_manager.algorithm_executor
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.model.data_loader.neural_network_loader import NeuralNetworkLoader
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from qs_common import PROFILING_OUT_DIR, ROOT, ensure_output_dir, input_dim_from_model, maxrss_kb, write_csv, write_json, write_profiling_plot
 
@@ -62,13 +65,13 @@ def run_profiling_checks() -> list[dict]:
         },
         {
             "case": "NN2",
-            "network": ROOT / "TestFiles" / "NN2.onnx",
+            "network": ROOT / "Files" / "NN2.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 99), (0, 199)],
         },
         {
             "case": "NN1_small",
-            "network": ROOT / "TestFiles" / "NN1.onnx",
+            "network": ROOT / "Files" / "NN1.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 0), (0, 1)],
         },

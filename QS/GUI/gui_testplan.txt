@@ -9,5 +9,5 @@ Executed checks:
 - diagram_selection_state: passed
 
 Manual scenario references:
-- TS1 in TestResults/TS1/ts1.txt
-- TS2 in TestResults/TS2/ts2.txt
+- TS1 in QS/TS1/ts1.txt
+- TS2 in QS/TS2/ts2.txt

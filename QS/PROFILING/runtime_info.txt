@@ -1,7 +1,7 @@
 Profiling QS runtime information
 
 Command used:
-mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python tools/run_profiling_qs.py
+mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python QS/PROFILING/run_profiling_qs.py
 
 What the script measures:
 - Runtime is measured with time.perf_counter()
@@ -17,6 +17,6 @@ Profiling cases:
 - NN1_small
 
 Result files:
-- TestResults/PROFILING_QS/profiling_results.json
-- TestResults/PROFILING_QS/profiling_metrics.csv
-- TestResults/PROFILING_QS/profiling_metrics.png
+- QS/PROFILING/profiling_results.json
+- QS/PROFILING/profiling_metrics.csv
+- QS/PROFILING/profiling_metrics.png

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import random
+import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import onnxruntime as ort
@@ -13,6 +15,8 @@ from nn_verification_visualisation.model.data.network_verification_config import
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.model.data_loader.input_bounds_loader import InputBoundsLoader
 from nn_verification_visualisation.model.data_loader.neural_network_loader import NeuralNetworkLoader
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from qs_common import QUALITY_OUT_DIR, ROOT, ensure_output_dir, input_dim_from_model, maxrss_kb, run_model_samples, write_csv, write_json, write_quality_plot
 
@@ -42,32 +46,32 @@ def run_quality_checks() -> list[dict]:
     cases = [
         {
             "case": "NN1_BoxIBP",
-            "network": ROOT / "TestFiles" / "NN1.onnx",
-            "bounds": ROOT / "TestFiles" / "B1.csv",
+            "network": ROOT / "Files" / "NN1.onnx",
+            "bounds": ROOT / "Files" / "B1.csv",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 0), (0, 1)],
             "samples": 2000,
         },
         {
             "case": "NN1_Zonotope",
-            "network": ROOT / "TestFiles" / "NN1.onnx",
-            "bounds": ROOT / "TestFiles" / "B1.csv",
+            "network": ROOT / "Files" / "NN1.onnx",
+            "bounds": ROOT / "Files" / "B1.csv",
             "algorithm": ROOT / "algorithms" / "simple_zonotope.py",
             "selected_neurons": [(0, 0), (0, 1)],
             "samples": 2000,
         },
         {
             "case": "NN2_BoxIBP",
-            "network": ROOT / "TestFiles" / "NN2.onnx",
-            "bounds": ROOT / "TestFiles" / "B1.csv",
+            "network": ROOT / "Files" / "NN2.onnx",
+            "bounds": ROOT / "Files" / "B1.csv",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 99), (0, 199)],
             "samples": 1000,
         },
         {
             "case": "NN2_Zonotope",
-            "network": ROOT / "TestFiles" / "NN2.onnx",
-            "bounds": ROOT / "TestFiles" / "B1.csv",
+            "network": ROOT / "Files" / "NN2.onnx",
+            "bounds": ROOT / "Files" / "B1.csv",
             "algorithm": ROOT / "algorithms" / "simple_zonotope.py",
             "selected_neurons": [(0, 99), (0, 199)],
             "samples": 1000,

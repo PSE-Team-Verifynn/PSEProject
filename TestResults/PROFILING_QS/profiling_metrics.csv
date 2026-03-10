@@ -1,6 +1,0 @@
-case,runtime_ms,maxrss_kb
-simple_3_layer_x10,4.832,107100
-simple_3_layer_x50,31.195,107492
-simple_3_layer_x100,160.192,129644
-NN2,121.3,110992
-NN1_small,231.519,142244
