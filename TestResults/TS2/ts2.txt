@@ -5,7 +5,7 @@ CPU / RAM Grenzen nicht vorhanden
 Netz 1 und 2: Layer 1 Neuron 100
 		Layer 1 Neuron 200
 
-Beide male Algorithmus Box IBP Numpy
+Einmal BOX IBP Numpy und einmal Simple Zonotope Algorithmus
 Beide aufeinmal ausgeführt
 Resultate: TestResults/TS2_1.png und TestResults/TS2_2.png
 

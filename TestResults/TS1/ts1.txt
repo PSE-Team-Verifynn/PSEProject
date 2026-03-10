@@ -9,7 +9,7 @@ Neuronen ausgewählt: Layer 3 Node 4, Layer 3 Node 8
 Algorithmus: box_ibp_numpy.py
 Diagramm PNG: TestResults/image.png
 
-Zonotop Algorithmus nicht vorhanden
+Zonotop Algorithmus ausgeführt
 
 Neustart des Programms: Netz, Bounds und Diagramm noch vorhanden
 
