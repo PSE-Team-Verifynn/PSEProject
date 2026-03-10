@@ -38,7 +38,7 @@ class PlotWidget(QWidget):
 
     plot: Plot
     figure: Figure
-    axes: Axes          # set by subclass via _setup_axes()
+    axes: Axes  # set by subclass via _setup_axes()
     canvas: FigureCanvas
     locked: bool
     toolbar: NavigationToolbar
@@ -52,10 +52,10 @@ class PlotWidget(QWidget):
 
     @staticmethod
     def make_plot_widget(
-        on_limits_changed: Callable[[PlotWidget], None],
-        title: str = "",
-        parent=None,
-        is_3d: bool = False,
+            on_limits_changed: Callable[[PlotWidget], None],
+            title: str = "",
+            parent=None,
+            is_3d: bool = False,
     ) -> PlotWidget:
         if is_3d:
             from nn_verification_visualisation.view.plot_view.plot_widget_3d import PlotWidget3D
@@ -64,10 +64,10 @@ class PlotWidget(QWidget):
         return PlotWidget2D(on_limits_changed, title, parent)
 
     def __init__(
-        self,
-        on_limits_changed: Callable[[PlotWidget], None],
-        title: str = "",
-        parent=None,
+            self,
+            on_limits_changed: Callable[[PlotWidget], None],
+            title: str = "",
+            parent=None,
     ):
         super().__init__(parent)
 
@@ -155,10 +155,10 @@ class PlotWidget(QWidget):
         raise NotImplementedError
 
     def render_plot(
-        self,
-        polygons: list,
-        colors: list[QColor],
-        polygon_names: list[str],
+            self,
+            polygons: list,
+            colors: list[QColor],
+            polygon_names: list[str],
     ) -> None:
         raise NotImplementedError
 
