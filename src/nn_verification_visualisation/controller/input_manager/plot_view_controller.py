@@ -150,7 +150,7 @@ class PlotViewController:
         # start algorithm processes
         for index, plot_generation_config in enumerate(plot_generation_configs):
             model: ModelProto = plot_generation_config.nnconfig.network.model
-            input_bounds: np.ndarray = AlgorithmExecutor.input_bounds_to_numpy(plot_generation_config.nnconfig.bounds)
+            input_bounds: np.ndarray = AlgorithmExecutor.input_bounds_to_numpy(plot_generation_config.nnconfig.saved_bounds[plot_generation_config.bounds_index])
             algorithm_path: str = plot_generation_config.algorithm.path
             selected_neurons: list[tuple[int, int]] = plot_generation_config.selected_neurons
 
