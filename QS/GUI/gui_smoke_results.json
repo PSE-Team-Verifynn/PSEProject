@@ -32,6 +32,59 @@
     }
   },
   {
+    "check": "network_load_real_file",
+    "passed": true,
+    "details": {
+      "storage_networks": 1,
+      "tab_type": "NetworkPage",
+      "tab_title": "NN1"
+    }
+  },
+  {
+    "check": "bounds_import_real_file",
+    "passed": true,
+    "details": {
+      "bounds_loaded": true,
+      "first_bounds": [
+        [
+          -1.0,
+          0.5
+        ],
+        [
+          0.25,
+          0.75
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.25,
+          0.75
+        ]
+      ]
+    }
+  },
+  {
+    "check": "bounds_save_via_ui",
+    "passed": true,
+    "details": {
+      "saved_bounds": 1,
+      "selected_bounds_index": 0,
+      "bounds_list_count": 1,
+      "display_title": "Bounds 01"
+    }
+  },
+  {
+    "check": "bounds_edit_and_remove_via_ui",
+    "passed": true,
+    "details": {
+      "edit_mode_ok": true,
+      "saved_bounds_after_remove": 0,
+      "bounds_list_count_after_remove": 0
+    }
+  },
+  {
     "check": "diagram_tab_creation",
     "passed": true,
     "details": {
@@ -49,6 +102,14 @@
           0
         ]
       ]
+    }
+  },
+  {
+    "check": "plot_tab_close_removes_storage",
+    "passed": true,
+    "details": {
+      "stored_diagrams_after_close": 0,
+      "plot_tab_count_after_close": 1
     }
   }
 ]
