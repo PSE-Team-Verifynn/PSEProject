@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
 
 from nn_verification_visualisation.model.data.diagram_config import DiagramConfig
-from nn_verification_visualisation.view.base_view.plot_settings_widget import PlotSettingsWidget
+from nn_verification_visualisation.view.plot_view.plot_settings_widget import PlotSettingsWidget
 from nn_verification_visualisation.view.plot_view.plot_widget import PlotWidget
 from nn_verification_visualisation.view.base_view.tab import Tab
 from nn_verification_visualisation.view.dialogs.settings_dialog import SettingsDialog

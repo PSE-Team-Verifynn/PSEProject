@@ -32,6 +32,8 @@ def main():
     load_res = storage.load_from_disk()
 
     window = MainWindow(color_manager)
+    color_manager.main_window = window
+    color_manager.set_colors(ColorManager.NETWORK_COLORS)
 
     window.showMaximized()
 
@@ -46,7 +48,7 @@ def main():
             dialog = InfoPopup(window.base_view.active_view.close_dialog, message, InfoType.WARNING)
             window.base_view.active_view.open_dialog(dialog)
 
-    app.aboutToQuit.connect(lambda: Storage().save_to_disk())
+    app.aboutToQuit.connect(storage.save_to_disk)
 
     sys.exit(app.exec())
 
