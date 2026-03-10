@@ -1,0 +1,21 @@
+Profiling QS runtime information
+
+Command used:
+mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python tools/run_profiling_qs.py
+
+What the script measures:
+- Runtime is measured with time.perf_counter()
+- Peak memory is measured with resource.getrusage(...).ru_maxrss
+- The algorithm used is algorithms/box_ibp_numpy.py
+- Default input bounds are (0.0, 1.0) for every input dimension
+
+Profiling cases:
+- simple_3_layer_x10
+- simple_3_layer_x50
+- simple_3_layer_x100
+- NN1_small
+
+Result files:
+- TestResults/PROFILING_QS/profiling_results.json
+- TestResults/PROFILING_QS/profiling_metrics.csv
+- TestResults/PROFILING_QS/profiling_metrics.png

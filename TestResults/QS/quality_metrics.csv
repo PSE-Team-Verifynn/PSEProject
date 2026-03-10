@@ -1,4 +1,0 @@
-case,runtime_ms,memory_delta_kb,containment_pass,containment_ratio,avg_bound_width,avg_sample_width,avg_tightness_ratio,sample_metric_outputs
-NN1_BoxIBP,153.915,14032,False,0.0,0.634573,0.93733,1.477746,5
-NN1_Zonotope,183.611,32708,False,0.0,0.634573,0.923102,1.456338,5
-NN2_BoxIBP,79.937,0,True,1.0,0.0,0.0,0.0,2

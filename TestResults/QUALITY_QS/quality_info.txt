@@ -1,0 +1,36 @@
+Quality QS information
+
+Command used:
+mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python tools/run_quality_qs.py
+
+What the script does:
+- Loads selected ONNX networks and their input bounds
+- Runs the selected verification algorithm on chosen neuron pairs
+- Computes output bounds for multiple directions
+- Generates random samples within the given input bounds
+- Evaluates the modified ONNX model with those samples
+- Compares sampled output ranges with the computed bounds
+
+Measured quality values:
+- containment_pass: whether all sampled values stay inside the computed bounds
+- containment_ratio: share of directions for which the sampled values stay inside the computed bounds
+- avg_bound_width: average width of the computed bounds
+- avg_sample_width: average width observed from sampling
+- avg_tightness_ratio: sample width divided by computed bound width
+- runtime_ms: runtime of the quality check computation
+- memory_delta_kb: additional memory observed during the computation
+
+Additional sampling metrics:
+- max
+- mean
+- range
+
+Quality cases:
+- NN1_BoxIBP
+- NN1_Zonotope
+- NN2_BoxIBP
+
+Result files:
+- TestResults/QUALITY_QS/quality_results.json
+- TestResults/QUALITY_QS/quality_metrics.csv
+- TestResults/QUALITY_QS/quality_metrics.png
