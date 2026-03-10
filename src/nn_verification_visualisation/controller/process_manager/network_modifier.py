@@ -2,6 +2,7 @@ import copy
 
 from onnx import ModelProto, TensorProto, NodeProto
 import onnx
+from sympy import true
 
 
 class NetworkModifier:
@@ -92,33 +93,41 @@ class NetworkModifier:
         :param directions: List of directions, that represent linear combinations of neurons
         :return: the modified model
         '''
+        dirty_trick_constant = 10000
         for neuron in neurons:
-            for layer in range(2 * neuron[0], model.graph.initializer.__len__() - 1):   # goes through all layers following
-                                                                                        # the layer with the neuron in it and adds a new neuron for each layer
-                if layer != 2 * neuron[0]:
-                    model.graph.initializer[layer].dims[0] += 1
-                if model.graph.initializer[layer].dims.__len__() == 2 and layer != model.graph.initializer.__len__() - 2:
-                    model.graph.initializer[layer].dims[1] += 1
-                    if layer == 2 * neuron[0]:
-                        for node in range(0, model.graph.initializer[layer].dims[0]):
-                            if node == neuron[1]:
-                                model.graph.initializer[layer].float_data.insert(                       # adds the connections between the new neurons
-                                    (node + 1) * model.graph.initializer[layer].dims[1] - 1, 1)
-                            else:
-                                model.graph.initializer[layer].float_data.insert(                       # adds the connections between old and new neurons
-                                    (node + 1) * model.graph.initializer[layer].dims[1] - 1, 0)
-                    else:
-                        for node in range(1, model.graph.initializer[layer].dims[0] - 1):
-                            model.graph.initializer[layer].float_data.insert(               # adds the connections to the new neurons
-                                node * model.graph.initializer[layer].dims[1] - 1, 0)
-                        model.graph.initializer[layer].float_data.append(0)
-                        for node in range(1, model.graph.initializer[layer].dims[1]):
+            for layer in range(2 * neuron[0], model.graph.initializer.__len__() - 1):   # goes through all layers following                                                               # the layer with the neuron in it and adds a new neuron for each layer
+                if model.graph.initializer[layer].dims.__len__() < 3:
+                    if layer != 2 * neuron[0]:
+                        model.graph.initializer[layer].dims[0] += 1
+                    if model.graph.initializer[layer].dims.__len__() == 2 and layer != model.graph.initializer.__len__() - 2:
+                        model.graph.initializer[layer].dims[1] += 1
+                        if layer == 2 * neuron[0]:
+                            for node in range(0, model.graph.initializer[layer].dims[0]):
+                                if node == neuron[1]:
+                                    model.graph.initializer[layer].float_data.insert(                       # adds the connections between the new neurons
+                                        (node + 1) * model.graph.initializer[layer].dims[1] - 1, 1)
+                                else:
+                                    model.graph.initializer[layer].float_data.insert(                       # adds the connections between old and new neurons
+                                        (node + 1) * model.graph.initializer[layer].dims[1] - 1, 0)
+                        else:
+                            for node in range(1, model.graph.initializer[layer].dims[0] - 1):
+                                model.graph.initializer[layer].float_data.insert(               # adds the connections to the new neurons
+                                    node * model.graph.initializer[layer].dims[1] - 1, 0)
                             model.graph.initializer[layer].float_data.append(0)
-                        model.graph.initializer[layer].float_data.append(1)
-                else:
-                    if layer != model.graph.initializer.__len__() - 2:
-                        model.graph.initializer[layer].float_data.append(0)
-        for neuron_ind in range(0, neurons.__len__()):# changes the last initializer to match the output
+                            for node in range(1, model.graph.initializer[layer].dims[1]):
+                                model.graph.initializer[layer].float_data.append(0)
+                            model.graph.initializer[layer].float_data.append(1)
+                    else:
+                        if layer != model.graph.initializer.__len__() - 2:
+                            if layer == 2 * neuron[0] + 1 and layer == model.graph.initializer.__len__() - 3:
+                                model.graph.initializer[layer].float_data.append(0)
+                            elif layer == 2 * neuron[0] + 1:
+                                model.graph.initializer[layer].float_data.append(dirty_trick_constant)
+                            elif layer == model.graph.initializer.__len__() - 3:
+                                model.graph.initializer[layer].float_data.append(-1 * dirty_trick_constant)
+                            else:
+                                model.graph.initializer[layer].float_data.append(0)
+        for neuron_ind in range(0, neurons.__len__()):          # changes the last initializer to match the output
             if 2 * neurons[neuron_ind][0] == model.graph.initializer.__len__() - 2:
                 for direction in range(0, directions.__len__()):
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.remove(0)
@@ -168,6 +177,7 @@ class NetworkModifier:
         new_node.input.append(model.graph.node[model.graph.node.__len__() - 1].output[0])   #adds the data
         new_node.input.append(initializers[0].name)
         new_node.input.append(initializers[1].name)
-        new_node.output.append("output")
+        new_node.output.append(model.graph.output[0].name)
         new_node.name = "new_output"
+        new_node.op_type = "Gemm"
         return  new_node
