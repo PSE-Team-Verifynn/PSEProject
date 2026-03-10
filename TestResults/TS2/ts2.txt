@@ -1,0 +1,19 @@
+TS2: Zwei Netze: NN2
+Bounds: B1
+CPU / RAM Grenzen nicht vorhanden
+
+Netz 1 und 2: Layer 1 Neuron 100
+		Layer 1 Neuron 200
+
+Beide male Algorithmus Box IBP Numpy
+Beide aufeinmal ausgeführt
+Resultate: TestResults/TS2_1.png und TestResults/TS2_2.png
+
+Algorithmus cancel_test.py ausgeführt, abgebrochen, funktioniert
+
+Ungültige Datentypen könne bei keiner Input Option geladen werden
+NNE.onnx geladen -> wird nicht geladen aber auch keine Fehlermeldung
+BE1.csv geladen: ValueError('Every index in the csv file has to appear exactly once and be in range 0..N-1.')
+BE2.vnnlib geladen: ValueError('Invalid expression.')
+
+Alle Eigenschaften sind erfüllt
