@@ -555,6 +555,7 @@ class NeuronPicker(DialogBase):
         self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
         self.__rebuild_bounds_display_rows()
 
+
         # --- Sample Results ---
         # --- Neuron Pair Selectors ---
         for i in range(0, self.num_neurons):
