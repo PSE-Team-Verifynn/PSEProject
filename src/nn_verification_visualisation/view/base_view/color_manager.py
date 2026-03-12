@@ -63,8 +63,6 @@ class ColorManager:
         self.raw_stylesheet = file.readAll().data().decode("utf-8")
         file.close()
 
-
-
         stylesheet, palette = self.__get_color_objects(ColorManager.NETWORK_COLORS)
         self.app.setPalette(palette)
         self.app.setStyleSheet(stylesheet)

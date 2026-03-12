@@ -37,12 +37,7 @@ class Tab(QWidget):
             sidebar_container.setObjectName("tab-sidebar")
             sidebar_container.setLayout(sidebar_layout)
 
-            sidebar_scroll = QScrollArea()
-            sidebar_scroll.setWidgetResizable(True)
-            sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
-            sidebar_scroll.setWidget(sidebar_container)
-
-            splitter.addWidget(sidebar_scroll)
+            splitter.addWidget(sidebar_container)
             splitter.addWidget(content_container)
 
             # Set default splitter size
