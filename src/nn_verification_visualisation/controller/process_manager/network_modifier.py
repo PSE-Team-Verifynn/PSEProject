@@ -177,6 +177,7 @@ class NetworkModifier:
         new_initializer2.name = "output_initializer_B"
         del new_initializer1.dims[:]
         del new_initializer2.dims[:]
+
         del new_initializer1.float_data[:]
         del new_initializer2.float_data[:]      #creates the 2 new initalizers, without data
         new_initializer1.dims.append(model.graph.initializer[model.graph.initializer.__len__() - 1].dims[0])
