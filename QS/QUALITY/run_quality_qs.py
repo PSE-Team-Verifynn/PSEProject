@@ -211,8 +211,9 @@ def evaluate_case(case: dict, case_output_dir: Path) -> dict:
         raise result.error
 
     computed_bounds, directions = result.data
-    low = np.array([pair[0] for pair in bounds_map.values()], dtype=np.float32)
-    high = np.array([pair[1] for pair in bounds_map.values()], dtype=np.float32)
+    ordered_bounds = [bounds_map[index] for index in range(len(bounds_map))]
+    low = np.array([pair[0] for pair in ordered_bounds], dtype=np.float32)
+    high = np.array([pair[1] for pair in ordered_bounds], dtype=np.float32)
     samples = np.random.uniform(low=low, high=high, size=(case["samples"], len(low))).astype(np.float32)
 
     modified_model = NetworkModifier().custom_output_layer(network.model, case["selected_neurons"], directions)
@@ -265,7 +266,7 @@ def evaluate_case(case: dict, case_output_dir: Path) -> dict:
             }
         )
 
-    sample_summary = run_samples_for_bounds(network, list(bounds_map.values()), min(case["samples"], 1000), ["max", "mean", "range"])
+    sample_summary = run_samples_for_bounds(network, ordered_bounds, min(case["samples"], 1000), ["max", "mean", "range"])
 
     detail_payload = {
         "case": case["case"],

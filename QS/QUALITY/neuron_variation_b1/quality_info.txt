@@ -1,6 +1,6 @@
 Quality QS information
 
-Suite: neuron_variation
+Suite: neuron_variation_b1
 
 Measured quality values:
 - containment_ratio: share of directions whose sampled extrema stay inside the computed bounds
