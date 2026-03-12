@@ -1,8 +1,10 @@
 import copy
 
+import numpy as np
 from onnx import ModelProto, TensorProto, NodeProto
 import onnx
 from sympy import true
+from sympy.codegen.ast import none
 
 
 class NetworkModifier:
@@ -73,15 +75,35 @@ class NetworkModifier:
             raise RuntimeError("The last layer of the network must have exactly one output")
 
         model.graph.node[model.graph.node.__len__() - 1].output.remove(output_names[0])
-        model.graph.node[model.graph.node.__len__() - 1].output.append("old_output")    #redirects the old output layer
-
+        model.graph.node[model.graph.node.__len__() - 1].output.append("old_output")            #redirects the old output layer
+        model = NetworkModifier.change_initialiser_data_format(self, model)
         initializers = NetworkModifier.create_initalizers(self, model, neurons, directions)
         model.graph.initializer.append(initializers[0])
-        model.graph.initializer.append(initializers[1])     # adds the new initializers
+        model.graph.initializer.append(initializers[1])                                         # adds the new initializers
         new_node = NetworkModifier.create_new_layer(self, model, neurons, initializers)
-        model.graph.node.append(new_node)   # adds the new node
+        model.graph.node.append(new_node)                                                       # adds the new node
         model = NetworkModifier.add_bridge_neurons(self, model, neurons, directions)
-        model.graph.output[0].type.tensor_type.shape.dim[-1].dim_value =  directions.__len__()       #modifies the output dim, so it matches with the initializers
+        model.graph.output[0].type.tensor_type.shape.dim[-1].dim_value =  directions.__len__()  #modifies the output dim, so it matches with the initializers
+        onnx.save_model(model, "Test6","textproto", save_as_external_data=true)
+
+        return model
+
+    def change_initialiser_data_format(self, model:ModelProto) -> ModelProto:
+        '''
+        This method forces the data format to be float data
+        :param model: the model that is changed
+        :return: the model with the correct data format
+        '''
+        for element in model.graph.initializer :
+            numpy_initializer = onnx.numpy_helper.to_array(element, np.float32)                 # saves the data as a numpy array
+            name = element.name
+            element.Clear()
+            for entry in np.nditer(numpy_initializer):
+                element.float_data.append(float(entry))                                        # adds the data back, forced as float
+            for dim in numpy_initializer.shape:
+                element.dims.append(dim)
+            element.data_type = 1
+            element.name = name
         return model
 
     @staticmethod
@@ -93,15 +115,18 @@ class NetworkModifier:
         :param directions: List of directions, that represent linear combinations of neurons
         :return: the modified model
         '''
-        dirty_trick_constant = 10000
+        offset = 0
+        if model.graph.initializer[0].dims.__len__() > 3:                     # adds an offset to the layer iteration if a preprocess layer exists (problem if there are more)
+            offset = 1
+        dirty_trick_constant = 10000                                           # this is the constant for fooling relu on bridge neurons
         for neuron in neurons:
-            for layer in range(2 * neuron[0], model.graph.initializer.__len__() - 1):   # goes through all layers following                                                               # the layer with the neuron in it and adds a new neuron for each layer
+            for layer in range(2 * neuron[0] + offset, model.graph.initializer.__len__() - 1):   # goes through all layers following
                 if model.graph.initializer[layer].dims.__len__() < 3:
-                    if layer != 2 * neuron[0]:
-                        model.graph.initializer[layer].dims[0] += 1
-                    if model.graph.initializer[layer].dims.__len__() == 2 and layer != model.graph.initializer.__len__() - 2:
-                        model.graph.initializer[layer].dims[1] += 1
-                        if layer == 2 * neuron[0]:
+                    if layer != 2 * neuron[0] + offset:
+                        model.graph.initializer[layer].dims[0] += 1                      #changes the dims off all following layers to the layer of the selected neuron
+                    if model.graph.initializer[layer].dims.__len__() == 2 and layer != model.graph.initializer.__len__() - 2:           # adds connections to Matrix layers
+                        model.graph.initializer[layer].dims[1] += 1                     # changes the 2 dim for the matrix multiplication
+                        if layer == 2 * neuron[0] + offset:
                             for node in range(0, model.graph.initializer[layer].dims[0]):
                                 if node == neuron[1]:
                                     model.graph.initializer[layer].float_data.insert(                       # adds the connections between the new neurons
@@ -115,21 +140,21 @@ class NetworkModifier:
                                     node * model.graph.initializer[layer].dims[1] - 1, 0)
                             model.graph.initializer[layer].float_data.append(0)
                             for node in range(1, model.graph.initializer[layer].dims[1]):
-                                model.graph.initializer[layer].float_data.append(0)
-                            model.graph.initializer[layer].float_data.append(1)
-                    else:
+                                model.graph.initializer[layer].float_data.append(0)             # adds connections from new neurons to neurons in the next layer
+                            model.graph.initializer[layer].float_data.append(1)                 # gives over the value to the new bridge neuron
+                    else:                                                                       # adds the new biases for the new neurons
                         if layer != model.graph.initializer.__len__() - 2:
-                            if layer == 2 * neuron[0] + 1 and layer == model.graph.initializer.__len__() - 3:
+                            if layer == 2 * neuron[0] + 1 +offset and layer == model.graph.initializer.__len__() - 3:
                                 model.graph.initializer[layer].float_data.append(0)
-                            elif layer == 2 * neuron[0] + 1:
-                                model.graph.initializer[layer].float_data.append(dirty_trick_constant)
-                            elif layer == model.graph.initializer.__len__() - 3:
-                                model.graph.initializer[layer].float_data.append(-1 * dirty_trick_constant)
+                            elif layer == 2 * neuron[0] + 1 + offset:
+                                model.graph.initializer[layer].float_data.append(dirty_trick_constant)          # dirty trick start
+                            elif layer == model.graph.initializer.__len__() - 3 :
+                                model.graph.initializer[layer].float_data.append(-1 * dirty_trick_constant)     # dirty trick end
                             else:
                                 model.graph.initializer[layer].float_data.append(0)
         for neuron_ind in range(0, neurons.__len__()):          # changes the last initializer to match the output
             if 2 * neurons[neuron_ind][0] == model.graph.initializer.__len__() - 2:
-                for direction in range(0, directions.__len__()):
+                for direction in range(0, directions.__len__()):                    # adds the values of the directions into the last matrix multiplication
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.remove(0)
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.insert(2* neurons[neuron_ind][1] + direction,directions[direction][neuron_ind])
             else:
