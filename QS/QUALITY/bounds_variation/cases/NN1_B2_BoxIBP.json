@@ -1,7 +1,9 @@
 {
   "case": "NN1_B2_BoxIBP",
+  "suite": "bounds_variation",
   "network_name": "NN1",
   "bounds_label": "B2.vnnlib",
+  "neurons_label": "(0, 0) & (0, 1)",
   "plot_label": "NN1\nB2.vnnlib",
   "network": "NN1.onnx",
   "bounds": "B2.vnnlib",

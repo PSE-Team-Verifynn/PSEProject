@@ -22,7 +22,6 @@ ROOT = Path(__file__).resolve().parents[1]
 QS_DIR = ROOT / "QS"
 GUI_OUT_DIR = QS_DIR / "GUI"
 QUALITY_OUT_DIR = QS_DIR / "QUALITY"
-QUALITY_CASES_OUT_DIR = QUALITY_OUT_DIR / "cases"
 PROFILING_OUT_DIR = QS_DIR / "PROFILING"
 
 
@@ -65,7 +64,7 @@ def run_model_samples(session: ort.InferenceSession, input_name: str, output_nam
     return session.run([output_name], {input_name: samples})[0]
 
 
-def write_quality_plot(rows: list[dict]) -> None:
+def write_quality_plot(rows: list[dict], output_path: Path) -> None:
     labels = [row.get("plot_label", row["case"]) for row in rows]
     tightness = [row["avg_tightness_ratio"] for row in rows]
     containment = [row["containment_ratio"] for row in rows]
@@ -99,7 +98,7 @@ def write_quality_plot(rows: list[dict]) -> None:
     axes[1, 1].tick_params(axis="x", rotation=20)
 
     fig.tight_layout()
-    fig.savefig(QUALITY_OUT_DIR / "quality_metrics.png", dpi=160)
+    fig.savefig(output_path, dpi=160)
     plt.close(fig)
 
 
@@ -181,7 +180,14 @@ def convex_hull(points: np.ndarray) -> list[tuple[float, float]]:
     return lower[:-1] + upper[:-1]
 
 
-def write_quality_case_plot(case_name: str, sample_points: np.ndarray, polygon: list[tuple[float, float]], sample_hull: list[tuple[float, float]], width_rows: list[dict]) -> None:
+def write_quality_case_plot(
+    case_name: str,
+    sample_points: np.ndarray,
+    polygon: list[tuple[float, float]],
+    sample_hull: list[tuple[float, float]],
+    width_rows: list[dict],
+    output_path: Path,
+) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.2))
 
     axes[0].scatter(sample_points[:, 0], sample_points[:, 1], s=8, alpha=0.35, color="#2563eb", label="Samples")
@@ -212,13 +218,15 @@ def write_quality_case_plot(case_name: str, sample_points: np.ndarray, polygon: 
     axes[1].legend(loc="best")
 
     fig.tight_layout()
-    fig.savefig(QUALITY_CASES_OUT_DIR / f"{case_name}.png", dpi=170)
+    fig.savefig(output_path, dpi=170)
     plt.close(fig)
 
 
-def write_quality_summary(rows: list[dict]) -> None:
+def write_quality_summary(rows: list[dict], output_path: Path, suite_name: str) -> None:
     lines = [
         "Quality QS information",
+        "",
+        f"Suite: {suite_name}",
         "",
         "Measured quality values:",
         "- containment_ratio: share of directions whose sampled extrema stay inside the computed bounds",
@@ -231,11 +239,11 @@ def write_quality_summary(rows: list[dict]) -> None:
         "- avg_slack: mean signed directional slack across lower and upper bounds",
         "",
         "Generated artifacts:",
-        "- QS/QUALITY/quality_results.json",
-        "- QS/QUALITY/quality_metrics.csv",
-        "- QS/QUALITY/quality_metrics.png",
-        "- QS/QUALITY/cases/<case>.png",
-        "- QS/QUALITY/cases/<case>.json",
+        "- quality_results.json",
+        "- quality_metrics.csv",
+        "- quality_metrics.png",
+        "- cases/<case>.png",
+        "- cases/<case>.json",
         "",
         "Cases:",
     ]
@@ -245,7 +253,7 @@ def write_quality_summary(rows: list[dict]) -> None:
             lines.append(f"- {row['case']} ({bounds_label})")
         else:
             lines.append(f"- {row['case']}")
-    (QUALITY_OUT_DIR / "quality_info.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def write_profiling_plot(rows: list[dict]) -> None:

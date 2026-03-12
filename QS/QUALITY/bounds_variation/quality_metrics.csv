@@ -1,0 +1,19 @@
+case,suite,network_name,bounds_label,neurons_label,plot_label,runtime_ms,memory_delta_kb,containment_pass,containment_ratio,sample_point_containment_ratio,avg_bound_width,avg_sample_width,avg_tightness_ratio,polygon_area,sample_hull_area,polygon_over_hull_area_ratio,min_slack,avg_slack,sample_metric_outputs,bounded_directions,checked_directions
+NN1_B1_BoxIBP,bounds_variation,NN1,B1.csv,"(0, 0) & (0, 1)","NN1
+B1.csv",218.727,14808,False,0.0,0.0755,0.634573,0.93733,1.477746,0.25,0.494125,0.505945,-0.552829,-0.151378,5,0,16
+NN1_B2_BoxIBP,bounds_variation,NN1,B2.vnnlib,"(0, 0) & (0, 1)","NN1
+B2.vnnlib",209.766,0,True,1.0,1.0,1.903719,1.886734,0.991193,2.0,1.984733,1.007692,0.0,0.008493,5,16,16
+NN1_UnitBox_BoxIBP,bounds_variation,NN1,"[0,1]^n","(0, 0) & (0, 1)","NN1
+[0,1]^n",213.241,0,True,1.0,1.0,1.269146,1.243883,0.980795,1.0,0.991009,1.009073,3e-06,0.012632,5,16,16
+IR11_1_B1_BoxIBP,bounds_variation,IR11_1,B1.csv,"(0, 0) & (0, 1)","IR11_1
+B1.csv",0.878,0,False,0.0,0.087,0.634573,0.939202,1.480588,0.25,0.490479,0.509706,-0.557368,-0.152315,2,0,16
+IR11_1_B2_BoxIBP,bounds_variation,IR11_1,B2.vnnlib,"(0, 0) & (0, 1)","IR11_1
+B2.vnnlib",0.916,0,True,1.0,1.0,1.903719,1.871434,0.98305,2.0,1.974488,1.012921,0.0,0.016143,2,16,16
+IR11_1_UnitBox_BoxIBP,bounds_variation,IR11_1,"[0,1]^n","(0, 0) & (0, 1)","IR11_1
+[0,1]^n",0.81,0,True,1.0,1.0,1.269146,1.217071,0.960482,1.0,0.979898,1.020514,0.00021,0.026038,2,16,16
+IR11_2_UnitBox_BoxIBP,bounds_variation,IR11_2,"[0,1]^n","(1, 0) & (1, 1)","IR11_2
+[0,1]^n",11.419,0,True,1.0,1.0,95.438119,10.682614,0.112775,5642.37187,47.730144,118.214013,0.0,42.377753,3,16,16
+IR11_2_Symmetric_BoxIBP,bounds_variation,IR11_2,"[-1,1]^n","(1, 0) & (1, 1)","IR11_2
+[-1,1]^n",9.31,0,True,1.0,1.0,195.70726,24.187494,0.124533,23761.881793,327.855391,72.476715,0.0,85.759883,3,16,16
+IR11_2_Narrow_BoxIBP,bounds_variation,IR11_2,"[0.25,0.75]^n","(1, 0) & (1, 1)","IR11_2
+[0.25,0.75]^n",9.273,0,True,1.0,1.0,46.243683,4.512106,0.097303,1322.431526,10.995937,120.265469,0.0,20.865788,3,16,16

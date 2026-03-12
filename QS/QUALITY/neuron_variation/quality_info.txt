@@ -1,0 +1,31 @@
+Quality QS information
+
+Suite: neuron_variation
+
+Measured quality values:
+- containment_ratio: share of directions whose sampled extrema stay inside the computed bounds
+- sample_point_containment_ratio: share of sampled 2D neuron points that stay inside the computed polygon
+- avg_tightness_ratio: sample width divided by computed bound width
+- polygon_area: area of the halfspace polygon built from the computed bounds
+- sample_hull_area: convex hull area of the sampled 2D neuron outputs
+- polygon_over_hull_area_ratio: geometric overapproximation factor
+- min_slack: worst signed margin between computed and sampled directional bounds
+- avg_slack: mean signed directional slack across lower and upper bounds
+
+Generated artifacts:
+- quality_results.json
+- quality_metrics.csv
+- quality_metrics.png
+- cases/<case>.png
+- cases/<case>.json
+
+Cases:
+- NN1_Neurons01_BoxIBP (B2.vnnlib)
+- NN1_Neurons23_BoxIBP (B2.vnnlib)
+- NN1_Output01_BoxIBP (B2.vnnlib)
+- IR11_1_Neurons01_BoxIBP (B2.vnnlib)
+- IR11_1_Neurons23_BoxIBP (B2.vnnlib)
+- IR11_1_Output01_BoxIBP (B2.vnnlib)
+- IR11_2_Hidden01_BoxIBP ([0,1]^n)
+- IR11_2_Hidden23_BoxIBP ([0,1]^n)
+- IR11_2_FirstLayer01_BoxIBP ([0,1]^n)

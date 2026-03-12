@@ -1,7 +1,9 @@
 {
   "case": "IR11_2_UnitBox_BoxIBP",
+  "suite": "bounds_variation",
   "network_name": "IR11_2",
   "bounds_label": "[0,1]^n",
+  "neurons_label": "(1, 0) & (1, 1)",
   "plot_label": "IR11_2\n[0,1]^n",
   "network": "IR11_2_gemm.onnx",
   "bounds": null,

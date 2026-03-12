@@ -1,7 +1,9 @@
 {
   "case": "NN1_UnitBox_BoxIBP",
+  "suite": "bounds_variation",
   "network_name": "NN1",
   "bounds_label": "[0,1]^n",
+  "neurons_label": "(0, 0) & (0, 1)",
   "plot_label": "NN1\n[0,1]^n",
   "network": "NN1.onnx",
   "bounds": null,
