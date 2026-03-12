@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+
 import numpy as np
 import onnx
-from onnx import helper, TensorProto
+from onnx import TensorProto, helper
 
 
 def _init_tensor(name: str, shape: list[int], rng: np.random.Generator) -> onnx.TensorProto:
@@ -16,10 +17,9 @@ def _init_tensor(name: str, shape: list[int], rng: np.random.Generator) -> onnx.
 
 def build_model(
     input_dim: int,
-    hidden_dim: int,
+    hidden_dims: list[int],
     output_dim: int,
     seed: int,
-    hidden_dim2: int | None = None,
 ) -> onnx.ModelProto:
     """
     Build a simple ONNX model.
@@ -29,42 +29,59 @@ def build_model(
     input_value = helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, input_dim])
     output_value = helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, output_dim])
 
-    w1 = _init_tensor("W1", [input_dim, hidden_dim], rng)
-    b1 = _init_tensor("B1", [hidden_dim], rng)
+    if not hidden_dims:
+        raise ValueError("At least one hidden layer is required.")
 
-    nodes = [
-        helper.make_node("MatMul", ["input", "W1"], ["h1"]),
-        helper.make_node("Add", ["h1", "B1"], ["h1b"]),
-        helper.make_node("Relu", ["h1b"], ["h1r"]),
-    ]
+    nodes = []
+    initializers = []
+    previous_output = "input"
+    previous_dim = input_dim
 
-    initializers = [w1, b1]
-
-    if hidden_dim2 is None:
-        w2 = _init_tensor("W2", [hidden_dim, output_dim], rng)
-        b2 = _init_tensor("B2", [output_dim], rng)
-        nodes.extend(
+    for layer_index, hidden_dim in enumerate(hidden_dims, start=1):
+        weight_name = f"W{layer_index}"
+        bias_name = f"B{layer_index}"
+        linear_output = f"h{layer_index}b"
+        activation_output = f"h{layer_index}r"
+        initializers.extend(
             [
-                helper.make_node("MatMul", ["h1r", "W2"], ["out"]),
-                helper.make_node("Add", ["out", "B2"], ["output"]),
+                _init_tensor(weight_name, [previous_dim, hidden_dim], rng),
+                _init_tensor(bias_name, [hidden_dim], rng),
             ]
         )
-        initializers.extend([w2, b2])
-    else:
-        w2 = _init_tensor("W2", [hidden_dim, hidden_dim2], rng)
-        b2 = _init_tensor("B2", [hidden_dim2], rng)
-        w3 = _init_tensor("W3", [hidden_dim2, output_dim], rng)
-        b3 = _init_tensor("B3", [output_dim], rng)
         nodes.extend(
             [
-                helper.make_node("MatMul", ["h1r", "W2"], ["h2"]),
-                helper.make_node("Add", ["h2", "B2"], ["h2b"]),
-                helper.make_node("Relu", ["h2b"], ["h2r"]),
-                helper.make_node("MatMul", ["h2r", "W3"], ["out"]),
-                helper.make_node("Add", ["out", "B3"], ["output"]),
+                helper.make_node(
+                    "Gemm",
+                    [previous_output, weight_name, bias_name],
+                    [linear_output],
+                    name=f"gemm_{layer_index}",
+                ),
+                helper.make_node(
+                    "Relu",
+                    [linear_output],
+                    [activation_output],
+                    name=f"relu_{layer_index}",
+                ),
             ]
         )
-        initializers.extend([w2, b2, w3, b3])
+        previous_output = activation_output
+        previous_dim = hidden_dim
+
+    output_layer_index = len(hidden_dims) + 1
+    initializers.extend(
+        [
+            _init_tensor(f"W{output_layer_index}", [previous_dim, output_dim], rng),
+            _init_tensor(f"B{output_layer_index}", [output_dim], rng),
+        ]
+    )
+    nodes.append(
+        helper.make_node(
+            "Gemm",
+            [previous_output, f"W{output_layer_index}", f"B{output_layer_index}"],
+            ["output"],
+            name=f"gemm_{output_layer_index}",
+        )
+    )
 
     graph = helper.make_graph(
         nodes,
@@ -87,10 +104,21 @@ def main() -> None:
     parser.add_argument("--hidden-dim", type=int, default=8)
     parser.add_argument("--output-dim", type=int, default=2)
     parser.add_argument("--hidden-dim2", type=int, default=None)
+    parser.add_argument(
+        "--hidden-dims",
+        help="Comma-separated hidden layer sizes. Overrides --hidden-dim/--hidden-dim2 when provided.",
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
-    model = build_model(args.input_dim, args.hidden_dim, args.output_dim, args.seed, args.hidden_dim2)
+    if args.hidden_dims:
+        hidden_dims = [int(value) for value in args.hidden_dims.split(",") if value]
+    else:
+        hidden_dims = [args.hidden_dim]
+        if args.hidden_dim2 is not None:
+            hidden_dims.append(args.hidden_dim2)
+
+    model = build_model(args.input_dim, hidden_dims, args.output_dim, args.seed)
     onnx.save(model, args.out)
 
 

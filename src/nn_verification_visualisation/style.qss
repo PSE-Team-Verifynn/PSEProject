@@ -160,6 +160,11 @@ QDoubleSpinBox {
     border-color: @bg0;
 }
 
+QSpinBox {
+    background-color: white;
+}
+
+
 QCheckBox {
     spacing: 1px;
     color: @bgt;

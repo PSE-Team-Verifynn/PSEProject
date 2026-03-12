@@ -1,0 +1,18 @@
+TS1:
+Geladenes Standardnetz: NN1
+Geladene Bounds: B1
+Sample Run erfolgreich
+Zoom / Pan funktioniert
+Diagrammansicht Wechsel funktioniert
+
+Neuronen ausgewählt: Layer 3 Node 4, Layer 3 Node 8
+Algorithmus: box_ibp_numpy.py
+Diagramm PNG: TestResults/image.png
+
+Zonotop Algorithmus ausgeführt
+
+Neustart des Programms: Netz, Bounds und Diagramm noch vorhanden
+
+3 Dimensionale und N dimensionale Visualisierung nicht vorhanden
+
+Alle erwarteten Ergebnisse die vorhandene Funktionen betreffen sind erfüllt

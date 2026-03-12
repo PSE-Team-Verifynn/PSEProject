@@ -1,0 +1,9 @@
+Systemtest:
+Getestete Umgebungen:
+- macOS 14: funktioniert
+- macOS 15: funktioniert
+- Windows 11: funktioniert
+- Fedora 43: funktioniert
+
+Ergebnis:
+Das Programm ist auf allen getesteten Systemen lauffaehig.

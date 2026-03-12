@@ -1,0 +1,5 @@
+case,runtime_ms,memory_delta_kb,containment_pass,containment_ratio,avg_bound_width,avg_sample_width,avg_tightness_ratio,sample_metric_outputs,bounded_directions,checked_directions
+NN1_BoxIBP,237.146,14852,False,0.0,0.634573,0.93733,1.477746,5,0,16
+NN1_Zonotope,293.477,32668,False,0.0,0.634573,0.923102,1.456338,5,0,16
+NN2_BoxIBP,126.112,0,True,1.0,0.0,0.0,0.0,2,16,16
+NN2_Zonotope,1448.54,552668,True,1.0,0.0,0.0,0.0,2,16,16

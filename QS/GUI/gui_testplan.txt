@@ -1,0 +1,18 @@
+GUI test plan execution
+
+Executed checks:
+- window_init: passed
+- window_layout: passed
+- view_switching: passed
+- tab_container_present: passed
+- network_load_real_file: passed
+- bounds_import_real_file: passed
+- bounds_save_via_ui: passed
+- bounds_edit_and_remove_via_ui: passed
+- diagram_tab_creation: passed
+- diagram_selection_state: passed
+- plot_tab_close_removes_storage: passed
+
+Manual scenario references:
+- TS1 in QS/TS1/ts1.txt
+- TS2 in QS/TS2/ts2.txt

@@ -1,0 +1,27 @@
+[
+  {
+    "case": "simple_3_layer_x10",
+    "runtime_ms": 4.615,
+    "maxrss_kb": 107080
+  },
+  {
+    "case": "simple_3_layer_x50",
+    "runtime_ms": 27.853,
+    "maxrss_kb": 108732
+  },
+  {
+    "case": "simple_3_layer_x100",
+    "runtime_ms": 207.455,
+    "maxrss_kb": 129616
+  },
+  {
+    "case": "NN2",
+    "runtime_ms": 109.738,
+    "maxrss_kb": 111040
+  },
+  {
+    "case": "NN1_small",
+    "runtime_ms": 219.445,
+    "maxrss_kb": 141980
+  }
+]

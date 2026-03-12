@@ -1,0 +1,54 @@
+[
+  {
+    "case": "NN1_BoxIBP",
+    "runtime_ms": 237.146,
+    "memory_delta_kb": 14852,
+    "containment_pass": false,
+    "containment_ratio": 0.0,
+    "avg_bound_width": 0.634573,
+    "avg_sample_width": 0.93733,
+    "avg_tightness_ratio": 1.477746,
+    "sample_metric_outputs": 5,
+    "bounded_directions": 0,
+    "checked_directions": 16
+  },
+  {
+    "case": "NN1_Zonotope",
+    "runtime_ms": 293.477,
+    "memory_delta_kb": 32668,
+    "containment_pass": false,
+    "containment_ratio": 0.0,
+    "avg_bound_width": 0.634573,
+    "avg_sample_width": 0.923102,
+    "avg_tightness_ratio": 1.456338,
+    "sample_metric_outputs": 5,
+    "bounded_directions": 0,
+    "checked_directions": 16
+  },
+  {
+    "case": "NN2_BoxIBP",
+    "runtime_ms": 126.112,
+    "memory_delta_kb": 0,
+    "containment_pass": true,
+    "containment_ratio": 1.0,
+    "avg_bound_width": 0.0,
+    "avg_sample_width": 0.0,
+    "avg_tightness_ratio": 0.0,
+    "sample_metric_outputs": 2,
+    "bounded_directions": 16,
+    "checked_directions": 16
+  },
+  {
+    "case": "NN2_Zonotope",
+    "runtime_ms": 1448.54,
+    "memory_delta_kb": 552668,
+    "containment_pass": true,
+    "containment_ratio": 1.0,
+    "avg_bound_width": 0.0,
+    "avg_sample_width": 0.0,
+    "avg_tightness_ratio": 0.0,
+    "sample_metric_outputs": 2,
+    "bounded_directions": 16,
+    "checked_directions": 16
+  }
+]
