@@ -1,4 +1,5 @@
 {
-  "bounds_variation_cases": 9,
-  "neuron_variation_cases": 9
+  "bounds_variation_l0n0_l0n1": 9,
+  "bounds_variation_l0n0_l1n0": 9,
+  "neuron_variation_b2": 15
 }

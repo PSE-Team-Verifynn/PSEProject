@@ -35,14 +35,13 @@ from qs_common import (
     write_quality_summary,
 )
 
-BOUNDS_SUITE_NAME = "bounds_variation"
-NEURON_SUITE_NAME = "neuron_variation"
 QUALITY_FIELDNAMES = [
     "case",
     "suite",
     "network_name",
     "bounds_label",
     "neurons_label",
+    "pair_group",
     "plot_label",
     "runtime_ms",
     "memory_delta_kb",
@@ -62,6 +61,9 @@ QUALITY_FIELDNAMES = [
     "checked_directions",
 ]
 
+B1_PATTERN = [(-1.0, 0.5), (0.25, 0.75), (0.0, 1.0), (0.25, 0.75)]
+B2_PATTERN = [(-1.0, 1.0), (0.0, 2.0), (0.5, 0.5), (-3.0, -2.0)]
+
 
 def suite_dir(name: str) -> Path:
     return QUALITY_OUT_DIR / name
@@ -71,14 +73,26 @@ def suite_cases_dir(name: str) -> Path:
     return suite_dir(name) / "cases"
 
 
-def load_network_and_bounds(network_path, bounds_path=None, default_bounds=None):
+def repeat_bounds(pattern: list[tuple[float, float]], size: int) -> list[tuple[float, float]]:
+    return [pattern[index % len(pattern)] for index in range(size)]
+
+
+def neuron_pair_slug(selected_neurons: list[tuple[int, int]]) -> str:
+    return "_".join(f"l{layer}n{node}" for layer, node in selected_neurons)
+
+
+def load_network_and_bounds(network_path, bounds_path=None, default_bounds=None, explicit_bounds=None):
     nn_res = NeuralNetworkLoader().load_neural_network(str(network_path))
     if not nn_res.is_success:
         raise nn_res.error
 
     network = nn_res.data
     input_dim = input_dim_from_model(network_path)
-    if default_bounds is not None:
+    if explicit_bounds is not None:
+        if len(explicit_bounds) != input_dim:
+            raise ValueError(f"Explicit bounds length {len(explicit_bounds)} does not match input dim {input_dim} for {network_path}")
+        bounds_map = {index: (float(bounds[0]), float(bounds[1])) for index, bounds in enumerate(explicit_bounds)}
+    elif default_bounds is not None:
         bounds_map = {index: (float(default_bounds[0]), float(default_bounds[1])) for index in range(input_dim)}
     else:
         config = NetworkVerificationConfig(network, [input_dim])
@@ -110,9 +124,11 @@ def make_case(
     *,
     bounds_file: str | None = None,
     default_bounds: tuple[float, float] | None = None,
+    explicit_bounds: list[tuple[float, float]] | None = None,
+    pair_group: str | None = None,
 ) -> dict:
     neurons_label = f"{selected_neurons[0]} & {selected_neurons[1]}"
-    control_label = bounds_label if suite == BOUNDS_SUITE_NAME else neurons_label
+    control_label = bounds_label if suite.startswith("bounds_variation") else neurons_label
     return {
         "suite": suite,
         "case": case,
@@ -120,40 +136,61 @@ def make_case(
         "network": ROOT / "TestFiles" / network_file,
         "bounds": None if bounds_file is None else ROOT / "TestFiles" / bounds_file,
         "default_bounds": default_bounds,
+        "explicit_bounds": explicit_bounds,
         "bounds_label": bounds_label,
         "selected_neurons": selected_neurons,
         "neurons_label": neurons_label,
+        "pair_group": pair_group,
         "plot_label": f"{network_name}\n{control_label}",
         "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
         "samples": samples,
     }
 
 
-def build_bounds_variation_cases() -> list[dict]:
+def build_bounds_variation_cases(suite_name: str, selected_neurons: list[tuple[int, int]]) -> list[dict]:
     return [
-        make_case(BOUNDS_SUITE_NAME, "NN1_B1_BoxIBP", "NN1", "NN1.onnx", "B1.csv", [(0, 0), (0, 1)], 2000, bounds_file="B1.csv"),
-        make_case(BOUNDS_SUITE_NAME, "NN1_B2_BoxIBP", "NN1", "NN1.onnx", "B2.vnnlib", [(0, 0), (0, 1)], 2000, bounds_file="B2.vnnlib"),
-        make_case(BOUNDS_SUITE_NAME, "NN1_UnitBox_BoxIBP", "NN1", "NN1.onnx", "[0,1]^n", [(0, 0), (0, 1)], 2000, default_bounds=(0.0, 1.0)),
-        make_case(BOUNDS_SUITE_NAME, "IR11_1_B1_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B1.csv", [(0, 0), (0, 1)], 1000, bounds_file="B1.csv"),
-        make_case(BOUNDS_SUITE_NAME, "IR11_1_B2_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B2.vnnlib", [(0, 0), (0, 1)], 1000, bounds_file="B2.vnnlib"),
-        make_case(BOUNDS_SUITE_NAME, "IR11_1_UnitBox_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "[0,1]^n", [(0, 0), (0, 1)], 1000, default_bounds=(0.0, 1.0)),
-        make_case(BOUNDS_SUITE_NAME, "IR11_2_UnitBox_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0,1]^n", [(1, 0), (1, 1)], 1000, default_bounds=(0.0, 1.0)),
-        make_case(BOUNDS_SUITE_NAME, "IR11_2_Symmetric_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[-1,1]^n", [(1, 0), (1, 1)], 1000, default_bounds=(-1.0, 1.0)),
-        make_case(BOUNDS_SUITE_NAME, "IR11_2_Narrow_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0.25,0.75]^n", [(1, 0), (1, 1)], 1000, default_bounds=(0.25, 0.75)),
+        make_case(suite_name, "NN1_B1_BoxIBP", "NN1", "NN1.onnx", "B1.csv", selected_neurons, 2000, bounds_file="B1.csv"),
+        make_case(suite_name, "NN1_B2_BoxIBP", "NN1", "NN1.onnx", "B2.vnnlib", selected_neurons, 2000, bounds_file="B2.vnnlib"),
+        make_case(suite_name, "NN1_UnitBox_BoxIBP", "NN1", "NN1.onnx", "[0,1]^n", selected_neurons, 2000, default_bounds=(0.0, 1.0)),
+        make_case(suite_name, "IR11_1_B1_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B1.csv", selected_neurons, 1000, bounds_file="B1.csv"),
+        make_case(suite_name, "IR11_1_B2_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B2.vnnlib", selected_neurons, 1000, bounds_file="B2.vnnlib"),
+        make_case(suite_name, "IR11_1_UnitBox_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "[0,1]^n", selected_neurons, 1000, default_bounds=(0.0, 1.0)),
+        make_case(suite_name, "IR11_2_B1Repeat_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "B1-repeat", selected_neurons, 1000, explicit_bounds=repeat_bounds(B1_PATTERN, 200)),
+        make_case(suite_name, "IR11_2_B2Repeat_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "B2-repeat", selected_neurons, 1000, explicit_bounds=repeat_bounds(B2_PATTERN, 200)),
+        make_case(suite_name, "IR11_2_UnitBox_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0,1]^n", selected_neurons, 1000, default_bounds=(0.0, 1.0)),
     ]
 
 
-def build_neuron_variation_cases() -> list[dict]:
+def build_neuron_variation_cases(suite_name: str, bounds_kind: str) -> list[dict]:
+    if bounds_kind == "b2":
+        nn_bounds_label = "B2.vnnlib"
+        nn_bounds_file = "B2.vnnlib"
+        ir11_2_bounds_label = "B2-repeat"
+        ir11_2_explicit_bounds = repeat_bounds(B2_PATTERN, 200)
+    elif bounds_kind == "b1":
+        nn_bounds_label = "B1.csv"
+        nn_bounds_file = "B1.csv"
+        ir11_2_bounds_label = "B1-repeat"
+        ir11_2_explicit_bounds = repeat_bounds(B1_PATTERN, 200)
+    else:
+        raise ValueError(f"Unsupported bounds kind: {bounds_kind}")
+
     return [
-        make_case(NEURON_SUITE_NAME, "NN1_Neurons01_BoxIBP", "NN1", "NN1.onnx", "B2.vnnlib", [(0, 0), (0, 1)], 2000, bounds_file="B2.vnnlib"),
-        make_case(NEURON_SUITE_NAME, "NN1_Neurons23_BoxIBP", "NN1", "NN1.onnx", "B2.vnnlib", [(0, 2), (0, 3)], 2000, bounds_file="B2.vnnlib"),
-        make_case(NEURON_SUITE_NAME, "NN1_Output01_BoxIBP", "NN1", "NN1.onnx", "B2.vnnlib", [(1, 0), (1, 1)], 2000, bounds_file="B2.vnnlib"),
-        make_case(NEURON_SUITE_NAME, "IR11_1_Neurons01_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B2.vnnlib", [(0, 0), (0, 1)], 1000, bounds_file="B2.vnnlib"),
-        make_case(NEURON_SUITE_NAME, "IR11_1_Neurons23_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B2.vnnlib", [(0, 2), (0, 3)], 1000, bounds_file="B2.vnnlib"),
-        make_case(NEURON_SUITE_NAME, "IR11_1_Output01_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B2.vnnlib", [(1, 0), (1, 1)], 1000, bounds_file="B2.vnnlib"),
-        make_case(NEURON_SUITE_NAME, "IR11_2_Hidden01_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0,1]^n", [(1, 0), (1, 1)], 1000, default_bounds=(0.0, 1.0)),
-        make_case(NEURON_SUITE_NAME, "IR11_2_Hidden23_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0,1]^n", [(1, 2), (1, 3)], 1000, default_bounds=(0.0, 1.0)),
-        make_case(NEURON_SUITE_NAME, "IR11_2_FirstLayer01_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0,1]^n", [(0, 0), (0, 1)], 1000, default_bounds=(0.0, 1.0)),
+        make_case(suite_name, "NN1_Neurons01_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 0), (0, 1)], 2000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "NN1_Neurons23_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 2), (0, 3)], 2000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "NN1_Output01_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(1, 0), (1, 1)], 2000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "NN1_CrossLayer00_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 0), (1, 0)], 2000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "NN1_CrossLayer11_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 1), (1, 1)], 2000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_1_Neurons01_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 0), (0, 1)], 1000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "IR11_1_Neurons23_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 2), (0, 3)], 1000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "IR11_1_Output01_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(1, 0), (1, 1)], 1000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "IR11_1_CrossLayer00_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 0), (1, 0)], 1000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_1_CrossLayer11_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 1), (1, 1)], 1000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_2_Hidden01_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(1, 0), (1, 1)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="same_layer"),
+        make_case(suite_name, "IR11_2_Hidden23_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(1, 2), (1, 3)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="same_layer"),
+        make_case(suite_name, "IR11_2_FirstLayer01_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(0, 0), (0, 1)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="same_layer"),
+        make_case(suite_name, "IR11_2_CrossLayer00_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(0, 0), (1, 0)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_2_CrossLayer11_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(0, 1), (1, 1)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="cross_layer"),
     ]
 
 
@@ -162,6 +199,7 @@ def evaluate_case(case: dict, case_output_dir: Path) -> dict:
         case["network"],
         case.get("bounds"),
         case.get("default_bounds"),
+        case.get("explicit_bounds"),
     )
 
     start_rss = maxrss_kb()
@@ -235,10 +273,12 @@ def evaluate_case(case: dict, case_output_dir: Path) -> dict:
         "network_name": case["network_name"],
         "bounds_label": case["bounds_label"],
         "neurons_label": case["neurons_label"],
+        "pair_group": case["pair_group"],
         "plot_label": case["plot_label"],
         "network": case["network"].name,
         "bounds": case["bounds"].name if case.get("bounds") else None,
         "default_bounds": list(case["default_bounds"]) if case.get("default_bounds") else None,
+        "explicit_bounds_preview": case["explicit_bounds"][:8] if case.get("explicit_bounds") else None,
         "algorithm": case["algorithm"].name,
         "selected_neurons": case["selected_neurons"],
         "samples": int(case["samples"]),
@@ -256,6 +296,7 @@ def evaluate_case(case: dict, case_output_dir: Path) -> dict:
         "network_name": case["network_name"],
         "bounds_label": case["bounds_label"],
         "neurons_label": case["neurons_label"],
+        "pair_group": case["pair_group"],
         "plot_label": case["plot_label"],
         "runtime_ms": round(runtime_ms, 3),
         "memory_delta_kb": int(memory_delta_kb),
@@ -296,12 +337,18 @@ def main() -> None:
     random.seed(7)
 
     ensure_output_dir(QUALITY_OUT_DIR)
-    bounds_rows = run_quality_suite(BOUNDS_SUITE_NAME, build_bounds_variation_cases())
-    neuron_rows = run_quality_suite(NEURON_SUITE_NAME, build_neuron_variation_cases())
+    bounds_same_suite = f"bounds_variation_{neuron_pair_slug([(0, 0), (0, 1)])}"
+    bounds_cross_suite = f"bounds_variation_{neuron_pair_slug([(0, 0), (1, 0)])}"
+    neuron_b2_suite = "neuron_variation_b2"
+
+    bounds_same_rows = run_quality_suite(bounds_same_suite, build_bounds_variation_cases(bounds_same_suite, [(0, 0), (0, 1)]))
+    bounds_cross_rows = run_quality_suite(bounds_cross_suite, build_bounds_variation_cases(bounds_cross_suite, [(0, 0), (1, 0)]))
+    neuron_rows = run_quality_suite(neuron_b2_suite, build_neuron_variation_cases(neuron_b2_suite, "b2"))
 
     summary = {
-        "bounds_variation_cases": len(bounds_rows),
-        "neuron_variation_cases": len(neuron_rows),
+        bounds_same_suite: len(bounds_same_rows),
+        bounds_cross_suite: len(bounds_cross_rows),
+        neuron_b2_suite: len(neuron_rows),
     }
     write_json(QUALITY_OUT_DIR / "quality_summary.json", summary)
     print(summary)

@@ -65,6 +65,10 @@ def run_model_samples(session: ort.InferenceSession, input_name: str, output_nam
 
 
 def write_quality_plot(rows: list[dict], output_path: Path) -> None:
+    if rows and all(row.get("suite") == "neuron_variation" for row in rows):
+        write_neuron_variation_plot(rows, output_path)
+        return
+
     labels = [row.get("plot_label", row["case"]) for row in rows]
     tightness = [row["avg_tightness_ratio"] for row in rows]
     containment = [row["containment_ratio"] for row in rows]
@@ -97,6 +101,60 @@ def write_quality_plot(rows: list[dict], output_path: Path) -> None:
     axes[1, 1].set_ylabel("overapproximation factor")
     axes[1, 1].tick_params(axis="x", rotation=20)
 
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def write_neuron_variation_plot(rows: list[dict], output_path: Path) -> None:
+    metrics = [
+        ("containment_ratio", "Directional containment ratio", "share of bounded directions"),
+        ("sample_point_containment_ratio", "Sample point containment ratio", "share of sampled points inside polygon"),
+        ("avg_tightness_ratio", "Average tightness ratio", "sample width / computed width"),
+        ("polygon_over_hull_area_ratio", "Polygon / hull area ratio", "overapproximation factor"),
+    ]
+    networks = list(dict.fromkeys(row["network_name"] for row in rows))
+    group_order = ["same_layer", "cross_layer"]
+    group_labels = {"same_layer": "same layer", "cross_layer": "cross layer"}
+    group_colors = {"same_layer": "#2563eb", "cross_layer": "#f97316"}
+
+    aggregated: dict[tuple[str, str], dict[str, float]] = {}
+    for network in networks:
+        network_rows = [row for row in rows if row["network_name"] == network]
+        for group in group_order:
+            selected_rows = [row for row in network_rows if row.get("pair_group") == group]
+            if not selected_rows:
+                continue
+            aggregated[(network, group)] = {}
+            for metric_key, _, _ in metrics:
+                values = [row[metric_key] for row in selected_rows if row[metric_key] is not None]
+                aggregated[(network, group)][metric_key] = float(np.mean(values)) if values else 0.0
+
+    x = np.arange(len(networks), dtype=float)
+    width = 0.28
+    offsets = {"same_layer": -width / 2, "cross_layer": width / 2}
+    fig, axes = plt.subplots(2, 2, figsize=(12.5, 8))
+
+    for axis, (metric_key, title, ylabel) in zip(axes.flat, metrics):
+        for group in group_order:
+            heights = [aggregated.get((network, group), {}).get(metric_key, 0.0) for network in networks]
+            axis.bar(
+                x + offsets[group],
+                heights,
+                width=width,
+                color=group_colors[group],
+                label=group_labels[group],
+            )
+        axis.set_title(title)
+        axis.set_ylabel(ylabel)
+        axis.set_xticks(x)
+        axis.set_xticklabels(networks)
+        if "containment" in metric_key:
+            axis.set_ylim(0, 1.1)
+        axis.grid(axis="y", alpha=0.15)
+
+    axes[0, 0].legend(loc="best")
+    fig.suptitle("Neuron variation grouped by pair type", fontsize=14)
     fig.tight_layout()
     fig.savefig(output_path, dpi=160)
     plt.close(fig)
