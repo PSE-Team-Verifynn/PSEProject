@@ -555,6 +555,7 @@ class NeuronPicker(DialogBase):
         self.bounds_display_group.set_rows(input_count, index_label_width=self._bounds_index_label_width)
         self.__rebuild_bounds_display_rows()
 
+
         # --- Sample Results ---
         # --- Neuron Pair Selectors ---
         for i in range(0, self.num_neurons):
@@ -628,8 +629,9 @@ class NeuronPicker(DialogBase):
             "Sample Results",
             include_min=False,
             max_items=10,
-            scrollable=False,
+            scrollable=True,
         )
+        # self.sample_metrics.setMaximumHeight(200)
         layout.addSpacing(12)
         self.sample_metrics.setVisible(False)
         layout.addWidget(self.sample_metrics)

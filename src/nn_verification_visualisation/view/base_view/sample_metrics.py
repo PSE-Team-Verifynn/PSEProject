@@ -56,7 +56,7 @@ class SampleMetricsWidget(QGroupBox):
         self._content = QWidget()
         self._content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._content_layout = QVBoxLayout(self._content)
-        self._content_layout.setContentsMargins(6, 6, 6, 6)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
         self._content_layout.setSpacing(6)
 
         self._summary_container = QWidget()
