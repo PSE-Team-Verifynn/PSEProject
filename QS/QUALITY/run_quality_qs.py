@@ -18,130 +18,341 @@ from nn_verification_visualisation.model.data_loader.neural_network_loader impor
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from qs_common import QUALITY_OUT_DIR, ROOT, ensure_output_dir, input_dim_from_model, maxrss_kb, run_model_samples, write_csv, write_json, write_quality_plot
+from qs_common import (
+    QUALITY_OUT_DIR,
+    ROOT,
+    compute_polygon,
+    convex_hull,
+    ensure_output_dir,
+    input_dim_from_model,
+    maxrss_kb,
+    polygon_area,
+    run_model_samples,
+    write_csv,
+    write_json,
+    write_quality_case_plot,
+    write_quality_plot,
+    write_quality_summary,
+)
+
+QUALITY_FIELDNAMES = [
+    "case",
+    "suite",
+    "network_name",
+    "bounds_label",
+    "neurons_label",
+    "pair_group",
+    "plot_label",
+    "runtime_ms",
+    "memory_delta_kb",
+    "containment_pass",
+    "containment_ratio",
+    "sample_point_containment_ratio",
+    "avg_bound_width",
+    "avg_sample_width",
+    "avg_tightness_ratio",
+    "polygon_area",
+    "sample_hull_area",
+    "polygon_over_hull_area_ratio",
+    "min_slack",
+    "avg_slack",
+    "sample_metric_outputs",
+    "bounded_directions",
+    "checked_directions",
+]
+
+B1_PATTERN = [(-1.0, 0.5), (0.25, 0.75), (0.0, 1.0), (0.25, 0.75)]
+B2_PATTERN = [(-1.0, 1.0), (0.0, 2.0), (0.5, 0.5), (-3.0, -2.0)]
 
 
-def load_network_and_bounds(network_path, bounds_path):
+def suite_dir(name: str) -> Path:
+    return QUALITY_OUT_DIR / name
+
+
+def suite_cases_dir(name: str) -> Path:
+    return suite_dir(name) / "cases"
+
+
+def repeat_bounds(pattern: list[tuple[float, float]], size: int) -> list[tuple[float, float]]:
+    return [pattern[index % len(pattern)] for index in range(size)]
+
+
+def neuron_pair_slug(selected_neurons: list[tuple[int, int]]) -> str:
+    return "_".join(f"l{layer}n{node}" for layer, node in selected_neurons)
+
+
+def load_network_and_bounds(network_path, bounds_path=None, default_bounds=None, explicit_bounds=None):
     nn_res = NeuralNetworkLoader().load_neural_network(str(network_path))
     if not nn_res.is_success:
         raise nn_res.error
 
     network = nn_res.data
     input_dim = input_dim_from_model(network_path)
-    config = NetworkVerificationConfig(network, [input_dim])
-    bounds_res = InputBoundsLoader().load_input_bounds(str(bounds_path), config)
-    if not bounds_res.is_success:
-        raise bounds_res.error
-
-    bounds_map = bounds_res.data
+    if explicit_bounds is not None:
+        if len(explicit_bounds) != input_dim:
+            raise ValueError(f"Explicit bounds length {len(explicit_bounds)} does not match input dim {input_dim} for {network_path}")
+        bounds_map = {index: (float(bounds[0]), float(bounds[1])) for index, bounds in enumerate(explicit_bounds)}
+    elif default_bounds is not None:
+        bounds_map = {index: (float(default_bounds[0]), float(default_bounds[1])) for index in range(input_dim)}
+    else:
+        config = NetworkVerificationConfig(network, [input_dim])
+        bounds_res = InputBoundsLoader().load_input_bounds(str(bounds_path), config)
+        if not bounds_res.is_success:
+            raise bounds_res.error
+        bounds_map = bounds_res.data
     bounds_np = np.array([bounds_map[index] for index in range(len(bounds_map))], dtype=float)
     return network, bounds_map, bounds_np
 
 
-def run_quality_checks() -> list[dict]:
+def evaluate_selected_neuron_samples(network, selected_neurons: list[tuple[int, int]], samples: np.ndarray) -> np.ndarray:
+    identity_directions = [(1.0, 0.0), (0.0, 1.0)]
+    modified_model = NetworkModifier().custom_output_layer(network.model, selected_neurons, identity_directions)
+    session = ort.InferenceSession(modified_model.SerializeToString(), providers=["CPUExecutionProvider"])
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
+    return run_model_samples(session, input_name, output_name, samples)
+
+
+def make_case(
+    suite: str,
+    case: str,
+    network_name: str,
+    network_file: str,
+    bounds_label: str,
+    selected_neurons: list[tuple[int, int]],
+    samples: int,
+    *,
+    bounds_file: str | None = None,
+    default_bounds: tuple[float, float] | None = None,
+    explicit_bounds: list[tuple[float, float]] | None = None,
+    pair_group: str | None = None,
+) -> dict:
+    neurons_label = f"{selected_neurons[0]} & {selected_neurons[1]}"
+    control_label = bounds_label if suite.startswith("bounds_variation") else neurons_label
+    return {
+        "suite": suite,
+        "case": case,
+        "network_name": network_name,
+        "network": ROOT / "TestFiles" / network_file,
+        "bounds": None if bounds_file is None else ROOT / "TestFiles" / bounds_file,
+        "default_bounds": default_bounds,
+        "explicit_bounds": explicit_bounds,
+        "bounds_label": bounds_label,
+        "selected_neurons": selected_neurons,
+        "neurons_label": neurons_label,
+        "pair_group": pair_group,
+        "plot_label": f"{network_name}\n{control_label}",
+        "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
+        "samples": samples,
+    }
+
+
+def build_bounds_variation_cases(suite_name: str, selected_neurons: list[tuple[int, int]]) -> list[dict]:
+    return [
+        make_case(suite_name, "NN1_B1_BoxIBP", "NN1", "NN1.onnx", "B1.csv", selected_neurons, 2000, bounds_file="B1.csv"),
+        make_case(suite_name, "NN1_B2_BoxIBP", "NN1", "NN1.onnx", "B2.vnnlib", selected_neurons, 2000, bounds_file="B2.vnnlib"),
+        make_case(suite_name, "NN1_UnitBox_BoxIBP", "NN1", "NN1.onnx", "[0,1]^n", selected_neurons, 2000, default_bounds=(0.0, 1.0)),
+        make_case(suite_name, "IR11_1_B1_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B1.csv", selected_neurons, 1000, bounds_file="B1.csv"),
+        make_case(suite_name, "IR11_1_B2_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "B2.vnnlib", selected_neurons, 1000, bounds_file="B2.vnnlib"),
+        make_case(suite_name, "IR11_1_UnitBox_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", "[0,1]^n", selected_neurons, 1000, default_bounds=(0.0, 1.0)),
+        make_case(suite_name, "IR11_2_B1Repeat_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "B1-repeat", selected_neurons, 1000, explicit_bounds=repeat_bounds(B1_PATTERN, 200)),
+        make_case(suite_name, "IR11_2_B2Repeat_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "B2-repeat", selected_neurons, 1000, explicit_bounds=repeat_bounds(B2_PATTERN, 200)),
+        make_case(suite_name, "IR11_2_UnitBox_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", "[0,1]^n", selected_neurons, 1000, default_bounds=(0.0, 1.0)),
+    ]
+
+
+def build_neuron_variation_cases(suite_name: str, bounds_kind: str) -> list[dict]:
+    if bounds_kind == "b2":
+        nn_bounds_label = "B2.vnnlib"
+        nn_bounds_file = "B2.vnnlib"
+        ir11_2_bounds_label = "B2-repeat"
+        ir11_2_explicit_bounds = repeat_bounds(B2_PATTERN, 200)
+    elif bounds_kind == "b1":
+        nn_bounds_label = "B1.csv"
+        nn_bounds_file = "B1.csv"
+        ir11_2_bounds_label = "B1-repeat"
+        ir11_2_explicit_bounds = repeat_bounds(B1_PATTERN, 200)
+    else:
+        raise ValueError(f"Unsupported bounds kind: {bounds_kind}")
+
+    return [
+        make_case(suite_name, "NN1_Neurons01_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 0), (0, 1)], 2000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "NN1_Neurons23_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 2), (0, 3)], 2000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "NN1_Output01_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(1, 0), (1, 1)], 2000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "NN1_CrossLayer00_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 0), (1, 0)], 2000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "NN1_CrossLayer11_BoxIBP", "NN1", "NN1.onnx", nn_bounds_label, [(0, 1), (1, 1)], 2000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_1_Neurons01_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 0), (0, 1)], 1000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "IR11_1_Neurons23_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 2), (0, 3)], 1000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "IR11_1_Output01_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(1, 0), (1, 1)], 1000, bounds_file=nn_bounds_file, pair_group="same_layer"),
+        make_case(suite_name, "IR11_1_CrossLayer00_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 0), (1, 0)], 1000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_1_CrossLayer11_BoxIBP", "IR11_1", "IR11_1_gemm.onnx", nn_bounds_label, [(0, 1), (1, 1)], 1000, bounds_file=nn_bounds_file, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_2_Hidden01_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(1, 0), (1, 1)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="same_layer"),
+        make_case(suite_name, "IR11_2_Hidden23_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(1, 2), (1, 3)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="same_layer"),
+        make_case(suite_name, "IR11_2_FirstLayer01_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(0, 0), (0, 1)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="same_layer"),
+        make_case(suite_name, "IR11_2_CrossLayer00_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(0, 0), (1, 0)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="cross_layer"),
+        make_case(suite_name, "IR11_2_CrossLayer11_BoxIBP", "IR11_2", "IR11_2_gemm.onnx", ir11_2_bounds_label, [(0, 1), (1, 1)], 1000, explicit_bounds=ir11_2_explicit_bounds, pair_group="cross_layer"),
+    ]
+
+
+def evaluate_case(case: dict, case_output_dir: Path) -> dict:
+    network, bounds_map, bounds_np = load_network_and_bounds(
+        case["network"],
+        case.get("bounds"),
+        case.get("default_bounds"),
+        case.get("explicit_bounds"),
+    )
+
+    start_rss = maxrss_kb()
+    start_time = time.perf_counter()
+    result = AlgorithmExecutor().execute_algorithm(network.model, bounds_np, str(case["algorithm"]), case["selected_neurons"])
+    runtime_ms = (time.perf_counter() - start_time) * 1000
+    memory_delta_kb = max(0, maxrss_kb() - start_rss)
+    if not result.is_success:
+        raise result.error
+
+    computed_bounds, directions = result.data
+    ordered_bounds = [bounds_map[index] for index in range(len(bounds_map))]
+    low = np.array([pair[0] for pair in ordered_bounds], dtype=np.float32)
+    high = np.array([pair[1] for pair in ordered_bounds], dtype=np.float32)
+    samples = np.random.uniform(low=low, high=high, size=(case["samples"], len(low))).astype(np.float32)
+
+    modified_model = NetworkModifier().custom_output_layer(network.model, case["selected_neurons"], directions)
+    direction_session = ort.InferenceSession(modified_model.SerializeToString(), providers=["CPUExecutionProvider"])
+    input_name = direction_session.get_inputs()[0].name
+    output_name = direction_session.get_outputs()[0].name
+    actual_outputs = run_model_samples(direction_session, input_name, output_name, samples)
+    sample_points = evaluate_selected_neuron_samples(network, case["selected_neurons"], samples)
+
+    actual_min = actual_outputs.min(axis=0)
+    actual_max = actual_outputs.max(axis=0)
+    computed_min = computed_bounds[:, 0]
+    computed_max = computed_bounds[:, 1]
+    contained = (actual_min >= computed_min - 1e-6) & (actual_max <= computed_max + 1e-6)
+    width = computed_max - computed_min
+    actual_width = actual_max - actual_min
+    tightness = np.divide(actual_width, width, out=np.zeros_like(actual_width), where=width > 0)
+    upper_slack = computed_max - actual_max
+    lower_slack = actual_min - computed_min
+    slack_values = np.concatenate([lower_slack, upper_slack])
+
+    polygon = compute_polygon([(float(bound_low), float(bound_high)) for bound_low, bound_high in computed_bounds], directions)
+    sample_hull = convex_hull(sample_points)
+    polygon_area_value = polygon_area(polygon)
+    sample_hull_area = polygon_area(sample_hull)
+    polygon_area_ratio = polygon_area_value / sample_hull_area if sample_hull_area > 1e-12 else None
+
+    projections = sample_points @ np.asarray(directions, dtype=np.float32).T
+    point_inside = np.all(
+        (projections >= computed_min - 1e-6) & (projections <= computed_max + 1e-6),
+        axis=1,
+    )
+    point_containment_ratio = float(point_inside.mean()) if len(point_inside) else 0.0
+
+    width_rows = []
+    for direction_index, direction in enumerate(directions):
+        width_rows.append(
+            {
+                "direction_index": direction_index,
+                "direction": [round(float(direction[0]), 6), round(float(direction[1]), 6)],
+                "computed_min": round(float(computed_min[direction_index]), 6),
+                "computed_max": round(float(computed_max[direction_index]), 6),
+                "actual_min": round(float(actual_min[direction_index]), 6),
+                "actual_max": round(float(actual_max[direction_index]), 6),
+                "computed_width": round(float(width[direction_index]), 6),
+                "sample_width": round(float(actual_width[direction_index]), 6),
+                "lower_slack": round(float(lower_slack[direction_index]), 6),
+                "upper_slack": round(float(upper_slack[direction_index]), 6),
+                "contained": bool(contained[direction_index]),
+            }
+        )
+
+    sample_summary = run_samples_for_bounds(network, ordered_bounds, min(case["samples"], 1000), ["max", "mean", "range"])
+
+    detail_payload = {
+        "case": case["case"],
+        "suite": case["suite"],
+        "network_name": case["network_name"],
+        "bounds_label": case["bounds_label"],
+        "neurons_label": case["neurons_label"],
+        "pair_group": case["pair_group"],
+        "plot_label": case["plot_label"],
+        "network": case["network"].name,
+        "bounds": case["bounds"].name if case.get("bounds") else None,
+        "default_bounds": list(case["default_bounds"]) if case.get("default_bounds") else None,
+        "explicit_bounds_preview": case["explicit_bounds"][:8] if case.get("explicit_bounds") else None,
+        "algorithm": case["algorithm"].name,
+        "selected_neurons": case["selected_neurons"],
+        "samples": int(case["samples"]),
+        "polygon_vertices": [[round(float(x), 6), round(float(y), 6)] for x, y in polygon],
+        "sample_hull_vertices": [[round(float(x), 6), round(float(y), 6)] for x, y in sample_hull],
+        "sample_point_preview": [[round(float(point[0]), 6), round(float(point[1]), 6)] for point in sample_points[:250]],
+        "direction_metrics": width_rows,
+    }
+    write_json(case_output_dir / f"{case['case']}.json", detail_payload)
+    write_quality_case_plot(case["case"], sample_points, polygon, sample_hull, width_rows, case_output_dir / f"{case['case']}.png")
+
+    return {
+        "case": case["case"],
+        "suite": case["suite"],
+        "network_name": case["network_name"],
+        "bounds_label": case["bounds_label"],
+        "neurons_label": case["neurons_label"],
+        "pair_group": case["pair_group"],
+        "plot_label": case["plot_label"],
+        "runtime_ms": round(runtime_ms, 3),
+        "memory_delta_kb": int(memory_delta_kb),
+        "containment_pass": bool(contained.all()),
+        "containment_ratio": round(float(contained.mean()), 4),
+        "avg_bound_width": round(float(width.mean()), 6),
+        "avg_sample_width": round(float(actual_width.mean()), 6),
+        "avg_tightness_ratio": round(float(tightness.mean()), 6),
+        "sample_point_containment_ratio": round(point_containment_ratio, 4),
+        "polygon_area": round(float(polygon_area_value), 6),
+        "sample_hull_area": round(float(sample_hull_area), 6),
+        "polygon_over_hull_area_ratio": None if polygon_area_ratio is None else round(float(polygon_area_ratio), 6),
+        "min_slack": round(float(slack_values.min()), 6),
+        "avg_slack": round(float(slack_values.mean()), 6),
+        "sample_metric_outputs": len(sample_summary["outputs"]),
+        "bounded_directions": int(contained.sum()),
+        "checked_directions": int(len(contained)),
+    }
+
+
+def run_quality_suite(suite_name: str, cases: list[dict]) -> list[dict]:
+    suite_output_dir = suite_dir(suite_name)
+    suite_case_output_dir = suite_cases_dir(suite_name)
+    ensure_output_dir(suite_output_dir)
+    ensure_output_dir(suite_case_output_dir)
+
+    rows = [evaluate_case(case, suite_case_output_dir) for case in cases]
+    write_json(suite_output_dir / "quality_results.json", rows)
+    write_csv(suite_output_dir / "quality_metrics.csv", rows, QUALITY_FIELDNAMES)
+    write_quality_plot(rows, suite_output_dir / "quality_metrics.png")
+    write_quality_summary(rows, suite_output_dir / "quality_info.txt", suite_name)
+    return rows
+
+
+def main() -> None:
     Storage().num_directions = 16
     np.random.seed(7)
     random.seed(7)
 
-    cases = [
-        {
-            "case": "NN1_BoxIBP",
-            "network": ROOT / "Files" / "NN1.onnx",
-            "bounds": ROOT / "Files" / "B1.csv",
-            "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
-            "selected_neurons": [(0, 0), (0, 1)],
-            "samples": 2000,
-        },
-        {
-            "case": "NN1_Zonotope",
-            "network": ROOT / "Files" / "NN1.onnx",
-            "bounds": ROOT / "Files" / "B1.csv",
-            "algorithm": ROOT / "algorithms" / "simple_zonotope.py",
-            "selected_neurons": [(0, 0), (0, 1)],
-            "samples": 2000,
-        },
-        {
-            "case": "NN2_BoxIBP",
-            "network": ROOT / "Files" / "NN2.onnx",
-            "bounds": ROOT / "Files" / "B1.csv",
-            "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
-            "selected_neurons": [(0, 99), (0, 199)],
-            "samples": 1000,
-        },
-        {
-            "case": "NN2_Zonotope",
-            "network": ROOT / "Files" / "NN2.onnx",
-            "bounds": ROOT / "Files" / "B1.csv",
-            "algorithm": ROOT / "algorithms" / "simple_zonotope.py",
-            "selected_neurons": [(0, 99), (0, 199)],
-            "samples": 1000,
-        },
-    ]
-
-    results = []
-    for case in cases:
-        network, bounds_map, bounds_np = load_network_and_bounds(case["network"], case["bounds"])
-
-        start_rss = maxrss_kb()
-        start_time = time.perf_counter()
-        result = AlgorithmExecutor().execute_algorithm(network.model, bounds_np, str(case["algorithm"]), case["selected_neurons"])
-        runtime_ms = (time.perf_counter() - start_time) * 1000
-        memory_delta_kb = max(0, maxrss_kb() - start_rss)
-        if not result.is_success:
-            raise result.error
-
-        computed_bounds, directions = result.data
-        low = np.array([pair[0] for pair in bounds_map.values()], dtype=np.float32)
-        high = np.array([pair[1] for pair in bounds_map.values()], dtype=np.float32)
-        samples = np.random.uniform(low=low, high=high, size=(case["samples"], len(low))).astype(np.float32)
-
-        modified_model = NetworkModifier().custom_output_layer(network.model, case["selected_neurons"], directions)
-        session = ort.InferenceSession(modified_model.SerializeToString(), providers=["CPUExecutionProvider"])
-        input_name = session.get_inputs()[0].name
-        output_name = session.get_outputs()[0].name
-        actual_outputs = run_model_samples(session, input_name, output_name, samples)
-
-        actual_min = actual_outputs.min(axis=0)
-        actual_max = actual_outputs.max(axis=0)
-        computed_min = computed_bounds[:, 0]
-        computed_max = computed_bounds[:, 1]
-        contained = (actual_min >= computed_min - 1e-6) & (actual_max <= computed_max + 1e-6)
-        width = computed_max - computed_min
-        actual_width = actual_max - actual_min
-        tightness = np.divide(actual_width, width, out=np.zeros_like(actual_width), where=width > 0)
-
-        sample_summary = run_samples_for_bounds(network, list(bounds_map.values()), min(case["samples"], 1000), ["max", "mean", "range"])
-
-        results.append(
-            {
-                "case": case["case"],
-                "runtime_ms": round(runtime_ms, 3),
-                "memory_delta_kb": int(memory_delta_kb),
-                "containment_pass": bool(contained.all()),
-                "containment_ratio": round(float(contained.mean()), 4),
-                "avg_bound_width": round(float(width.mean()), 6),
-                "avg_sample_width": round(float(actual_width.mean()), 6),
-                "avg_tightness_ratio": round(float(tightness.mean()), 6),
-                "sample_metric_outputs": len(sample_summary["outputs"]),
-                "bounded_directions": int(contained.sum()),
-                "checked_directions": int(len(contained)),
-            }
-        )
-
-    return results
-
-
-def main() -> None:
     ensure_output_dir(QUALITY_OUT_DIR)
-    rows = run_quality_checks()
-    write_json(QUALITY_OUT_DIR / "quality_results.json", rows)
-    write_csv(
-        QUALITY_OUT_DIR / "quality_metrics.csv",
-        rows,
-        ["case", "runtime_ms", "memory_delta_kb", "containment_pass", "containment_ratio", "avg_bound_width", "avg_sample_width", "avg_tightness_ratio", "sample_metric_outputs", "bounded_directions", "checked_directions"],
-    )
-    write_quality_plot(rows)
-    print({"quality_cases": len(rows)})
+    bounds_same_suite = f"bounds_variation_{neuron_pair_slug([(0, 0), (0, 1)])}"
+    bounds_cross_suite = f"bounds_variation_{neuron_pair_slug([(0, 0), (1, 0)])}"
+    neuron_b2_suite = "neuron_variation_b2"
+
+    bounds_same_rows = run_quality_suite(bounds_same_suite, build_bounds_variation_cases(bounds_same_suite, [(0, 0), (0, 1)]))
+    bounds_cross_rows = run_quality_suite(bounds_cross_suite, build_bounds_variation_cases(bounds_cross_suite, [(0, 0), (1, 0)]))
+    neuron_rows = run_quality_suite(neuron_b2_suite, build_neuron_variation_cases(neuron_b2_suite, "b2"))
+
+    summary = {
+        bounds_same_suite: len(bounds_same_rows),
+        bounds_cross_suite: len(bounds_cross_rows),
+        neuron_b2_suite: len(neuron_rows),
+    }
+    write_json(QUALITY_OUT_DIR / "quality_summary.json", summary)
+    print(summary)
 
 
 if __name__ == "__main__":

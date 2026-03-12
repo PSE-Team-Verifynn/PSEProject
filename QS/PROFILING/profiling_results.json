@@ -15,11 +15,6 @@
     "maxrss_kb": 129616
   },
   {
-    "case": "NN2",
-    "runtime_ms": 109.738,
-    "maxrss_kb": 111040
-  },
-  {
     "case": "NN1_small",
     "runtime_ms": 219.445,
     "maxrss_kb": 141980

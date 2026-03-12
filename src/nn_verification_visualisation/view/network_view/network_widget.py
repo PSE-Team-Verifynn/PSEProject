@@ -332,6 +332,6 @@ class NetworkWidget(QGraphicsView):
                 SettingsOption("Network Height To Width Ratio", self.get_height_to_width_changer,
                                f"Network Display: {self.configuration.network.name}")))
             self.remove_settings.append(SettingsDialog.add_setting(
-                SettingsOption("Performance Mode", self.get_performance_mode_changer,
+                SettingsOption("Network Drawing Mode", self.get_performance_mode_changer,
                                f"Network Display: {self.configuration.network.name}")))
         super().showEvent(event)

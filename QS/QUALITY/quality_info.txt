@@ -1,39 +1,29 @@
 Quality QS information
 
-Command used:
-mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python QS/QUALITY/run_quality_qs.py
-
-What the script does:
-- Loads selected ONNX networks and their input bounds
-- Runs the selected verification algorithm on chosen neuron pairs
-- Computes output bounds for multiple directions
-- Generates random samples within the given input bounds
-- Evaluates the modified ONNX model with those samples
-- Compares sampled output ranges with the computed bounds
-
 Measured quality values:
-- containment_pass: whether all sampled values stay inside the computed bounds
-- containment_ratio: share of directions for which the sampled values stay inside the computed bounds
-- bounded_directions: number of directions in which containment holds
-- checked_directions: total number of checked directions
-- avg_bound_width: average width of the computed bounds
-- avg_sample_width: average width observed from sampling
+- containment_ratio: share of directions whose sampled extrema stay inside the computed bounds
+- sample_point_containment_ratio: share of sampled 2D neuron points that stay inside the computed polygon
 - avg_tightness_ratio: sample width divided by computed bound width
-- runtime_ms: runtime of the quality check computation
-- memory_delta_kb: additional memory observed during the computation
+- polygon_area: area of the halfspace polygon built from the computed bounds
+- sample_hull_area: convex hull area of the sampled 2D neuron outputs
+- polygon_over_hull_area_ratio: geometric overapproximation factor
+- min_slack: worst signed margin between computed and sampled directional bounds
+- avg_slack: mean signed directional slack across lower and upper bounds
 
-Additional sampling metrics:
-- max
-- mean
-- range
-
-Quality cases:
-- NN1_BoxIBP
-- NN1_Zonotope
-- NN2_BoxIBP
-- NN2_Zonotope
-
-Result files:
+Generated artifacts:
 - QS/QUALITY/quality_results.json
 - QS/QUALITY/quality_metrics.csv
 - QS/QUALITY/quality_metrics.png
+- QS/QUALITY/cases/<case>.png
+- QS/QUALITY/cases/<case>.json
+
+Cases:
+- NN1_B1_BoxIBP (B1.csv)
+- NN1_B2_BoxIBP (B2.vnnlib)
+- NN1_UnitBox_BoxIBP ([0,1]^n)
+- IR11_1_B1_BoxIBP (B1.csv)
+- IR11_1_B2_BoxIBP (B2.vnnlib)
+- IR11_1_UnitBox_BoxIBP ([0,1]^n)
+- IR11_2_UnitBox_BoxIBP ([0,1]^n)
+- IR11_2_Symmetric_BoxIBP ([-1,1]^n)
+- IR11_2_Narrow_BoxIBP ([0.25,0.75]^n)

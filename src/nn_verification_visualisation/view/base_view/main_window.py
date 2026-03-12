@@ -42,11 +42,11 @@ class MainWindow(QMainWindow):
 
         self.exit_dialog_open = True
 
-        cancel_button = QPushButton("Cancel")
+        cancel_button = QPushButton("Don't Exit")
         cancel_button.setObjectName("light-button")
         cancel_button.clicked.connect(lambda: on_close())
 
-        confirm_button = QPushButton("Continue")
+        confirm_button = QPushButton("Exit")
         confirm_button.setObjectName("error-button")
         confirm_button.clicked.connect(lambda: self.__confirmed_exit())
 

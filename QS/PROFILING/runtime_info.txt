@@ -13,7 +13,6 @@ Profiling cases:
 - simple_3_layer_x10
 - simple_3_layer_x50
 - simple_3_layer_x100
-- NN2
 - NN1_small
 
 Result files:

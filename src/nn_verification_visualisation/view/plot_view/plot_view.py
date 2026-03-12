@@ -73,7 +73,7 @@ class PlotView(InsertView):
     def showEvent(self, event, /):
         super().showEvent(event)
         self.settings_remover = SettingsDialog.add_setting(
-            SettingsOption("Numer of Directions", self.get_num_directions_changer, "Plot View"))
+            SettingsOption("Number of Directions", self.get_num_directions_changer, "Plot View"))
 
     def hideEvent(self, event, /):
         super().hideEvent(event)
@@ -86,7 +86,7 @@ class PlotView(InsertView):
             Storage().num_directions = value
 
         changer = QSpinBox()
-        changer.setRange(0, 10000)
+        changer.setRange(2, 10000)
         changer.setValue(Storage().num_directions)
         changer.valueChanged.connect(on_change)
         return changer
