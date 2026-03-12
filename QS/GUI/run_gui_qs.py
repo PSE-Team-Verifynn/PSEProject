@@ -87,8 +87,8 @@ def run_gui_smoke_tests() -> list[dict]:
         }
     )
 
-    network_path = ROOT / "Files" / "NN1.onnx"
-    bounds_path = ROOT / "Files" / "B1.csv"
+    network_path = ROOT / "TestFiles" / "NN1.onnx"
+    bounds_path = ROOT / "TestFiles" / "B1.csv"
     with patch.object(window.base_view.network_view, "open_network_file_picker", return_value=str(network_path)), patch.object(
         Storage, "request_autosave", lambda self: None
     ):

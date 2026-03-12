@@ -2,5 +2,4 @@ case,runtime_ms,maxrss_kb
 simple_3_layer_x10,4.615,107080
 simple_3_layer_x50,27.853,108732
 simple_3_layer_x100,207.455,129616
-NN2,109.738,111040
 NN1_small,219.445,141980

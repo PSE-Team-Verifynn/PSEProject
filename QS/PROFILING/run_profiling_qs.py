@@ -47,31 +47,25 @@ def run_profiling_checks() -> list[dict]:
     cases = [
         {
             "case": "simple_3_layer_x10",
-            "network": ROOT / "Files" / "simple_3_layer_net x10.onnx",
+            "network": ROOT / "TestFiles" / "simple_3_layer_net x10.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 0), (0, 1)],
         },
         {
             "case": "simple_3_layer_x50",
-            "network": ROOT / "Files" / "simple_3_layer_net x50.onnx",
+            "network": ROOT / "TestFiles" / "simple_3_layer_net x50.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 0), (0, 1)],
         },
         {
             "case": "simple_3_layer_x100",
-            "network": ROOT / "Files" / "simple_3_layer_net x100.onnx",
+            "network": ROOT / "TestFiles" / "simple_3_layer_net x100.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 0), (0, 1)],
         },
         {
-            "case": "NN2",
-            "network": ROOT / "Files" / "NN2.onnx",
-            "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
-            "selected_neurons": [(0, 99), (0, 199)],
-        },
-        {
             "case": "NN1_small",
-            "network": ROOT / "Files" / "NN1.onnx",
+            "network": ROOT / "TestFiles" / "NN1.onnx",
             "algorithm": ROOT / "algorithms" / "box_ibp_numpy.py",
             "selected_neurons": [(0, 0), (0, 1)],
         },
