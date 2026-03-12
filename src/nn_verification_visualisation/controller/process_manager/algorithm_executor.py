@@ -20,7 +20,7 @@ class AlgorithmExecutor:
     """
 
     def execute_algorithm(self, model: ModelProto, input_bounds: np.ndarray, algorithm_path: str,
-                          selected_neurons: list[tuple[int, int]]) -> Result[
+                          selected_neurons: list[tuple[int, int]], num_directions: int) -> Result[
         tuple[np.ndarray, list[tuple[float, float]]]]:
 
         try:
@@ -28,7 +28,8 @@ class AlgorithmExecutor:
             fn_res = AlgorithmLoader.load_calculate_output_bounds(algorithm_path)
             if not fn_res.is_success:
                 raise fn_res.error
-            directions = AlgorithmExecutor.calculate_directions(self, Storage().num_directions)
+            directions = AlgorithmExecutor.calculate_directions(self, num_directions)
+            print(num_directions)
             modified_model = NetworkModifier.custom_output_layer(NetworkModifier(), model, selected_neurons,
                                                              directions)
             output_bounds = fn_res.data(modified_model, input_bounds)

@@ -1,11 +1,13 @@
+import math
 from typing import List, Optional
 
 from PySide6.QtGui import QColor, QPainter, QPen, QPolygonF, QLinearGradient, QBrush
 from PySide6.QtWidgets import QGraphicsItem, QStyleOptionGraphicsItem, QWidget
-from PySide6.QtCore import QRectF, QLineF, Qt
+from PySide6.QtCore import QRectF, QLineF, Qt, QPointF
 
 
 class NetworkEdgeBatch(QGraphicsItem):
+    __minimum_block_height = 10
     def __init__(self, source_nodes, target_nodes, force_block=False, use_weighted=False, weights: Optional[List[List[float]]] = None):
         super().__init__()
         self.source_nodes = source_nodes
@@ -13,6 +15,8 @@ class NetworkEdgeBatch(QGraphicsItem):
         self.use_block_mode = force_block
         self.use_weighted_mode = use_weighted
         self.weights = weights
+
+        self.polygon = None
 
         self.min_weight = None
         self.max_weight = None
@@ -34,6 +38,18 @@ class NetworkEdgeBatch(QGraphicsItem):
         s_bot = self.source_nodes[-1].scenePos()
         t_top = self.target_nodes[0].scenePos()
         t_bot = self.target_nodes[-1].scenePos()
+
+        def clamp_min_height(bot: QPointF, top: QPointF):
+            if bot.y() - top.y() < self.__minimum_block_height:
+                mid_s = (top.y() + bot.y()) / 2
+                new_top = QPointF(top.x(), mid_s - self.__minimum_block_height / 2)
+                new_bot = QPointF(bot.x(), mid_s + self.__minimum_block_height / 2)
+                return new_top, new_bot
+            else:
+                return top, bot
+
+        s_top, s_bot = clamp_min_height(s_bot, s_top)
+        t_top, t_bot = clamp_min_height(t_bot, t_top)
 
         self.polygon = QPolygonF([s_top, t_top, t_bot, s_bot])
         self._bounding_rect = self.polygon.boundingRect()
@@ -95,7 +111,7 @@ class NetworkEdgeBatch(QGraphicsItem):
             gradient.setColorAt(1, QColor(100, 100, 100, 80))
 
             painter.setBrush(QBrush(gradient))
-            painter.setPen(Qt.NoPen)
+            painter.setPen(Qt.PenStyle.NoPen)
             painter.drawPolygon(self.polygon)
         else:
             base_color = QColor(150, 150, 150, 150)
@@ -134,7 +150,7 @@ class NetworkEdgeBatch(QGraphicsItem):
             else:
                 # NORMAL MODE - uniform lines
                 pen.setWidth(1)
-                pen.setColor(QColor(100, 100, 100, 150))  # Consistent color
+                pen.setColor(QColor(100, 100, 100, 150))
                 painter.setPen(pen)
                 lines_only = [x[0] for x in self.lines_data]
                 painter.drawLines(lines_only)

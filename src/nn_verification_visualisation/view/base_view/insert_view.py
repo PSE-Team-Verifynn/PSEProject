@@ -2,8 +2,8 @@ from typing import List, Callable
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout, QMenu, \
     QGraphicsDropShadowEffect, QSizePolicy
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QIcon, QColor
+from PySide6.QtCore import Qt, QRect, QEvent
+from PySide6.QtGui import QIcon, QColor, QCursor
 
 from nn_verification_visualisation.view.base_view.action_menu import ActionMenu
 from nn_verification_visualisation.view.base_view.tabs import Tabs
@@ -45,9 +45,12 @@ class InsertView(QWidget):
         self.__dialog_stack = []
 
         self.action_menu = None
+        self._suppress_next_open = False
 
         menu_button = self._create_simple_icon_button(lambda: self.__action_menu_open_close(menu_button),
                                                ":assets/icons/menu_icon.svg",)
+        self._menu_button = menu_button
+        menu_button.installEventFilter(self)
 
         self.set_bar_corner_widgets([menu_button], Qt.Corner.TopLeftCorner)
 
@@ -119,13 +122,27 @@ class InsertView(QWidget):
         for dialog in self.__dialog_stack:
             dialog.setGeometry(self.rect())
 
-    def __action_menu_open_close(self, menu_button: QPushButton):
-        if not self.action_menu_open:
-            self.action_menu = ActionMenu(self)
-            self.action_menu_open = True
-            self.action_menu.menu.aboutToHide.connect(lambda: self.__exit_action())
-            self.action_menu.menu.popup(menu_button.mapToGlobal(menu_button.rect().bottomLeft()))
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.MouseButtonRelease and self._suppress_next_open:
+            btn = self._menu_button
+            btn_global = QRect(btn.mapToGlobal(btn.rect().topLeft()), btn.rect().size())
+            if not btn_global.contains(QCursor.pos()):
+                self._suppress_next_open = False
+        return super().eventFilter(obj, event)
 
-    def __exit_action(self):
-        self.action_menu.hide()
-        QTimer.singleShot(200, lambda: setattr(self, "action_menu_open", False))
+    def __action_menu_open_close(self, menu_button: QPushButton):
+        if self._suppress_next_open:
+            self._suppress_next_open = False
+            return
+        self.action_menu = ActionMenu(self)
+        self.action_menu_open = True
+        self.action_menu.menu.aboutToHide.connect(self.__on_menu_hide)
+        self.action_menu.menu.popup(menu_button.mapToGlobal(menu_button.rect().bottomLeft()))
+
+    def __on_menu_hide(self):
+        self.action_menu_open = False
+        cursor_pos = QCursor.pos()
+        btn = self._menu_button
+        btn_global = QRect(btn.mapToGlobal(btn.rect().topLeft()), btn.rect().size())
+        if btn_global.contains(cursor_pos):
+            self._suppress_next_open = True
