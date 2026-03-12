@@ -1,5 +1,6 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QDoubleSpinBox, QDataWidgetMapper, \
-    QListWidget, QListWidgetItem, QGroupBox
+    QListWidget, QListWidgetItem, QGroupBox, QScrollArea, QFrame
 
 from nn_verification_visualisation.controller.input_manager.network_view_controller import NetworkViewController
 from nn_verification_visualisation.model.data.network_verification_config import NetworkVerificationConfig
@@ -31,6 +32,7 @@ class NetworkPage(Tab):
         title.setObjectName("title")
 
         bounds_group = QGroupBox("Bounds")
+        bounds_group.setFixedHeight(300)
         bounds_group_layout = QVBoxLayout(bounds_group)
         bounds_group_layout.setContentsMargins(6, 6, 6, 6)
         bounds_group_layout.setSpacing(4)
@@ -112,7 +114,7 @@ class NetworkPage(Tab):
         edit_group_layout = QVBoxLayout(self.edit_group)
         edit_group_layout.setContentsMargins(6, 6, 6, 6)
         edit_group_layout.setSpacing(6)
-        edit_group_layout.addLayout(bound_input_layout)
+        edit_group_layout.addWidget(self.__make_scrollable(bound_input_layout))
 
         actions_layout = QHBoxLayout()
         actions_layout.setContentsMargins(0, 0, 0, 0)
@@ -121,12 +123,13 @@ class NetworkPage(Tab):
         actions_layout.addWidget(save_button)
         edit_group_layout.addLayout(actions_layout)
 
-        self.display_group = BoundsDisplayWidget("Bounds", scrollable=False)
+        self.display_group = BoundsDisplayWidget("Bounds", scrollable=True)
         self.display_group.set_rows(self.input_count)
 
-        layout.addWidget(self.edit_group)
         layout.addWidget(self.display_group)
-        self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10, scrollable=False)
+        layout.addWidget(self.edit_group)
+
+        self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10, scrollable=True)
         self.sample_metrics.setVisible(False)
         layout.addWidget(self.sample_metrics)
         self.full_results_button = QPushButton("Full Results")
@@ -134,7 +137,7 @@ class NetworkPage(Tab):
         self.full_results_button.setEnabled(False)
         self.full_results_button.clicked.connect(self.__on_full_results_clicked)
         layout.addWidget(self.full_results_button)
-        layout.addStretch(1)
+
         base.setLayout(layout)
 
         self.__refresh_bounds_list()
@@ -142,6 +145,23 @@ class NetworkPage(Tab):
         self.__update_sample_results()
 
         return base
+
+    def __make_scrollable(self, widget: QWidget | QVBoxLayout) -> QScrollArea:
+        if type(widget) == QVBoxLayout:
+            scroll_layout = widget
+        else:
+            scroll_layout = QVBoxLayout()
+            scroll_layout.addWidget(widget)
+
+        scroll_container = QWidget()
+        scroll_container.setLayout(scroll_layout)
+
+        sidebar_scroll = QScrollArea()
+        sidebar_scroll.setWidgetResizable(True)
+        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        sidebar_scroll.setFrameShape(QScrollArea.Shape.StyledPanel)
+        sidebar_scroll.setWidget(scroll_container)
+        return sidebar_scroll
 
     def on_changed(self, bounds_num: int, is_max: bool, new_val: float):
         self.configuration.bounds.bounds[bounds_num] = (new_val, new_val)
@@ -189,7 +209,8 @@ class NetworkPage(Tab):
         self.__update_sample_results()
 
     def __on_run_samples_clicked(self):
-        self.controller.open_run_samples_dialog(self.configuration, on_results=lambda _res: self.__update_sample_results())
+        self.controller.open_run_samples_dialog(self.configuration,
+                                                on_results=lambda _res: self.__update_sample_results())
 
     def __refresh_bounds_list(self, selected_row: int | None = None):
         self.bounds_list.blockSignals(True)

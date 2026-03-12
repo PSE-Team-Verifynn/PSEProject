@@ -628,8 +628,9 @@ class NeuronPicker(DialogBase):
             "Sample Results",
             include_min=False,
             max_items=10,
-            scrollable=False,
+            scrollable=True,
         )
+        # self.sample_metrics.setMaximumHeight(200)
         layout.addSpacing(12)
         self.sample_metrics.setVisible(False)
         layout.addWidget(self.sample_metrics)
