@@ -1,0 +1,17 @@
+# Fallback to standard PyPI for other libraries
+--extra-index-url https://pypi.org/simple
+
+# Pin PyTorch and Torchvision
+torch==2.8.0
+torchvision
+
+# Standard libraries
+tqdm
+onnx2pytorch
+pyside6 >= 6.10.1
+onnxruntime >= 1.23.0
+numpy >= 2.2.6
+matplotlib >= 3.10.8
+watchdog >= 6.0.0
+onnx >= 1.20.0
+
