@@ -1,8 +1,6 @@
 from unittest.mock import MagicMock
 
 from PySide6.QtWidgets import QApplication
-
-from build.lib.nn_verification_visualisation.view.base_view.base_view import BaseView
 from nn_verification_visualisation.controller.input_manager.plot_view_controller import PlotViewController
 from nn_verification_visualisation.view.base_view.color_manager import ColorManager
 from nn_verification_visualisation.view.plot_view.plot_view import PlotView
