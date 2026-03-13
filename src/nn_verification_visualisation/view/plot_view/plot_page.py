@@ -86,7 +86,6 @@ class PlotPage(Tab):
 
         widget.set_selection(sel)
 
-        # update PlotWidget (ваш текущий код ниже без изменений)
         length = len(self.diagram_config.polygons)
         colors = get_neuron_colors(length)
         self.plot_widgets[index].render_plot(

@@ -1,3 +1,5 @@
+import json
+
 import onnx
 from onnx import helper, TensorProto
 
@@ -59,3 +61,82 @@ def test_save_state_loader_restores_samples(tmp_path, qapp):
     lb = st.loaded_networks[0].saved_bounds[0]
     if hasattr(lb, "get_sample"):
         assert lb.get_sample() == sample
+
+def _make_dummy_onnx(path):
+    x = helper.make_tensor_value_info("x", TensorProto.FLOAT, [1])
+    y = helper.make_tensor_value_info("y", TensorProto.FLOAT, [1])
+    node = helper.make_node("Identity", ["x"], ["y"])
+    graph = helper.make_graph([node], "g", [x], [y])
+    model = helper.make_model(graph, producer_name="pytest")
+    onnx.save(model, str(path))
+
+
+def test_save_state_loader_rejects_wrong_format(tmp_path, qapp):
+    from nn_verification_visualisation.model.data_loader.save_state_loader import SaveStateLoader
+
+    f = tmp_path / "bad.json"
+    f.write_text(json.dumps({"format": "WRONG"}), encoding="utf-8")
+
+    res = SaveStateLoader().load_save_state(str(f))
+    assert not res.is_success
+
+
+def test_save_state_loader_collects_warning_and_skips_missing_onnx(monkeypatch, tmp_path, qapp):
+    """
+    If onnx.load fails, loader should add a warning and skip that network (but still succeed).
+    """
+    from nn_verification_visualisation.model.data_loader.save_state_loader import SaveStateLoader
+
+    doc = {
+        "format": "nnvv_save_state",
+        "version": 1,
+        "loaded_networks": [
+            {
+                "network": {"name": "N", "path": str(tmp_path / "missing.onnx")},
+                "layers_dimensions": [1, 1],
+                "activation_values": [],
+                "selected_bounds_index": -1,
+                "bounds": {"values": [[0.0, 1.0]], "sample": None},
+                "saved_bounds": [],
+            }
+        ],
+        "diagrams": [],
+    }
+
+    f = tmp_path / "state.json"
+    f.write_text(json.dumps(doc), encoding="utf-8")
+
+    # force onnx.load to throw
+    import nn_verification_visualisation.model.data_loader.save_state_loader as mod
+    monkeypatch.setattr(mod.onnx, "load", lambda p: (_ for _ in ()).throw(FileNotFoundError(p)), raising=True)
+
+    loader = SaveStateLoader()
+    res = loader.load_save_state(str(f))
+    assert res.is_success, res.error
+
+    assert len(res.data.loaded_networks) == 0
+    warnings = loader.get_warnings()
+    assert any("missing" in w.lower() or "not found" in w.lower() for w in warnings)
+
+
+def test_save_state_loader_filters_invalid_diagrams(tmp_path, qapp):
+    """
+    Diagram with no valid plot_generation_configs should be skipped (current behavior).
+    """
+    from nn_verification_visualisation.model.data_loader.save_state_loader import SaveStateLoader
+
+    doc = {
+        "format": "nnvv_save_state",
+        "version": 1,
+        "loaded_networks": [],
+        "diagrams": [
+            {"plot_generation_configs": [], "polygons": [], "plots": []}
+        ],
+    }
+
+    f = tmp_path / "state.json"
+    f.write_text(json.dumps(doc), encoding="utf-8")
+
+    res = SaveStateLoader().load_save_state(str(f))
+    assert res.is_success, res.error
+    assert res.data.diagrams == []
