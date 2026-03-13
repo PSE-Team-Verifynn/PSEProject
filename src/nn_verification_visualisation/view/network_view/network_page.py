@@ -1,4 +1,6 @@
-from PySide6.QtCore import Qt
+from typing import Callable
+
+from PySide6.QtCore import Qt, QTimer, QObject, QEvent
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QDoubleSpinBox, QDataWidgetMapper, \
     QListWidget, QListWidgetItem, QGroupBox, QScrollArea, QFrame
 
@@ -9,7 +11,6 @@ from nn_verification_visualisation.view.network_view.network_widget import Netwo
 from nn_verification_visualisation.view.base_view.sample_metrics import SampleMetricsWidget
 from nn_verification_visualisation.view.dialogs.sample_results_dialog import SampleResultsDialog
 from nn_verification_visualisation.view.base_view.bounds_display import BoundsDisplayWidget
-
 
 class NetworkPage(Tab):
     configuration: NetworkVerificationConfig
@@ -107,6 +108,8 @@ class NetworkPage(Tab):
             self.mappers.append(mapper)
             self.bound_inputs.append((min_input, max_input))
 
+        bound_input_layout.addStretch()
+
         layout = QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(bounds_group)
@@ -126,8 +129,16 @@ class NetworkPage(Tab):
         self.display_group = BoundsDisplayWidget("Bounds", scrollable=True)
         self.display_group.set_rows(self.input_count)
 
+        self.stretch_widget = QWidget()
+
+        stretch_widget_layout = QVBoxLayout()
+        stretch_widget_layout.addStretch()
+
+        self.stretch_widget.setLayout(stretch_widget_layout)
+
         layout.addWidget(self.display_group)
         layout.addWidget(self.edit_group)
+        layout.addWidget(self.stretch_widget)
 
         self.sample_metrics = SampleMetricsWidget("Sample Results", include_min=False, max_items=10, scrollable=True)
         self.sample_metrics.setVisible(False)
@@ -144,6 +155,12 @@ class NetworkPage(Tab):
         self.__set_edit_mode(False)
         self.__update_sample_results()
 
+        self.watcher = VisibilityWatcher(self.__update_stretch_visibility)
+
+        self.display_group.installEventFilter(self.watcher)
+        self.edit_group.installEventFilter(self.watcher)
+        self.sample_metrics.installEventFilter(self.watcher)
+
         return base
 
     def __make_scrollable(self, widget: QWidget | QVBoxLayout) -> QScrollArea:
@@ -154,6 +171,7 @@ class NetworkPage(Tab):
             scroll_layout.addWidget(widget)
 
         scroll_container = QWidget()
+        scroll_container.setObjectName("foreground-item")
         scroll_container.setLayout(scroll_layout)
 
         sidebar_scroll = QScrollArea()
@@ -162,6 +180,9 @@ class NetworkPage(Tab):
         sidebar_scroll.setFrameShape(QScrollArea.Shape.StyledPanel)
         sidebar_scroll.setWidget(scroll_container)
         return sidebar_scroll
+
+    def __update_stretch_visibility(self):
+        self.stretch_widget.setVisible(not self.sample_metrics.isVisible() and not (self.display_group.isVisible() or self.edit_group.isVisible()))
 
     def on_changed(self, bounds_num: int, is_max: bool, new_val: float):
         self.configuration.bounds.bounds[bounds_num] = (new_val, new_val)
@@ -295,3 +316,15 @@ class NetworkPage(Tab):
             return
         parent = self.controller.current_network_view
         parent.open_dialog(SampleResultsDialog(parent.close_dialog, result))
+
+class VisibilityWatcher(QObject):
+    on_update: Callable[[], None]
+
+    def __init__(self, on_update: Callable[[], None], /):
+        super().__init__()
+        self.on_update = on_update
+
+    def eventFilter(self, obj, event):
+        if event.type() in [QEvent.Show, QEvent.Hide]:
+            self.on_update()
+        return False

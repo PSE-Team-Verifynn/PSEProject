@@ -61,7 +61,6 @@ class SampleMetricsWidget(QGroupBox):
 
         self._summary_container = QWidget()
         self._summary_layout = QVBoxLayout(self._summary_container)
-        self._summary_layout.setContentsMargins(0, 0, 0, 0)
         self._summary_layout.setSpacing(4)
         self._summary_samples = QLabel("Samples: —")
         self._summary_mode = QLabel("Mode: —")
@@ -83,6 +82,7 @@ class SampleMetricsWidget(QGroupBox):
         self._summary_detail_widgets: list[QWidget] = []
 
         self._scroll_content = QWidget()
+        self._scroll_content.setObjectName("foreground-item")
         self._scroll_content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._scroll_layout = QVBoxLayout(self._scroll_content)
         self._scroll_layout.setContentsMargins(0, 0, 0, 0)
