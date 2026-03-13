@@ -1,6 +1,6 @@
 # PSE Project: Neural Network Verification Algorithm Visualisation
 
-## Install and run
+## Installation and Execution
 ### Linux
 Make sure that you have Python 3.13 (with pip, venv) and Git installed. Commands `python3.13`, `git` should be recognized by your system.
 1. Download the latest linux release.
