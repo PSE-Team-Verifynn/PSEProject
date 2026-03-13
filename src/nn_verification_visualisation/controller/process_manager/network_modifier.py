@@ -69,7 +69,6 @@ class NetworkModifier:
         :return: the new model
         '''
         model = copy.deepcopy(static_model)     #deepcopies so the original model does not change
-
         output_names = model.graph.node[-1].output
         if output_names.__len__() != 1:
             raise RuntimeError("The last layer of the network must have exactly one output")
@@ -156,7 +155,8 @@ class NetworkModifier:
             if 2 * neurons[neuron_ind][0] == model.graph.initializer.__len__() - 2:
                 for direction in range(0, directions.__len__()):                    # adds the values of the directions into the last matrix multiplication
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.remove(0)
-                    model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.insert(2* neurons[neuron_ind][1] + direction,directions[direction][neuron_ind])
+                    (model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.insert(
+                     model.graph.initializer[model.graph.initializer.__len__() - 2].dims[1] * (neurons[neuron_ind][1] + 1 ),directions[direction][neuron_ind]))
             else:
                 for direction in directions:
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.append(direction[neuron_ind])

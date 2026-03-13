@@ -551,9 +551,9 @@ class NeuronPicker(DialogBase):
         self.bounds_toggle_button.setObjectName("icon-button")
         self.bounds_toggle_button.setFixedWidth(32)
         self.bounds_toggle_button.clicked.connect(self.__toggle_bounds_display)
-        self.bounds_toggle_button.setVisible(True)
         bounds_group.addWidget(self.bounds_toggle_button)
         layout.addLayout(bounds_group)
+        # self.bounds_toggle_button.setVisible(True)
         layout.addSpacing(8)
 
         # --- Bounds Display ---
@@ -643,13 +643,13 @@ class NeuronPicker(DialogBase):
         )
         # self.sample_metrics.setMaximumHeight(200)
         layout.addSpacing(12)
-        self.sample_metrics.setVisible(False)
         layout.addWidget(self.sample_metrics)
+        self.sample_metrics.setVisible(False)
         self.full_results_button = QPushButton("Full Results")
+        layout.addWidget(self.full_results_button)
         self.full_results_button.setVisible(False)
         self.full_results_button.setEnabled(False)
         self.full_results_button.clicked.connect(self.__on_full_results_clicked)
-        layout.addWidget(self.full_results_button)
         layout.addStretch()
 
         print("Sidebar loaded")

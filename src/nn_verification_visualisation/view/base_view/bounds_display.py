@@ -24,6 +24,7 @@ class BoundsDisplayWidget(QGroupBox):
         container.setSpacing(4)
 
         self._content = QWidget()
+        self._content.setObjectName("foreground-item")
         self._content_layout = QVBoxLayout(self._content)
         self._content_layout.setContentsMargins(6, 6, 6, 6)
         self._content_layout.setSpacing(4)

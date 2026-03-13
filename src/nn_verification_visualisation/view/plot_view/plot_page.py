@@ -86,7 +86,6 @@ class PlotPage(Tab):
 
         widget.set_selection(sel)
 
-        # update PlotWidget (ваш текущий код ниже без изменений)
         length = len(self.diagram_config.polygons)
         colors = get_neuron_colors(length)
         self.plot_widgets[index].render_plot(
@@ -181,9 +180,23 @@ class PlotPage(Tab):
         self.__plots_sidebar_layout = QVBoxLayout()
         self.__plots_sidebar_layout.setContentsMargins(0, 0, 0, 0)
         self.__plots_sidebar_layout.setSpacing(8)
-        layout.addLayout(self.__plots_sidebar_layout)
 
-        layout.addStretch(1)
+        scroll_layout = QVBoxLayout()
+        scroll_layout.addLayout(self.__plots_sidebar_layout)
+        scroll_layout.addStretch()
+        scroll_layout.setContentsMargins(0,0,0,0)
+
+        scroll_container = QWidget()
+        scroll_container.setLayout(scroll_layout)
+        scroll_container.setObjectName("transparent")
+
+        sidebar_scroll = QScrollArea()
+        sidebar_scroll.setWidgetResizable(True)
+        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        sidebar_scroll.setFrameShape(QScrollArea.Shape.StyledPanel)
+        sidebar_scroll.setWidget(scroll_container)
+
+        layout.addWidget(sidebar_scroll)
 
         add_diagram_button = QPushButton("Add Diagram")
         add_diagram_button.clicked.connect(lambda: self.__add_plot([0]))
