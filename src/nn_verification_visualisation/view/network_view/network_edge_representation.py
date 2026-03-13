@@ -21,6 +21,14 @@ class NetworkEdgeBatch(QGraphicsItem):
         self.min_weight = None
         self.max_weight = None
 
+        if not source_nodes or not target_nodes or len(self.source_nodes) == 0 or len(self.target_nodes) == 0:
+            if self.use_block_mode:
+                self.polygon = QPolygonF()
+            else:
+                self.lines_data = []
+            self._bounding_rect = QRectF()
+            return
+
         if self.use_block_mode:
             self.__init_block_geometry()
         else:
