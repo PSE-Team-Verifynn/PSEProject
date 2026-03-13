@@ -99,11 +99,7 @@ class NetworkViewController:
         result = NeuralNetworkLoader().load_neural_network(path)
         if not result.is_success:
             return None
-        layer_dimensions = []   # list of the number of nodes per Layer
-        for layer in result.data.model.graph.initializer: # adds the 1.dim of the matrix, dim of the 1. layer
-            if len(layer.dims) == 2 :
-                layer_dimensions.append(layer.dims[0])
-        layer_dimensions.append(result.data.model.graph.output[0].type.tensor_type.shape.dim[-1].dim_value) # adds the output layer dim
+        layer_dimensions = self.get_layer_dimensions_from_network(result.data)
 
         network = NetworkVerificationConfig(result.data,layer_dimensions)   #layer_dimensions is used for visualization of the network
 
@@ -117,6 +113,16 @@ class NetworkViewController:
         self.current_tab = len(storage.networks)
 
         return network
+
+    @staticmethod
+    def get_layer_dimensions_from_network(network: NeuralNetwork):
+        layer_dimensions = []  # list of the number of nodes per Layer
+        for layer in network.model.graph.initializer:  # adds the 1.dim of the matrix, dim of the 1. layer
+            if len(layer.dims) == 2:
+                layer_dimensions.append(layer.dims[0])
+        layer_dimensions.append(
+            network.model.graph.output[0].type.tensor_type.shape.dim[-1].dim_value)  # adds the output layer dim
+        return layer_dimensions
 
     def remove_neural_network(self, network: NetworkVerificationConfig) -> bool:
         '''

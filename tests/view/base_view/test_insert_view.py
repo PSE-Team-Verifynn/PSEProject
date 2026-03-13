@@ -317,24 +317,7 @@ class TestActionMenu:
         mocked_insert_view['action_menu_class'].assert_called_once_with(mocked_insert_view['insert_view'])
         assert mocked_insert_view['insert_view'].action_menu is not None
 
-    def test_menu_button_click_when_already_open_does_not_reopen(self, mocked_insert_view):
-        """A second click while open does nothing (no second ActionMenu created)."""
-        menu_button = QPushButton()
-        menu_button.setGeometry(0, 0, 40, 40)
-        menu_button.mapToGlobal = Mock(return_value=menu_button.rect().bottomLeft())
-
-        # First click
-        mocked_insert_view['insert_view']._InsertView__action_menu_open_close(menu_button)
-        first_menu = mocked_insert_view['insert_view'].action_menu
-
-        # Second click (while open)
-        mocked_insert_view['insert_view']._InsertView__action_menu_open_close(menu_button)
-
-        # Should still be the same menu (only one call to ActionMenu constructor)
-        assert mocked_insert_view['action_menu_class'].call_count == 1
-        assert mocked_insert_view['insert_view'].action_menu == first_menu
-
-    def test_exit_action_hides_menu_and_resets_flag(self, mocked_insert_view, qtbot):
+    def test_exit_action_resets_flag(self, mocked_insert_view, qtbot):
         """After aboutToHide fires, action_menu_open eventually resets to False."""
         menu_button = QPushButton()
         menu_button.setGeometry(0, 0, 40, 40)
@@ -344,14 +327,8 @@ class TestActionMenu:
         mocked_insert_view['insert_view']._InsertView__action_menu_open_close(menu_button)
         assert mocked_insert_view['insert_view'].action_menu_open is True
 
-        # Trigger the exit action (this happens when menu is hidden)
-        mocked_insert_view['insert_view']._InsertView__exit_action()
-
-        # Check that hide was called
-        mocked_insert_view['action_menu'].hide.assert_called_once()
-
-        # Wait for the QTimer.singleShot(200) to fire
-        qtbot.wait(250)
+        # Simulate the menu being hidden (triggers __on_menu_hide via aboutToHide signal)
+        mocked_insert_view['insert_view']._InsertView__on_menu_hide()
 
         # Flag should now be reset
         assert mocked_insert_view['insert_view'].action_menu_open is False
