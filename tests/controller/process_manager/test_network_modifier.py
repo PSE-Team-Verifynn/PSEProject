@@ -12,9 +12,9 @@ from nn_verification_visualisation.model.data_loader.neural_network_loader impor
 from onnx import helper, TensorProto
 
 def test_network_modifier():
-    node_x = helper.make_node("Gemm",["input","W1", "B1"],"fc1_out","FullyConnected1")
-    node_y = helper.make_node("Relu","fc1_out","relu_out","Relu1")
-    node_z = helper.make_node("Gemm",["relu_out","W2","B2"],"output","FullyConnected2")
+    node_x = helper.make_node("Gemm",["input","W1", "B1"],["fc1_out"],"FullyConnected1")
+    node_y = helper.make_node("Relu","fc1_out",["relu_out"],"Relu1")
+    node_z = helper.make_node("Gemm",["relu_out","W2","B2"],["output"],"FullyConnected2")
     tensor_1 = helper.make_tensor("W1",1,[4,8],[
         0.5830841660499573,
         0.13663217425346375,
@@ -82,15 +82,6 @@ def test_network_modifier():
     test_output = helper.make_value_info("output",test_type_2)
     test_graph = helper.make_graph([node_x,node_y,node_z],"test_graph",[test_input],[test_output],[tensor_1,tensor_2,tensor_3,tensor_4])
     test_model = helper.make_model(test_graph,producer_name="test_model")
-    test_modification(test_model)
-
-
-def test_modification(test_model: ModelProto):
-    '''
-
-    :param test_model:
-    :return:
-    '''
     test_directions = AlgorithmExecutor.calculate_directions(AlgorithmExecutor(),32)
     modified_test_model = NetworkModifier.custom_output_layer(NetworkModifier(), test_model,[(2,1),(1,2)],test_directions)
     assert(modified_test_model.graph.initializer[0].dims[0] == 4)
@@ -105,52 +96,36 @@ def test_modification(test_model: ModelProto):
     assert(modified_test_model.graph.initializer[0].float_data == test_model.graph.initializer[0].float_data)
     assert (modified_test_model.graph.initializer[1].float_data == test_model.graph.initializer[1].float_data)
     assert (modified_test_model.graph.initializer[2].float_data == [
-    [
         -0.4191172420978546,
         -0.05619022622704506,
-        0
-    ],
-    [
+        0,
         2.037233591079712,
         1.1506322622299194,
-        0
-    ],
-    [
+        0,
         -0.07131075114011765,
         -0.6936957240104675,
-        1
-    ],
-    [
+        1,
         1.0400233268737793,
         0.1764814704656601,
-        0
-    ],
-    [
+        0,
         0.8922547698020935,
         -1.2435221672058105,
-        0
-    ],
-    [
+        0,
         -1.0535038709640503,
         -0.08947000652551651,
-        0
-    ],
-    [
+       0,
         0.3997858464717865,
         0.05722717568278313,
-        0
-    ],
-    [
+        0,
         -0.6842482089996338,
         1.056631326675415,
         0
-    ]
 ]
 )
     assert (modified_test_model.graph.initializer[3].float_data == [
             2.0324151515960693,
             -0.14824411273002625,
-            0
+           0
 ])
 
 

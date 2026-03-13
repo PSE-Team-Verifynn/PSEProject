@@ -69,7 +69,6 @@ class NetworkModifier:
         :return: the new model
         '''
         model = copy.deepcopy(static_model)     #deepcopies so the original model does not change
-        print(model.graph)
         output_names = model.graph.node[-1].output
         if output_names.__len__() != 1:
             raise RuntimeError("The last layer of the network must have exactly one output")
