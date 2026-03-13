@@ -12,6 +12,7 @@ class Tab(QWidget):
         self.title = title
         self.icon = icon
         self.remove_close_button = remove_close_button
+        self._splitter = None
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -26,7 +27,8 @@ class Tab(QWidget):
         content_container.setLayout(content_layout)
 
         if has_sidebar:
-            splitter = QSplitter(Qt.Orientation.Horizontal)
+            self._splitter = QSplitter(Qt.Orientation.Horizontal)
+            splitter = self._splitter
             splitter.setContentsMargins(0, 0, 0, 0)
 
             sidebar_layout = QVBoxLayout()
@@ -37,15 +39,20 @@ class Tab(QWidget):
             sidebar_container.setObjectName("tab-sidebar")
             sidebar_container.setLayout(sidebar_layout)
 
-            splitter.addWidget(sidebar_container)
+            sidebar_scroll = QScrollArea()
+            sidebar_scroll.setWidgetResizable(True)
+            sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+            sidebar_scroll.setWidget(sidebar_container)
+
+            splitter.addWidget(sidebar_scroll)
             splitter.addWidget(content_container)
 
             # Set default splitter size
             splitter.setStretchFactor(0, 0)
             splitter.setStretchFactor(1, 1)
-            QTimer.singleShot(0, lambda: splitter.setSizes([250, 10000]))
+            QTimer.singleShot(0, lambda: self._splitter.setSizes([250, 10000]))
 
-            layout.addWidget(splitter)
+            layout.addWidget(self._splitter)
         else:
             layout.addWidget(content_container)
         self.setLayout(layout)

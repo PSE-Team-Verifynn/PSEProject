@@ -10,9 +10,7 @@ def make_node(x, y):
     node.scenePos.return_value = QPointF(x, y)
     return node
 
-
 class TestNetworkEdgeBatchBlockMode:
-
     def test_block_has_minimum_height_when_single_node_per_layer(self, qapp):
         """Regression: a single-node layer must not produce a zero-height block."""
         source = [make_node(0, 100)]
