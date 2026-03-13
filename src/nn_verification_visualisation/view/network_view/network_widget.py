@@ -49,6 +49,9 @@ class NetworkWidget(QGraphicsView):
 
         self.height_to_width_ration = 1.0
 
+        self.min_scale = 0.1
+        self.max_scale = 300
+
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
 
@@ -73,7 +76,10 @@ class NetworkWidget(QGraphicsView):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.setUpdatesEnabled(False)
-        self.__build_network()
+        try:
+            self.__build_network()
+        except ValueError:
+            print("Network is empty. Please select a network.")
         self.setUpdatesEnabled(True)
 
         self.__update_view_constraints()
@@ -118,12 +124,16 @@ class NetworkWidget(QGraphicsView):
 
         return dropdown
 
+    def network_is_empty(self):
+        return all(layer for layer in self.configuration.layers_dimensions) == 0
+
     def __build_network(self):
         layers = self.configuration.layers_dimensions
-        if not layers:
+        if not layers or self.network_is_empty():
             return
 
         total_edges = sum(layers[i] * layers[i + 1] for i in range(len(layers) - 1))
+
 
         # Auto-detect mode based on edge count, unless user has manually selected a mode
         if not self.manual_mode_override:
@@ -144,7 +154,10 @@ class NetworkWidget(QGraphicsView):
         # Dimensions
         max_nodes = max(layers)
         total_height = max_nodes * self.node_spacing
-        self.layer_spacing = total_height / (self.height_to_width_ration * (len(layers) - 1))
+        if len(layers) > 1:
+            self.layer_spacing = total_height / (self.height_to_width_ration * (len(layers) - 1))
+        else:
+            self.layer_spacing = 0
 
         # --- Build Nodes & Layers ---
         for i, num_nodes in enumerate(layers):
@@ -267,9 +280,13 @@ class NetworkWidget(QGraphicsView):
         self.anim_group.start()
 
     def unselect_node(self, layer_index: int, node_index: int):
+        if not self.node_layers or not self.node_layers[layer_index]:
+            return
         self.node_layers[layer_index][node_index].setBrush(NetworkNode.color_unselected)
 
     def select_node(self, layer_index: int, node_index: int, color: QColor):
+        if not self.node_layers or not self.node_layers[layer_index] or len(self.node_layers[layer_index]) <= node_index:
+            return
         self.node_layers[layer_index][node_index].setBrush(color)
 
     def get_weights_from_onnx(self, model_proto: ModelProto):

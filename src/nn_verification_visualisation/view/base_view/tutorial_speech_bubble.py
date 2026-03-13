@@ -3,6 +3,8 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout
 
 
 class TutorialSpeechBubble(QWidget):
+    __margin: int = 15
+    __spacing: int = 15
     def __init__(self, heading: str, text: str):
         super().__init__()
 
@@ -12,8 +14,8 @@ class TutorialSpeechBubble(QWidget):
         container.setObjectName("card")
 
         container_layout = QVBoxLayout(container)
-        container_layout.setContentsMargins(15,15,15,15)
-        container_layout.setSpacing(15)
+        container_layout.setContentsMargins(self.__margin,self.__margin,self.__margin,self.__margin)
+        container_layout.setSpacing(self.__spacing)
 
         title = QLabel(heading)
         title.setObjectName("title")

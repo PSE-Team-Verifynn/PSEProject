@@ -327,6 +327,15 @@ class NeuronPicker(DialogBase):
 
         print(f"Network changed to {Storage().networks[index].network.name}")
         new_network = Storage().networks[index]
+
+        try:
+            self.network_widget = NetworkWidget(Storage().networks[index], nodes_selectable=True,
+                                                on_selection_changed=self.__on_node_selection_change)
+        except Exception as e:
+            self.network_widget = None
+            print(f"Failed to construct NetworkWidget: {e}")
+            return
+
         self.current_network = index
         if self.bounds_selector is not None:
             self.__populate_bounds_selector(index)
@@ -336,8 +345,6 @@ class NeuronPicker(DialogBase):
             self.bounds_toggle_button.setVisible(True)
         self.__update_sample_results()
 
-        self.network_widget = NetworkWidget(Storage().networks[index], nodes_selectable=True,
-                                            on_selection_changed=self.__on_node_selection_change)
 
         self.max_neuron_num_per_layer = new_network.layers_dimensions
 
@@ -359,7 +366,8 @@ class NeuronPicker(DialogBase):
             neuron_spin.blockSignals(False)
 
         # Reset stored choices
-        self.current_neurons = [(0, min(i, self.max_neuron_num_per_layer[i] - 1)) for i in range(self.num_neurons)]
+        for i in range(self.num_neurons):
+            self.current_neurons[i] = (0, min(i, self.max_neuron_num_per_layer[0] - 1) if self.max_neuron_num_per_layer[0] > 0 else 0)
 
         # Visual update
         if self.network_presentation.count() > 0:
@@ -371,6 +379,8 @@ class NeuronPicker(DialogBase):
         self.network_presentation.insertWidget(0, self.network_widget)
 
         for i, (layer, neuron) in enumerate(self.current_neurons):
+            if self.network_widget.network_is_empty():
+                break
             self.network_widget.select_node(layer, neuron, self.neuron_colors[i])
             self.node_spin_boxes[i][0].setValue(layer)
             self.node_spin_boxes[i][1].setValue(neuron)

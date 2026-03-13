@@ -167,7 +167,7 @@ class PlotWidget(QWidget):
                 continue
             if len(colors) < len(polygons):
                 for i in range(len(polygons) - len(colors)):
-                    colors.append("0x00000")
+                    colors.append(QColor(0,0,0))
 
             face_color = colors[index]
             edge_color = face_color.darker(150)

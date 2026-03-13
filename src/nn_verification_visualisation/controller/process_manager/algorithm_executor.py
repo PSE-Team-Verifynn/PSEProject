@@ -34,6 +34,12 @@ class AlgorithmExecutor:
             output_bounds = fn_res.data(modified_model, input_bounds)
             return Success((output_bounds, directions))
         except BaseException as e:
+            tb = e.__traceback__
+            import traceback
+            from logging import Logger
+            logger = Logger(__name__)
+            logger.error(f"Error while executing algorithm: {e}, traceback: {traceback.format_tb(tb)}")
+            traceback.print_tb(tb)
             return Failure(e)
 
     @staticmethod
