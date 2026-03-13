@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import onnx
 import onnxruntime as ort
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 ROOT = Path(__file__).resolve().parents[1]
 QS_DIR = ROOT / "QS"
@@ -349,3 +350,141 @@ def write_gui_testplan(rows: list[dict]) -> None:
     lines.append("- TS1 in QS/TS1/ts1.txt")
     lines.append("- TS2 in QS/TS2/ts2.txt")
     (GUI_OUT_DIR / "gui_testplan.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_gui_status_diagram(rows: list[dict], output_path: Path) -> None:
+    count = max(len(rows), 1)
+    top_margin = 2.4
+    bottom_margin = 0.8
+    row_gap = 1.08
+    first_row_y = bottom_margin + row_gap * (count - 1)
+    fig_height = max(7.8, first_row_y + top_margin + 1.2)
+    fig, axis = plt.subplots(figsize=(12.4, fig_height))
+    background = "#f1f5f9"
+    axis_width = 12.0
+    axis_height = first_row_y + top_margin + 0.9
+
+    fig.patch.set_facecolor(background)
+    axis.set_facecolor(background)
+    axis.set_xlim(0, axis_width)
+    axis.set_ylim(0, axis_height)
+    axis.axis("off")
+
+    # Soft page panel to give the diagram structure without crowding the first row.
+    axis.add_patch(
+        FancyBboxPatch(
+            (0.45, 0.28),
+            axis_width - 0.9,
+            axis_height - 0.52,
+            boxstyle="round,pad=0.18,rounding_size=0.22",
+            linewidth=1.2,
+            edgecolor="#cbd5e1",
+            facecolor="#ffffff",
+            zorder=0,
+        )
+    )
+
+    axis.text(
+        0.95,
+        axis_height - 0.8,
+        "GUI Smoke Test Summary",
+        fontsize=21,
+        fontweight="bold",
+        color="#0f172a",
+        ha="left",
+        va="center",
+    )
+    axis.text(
+        0.95,
+        axis_height - 1.32,
+        "Each executed check is shown with its final status.",
+        fontsize=10.5,
+        color="#475569",
+        ha="left",
+        va="center",
+    )
+
+    x_start = 1.1
+    box_width = 9.8
+    box_height = 0.74
+
+    for index, row in enumerate(rows):
+        y = first_row_y - index * row_gap
+        passed = bool(row["passed"])
+        border = "#16a34a" if passed else "#dc2626"
+        fill = "#ecfdf3" if passed else "#fef2f2"
+        accent = "#166534" if passed else "#991b1b"
+        status = "passed" if passed else "failed"
+        label = row["check"].replace("_", " ").title()
+
+        if index < len(rows) - 1:
+            next_y = first_row_y - (index + 1) * row_gap
+            axis.add_patch(
+                FancyArrowPatch(
+                    (x_start + box_width / 2, y - box_height / 2 - 0.07),
+                    (x_start + box_width / 2, next_y + box_height / 2 + 0.07),
+                    arrowstyle="-|>",
+                    mutation_scale=13,
+                    linewidth=1.5,
+                    color="#cbd5e1",
+                    zorder=1,
+                )
+            )
+
+        axis.add_patch(
+            FancyBboxPatch(
+                (x_start, y - box_height / 2),
+                box_width,
+                box_height,
+                boxstyle="round,pad=0.15,rounding_size=0.13",
+                linewidth=1.6,
+                edgecolor=border,
+                facecolor=fill,
+                zorder=2,
+            )
+        )
+
+        axis.add_patch(
+            FancyBboxPatch(
+                (x_start + box_width - 1.62, y - 0.23),
+                1.18,
+                0.46,
+                boxstyle="round,pad=0.08,rounding_size=0.18",
+                linewidth=0,
+                edgecolor=accent,
+                facecolor="#dcfce7" if passed else "#fee2e2",
+                zorder=3,
+            )
+        )
+
+        axis.text(
+            x_start + 0.36,
+            y,
+            label,
+            fontsize=12.2,
+            color="#0f172a",
+            va="center",
+            ha="left",
+            zorder=4,
+        )
+        axis.text(
+            x_start + box_width - 1.03,
+            y,
+            status,
+            fontsize=10.6,
+            fontweight="bold",
+            color=accent,
+            va="center",
+            ha="center",
+            zorder=4,
+        )
+
+    fig.subplots_adjust(left=0.035, right=0.985, top=0.99, bottom=0.03)
+    fig.savefig(output_path, dpi=180, facecolor=fig.get_facecolor())
+    plt.close(fig)
+
+
+def write_gui_outputs(rows: list[dict]) -> None:
+    write_json(GUI_OUT_DIR / "gui_smoke_results.json", rows)
+    write_gui_testplan(rows)
+    write_gui_status_diagram(rows, GUI_OUT_DIR / "gui_status_diagram.png")

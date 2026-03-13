@@ -8,7 +8,7 @@ sys.path.insert(0, str(BASE_DIR / "GUI"))
 sys.path.insert(0, str(BASE_DIR / "QUALITY"))
 sys.path.insert(0, str(BASE_DIR / "PROFILING"))
 
-from qs_common import GUI_OUT_DIR, PROFILING_OUT_DIR, QS_DIR, QUALITY_OUT_DIR, ensure_output_dir, write_json
+from qs_common import GUI_OUT_DIR, PROFILING_OUT_DIR, QS_DIR, QUALITY_OUT_DIR, ensure_output_dir, write_gui_outputs, write_json
 from run_gui_qs import run_gui_smoke_tests
 from run_profiling_qs import run_profiling_checks
 from run_quality_qs import run_quality_checks
@@ -21,6 +21,7 @@ def main() -> None:
     ensure_output_dir(PROFILING_OUT_DIR)
 
     gui_rows = run_gui_smoke_tests()
+    write_gui_outputs(gui_rows)
     quality_rows = run_quality_checks()
     profiling_rows = run_profiling_checks()
 

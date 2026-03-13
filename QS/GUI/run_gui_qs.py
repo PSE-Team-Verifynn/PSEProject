@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
+
+ROOT_PATH = Path(__file__).resolve().parents[2]
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/mpl")
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+sys.path.insert(0, str(ROOT_PATH / "src"))
+sys.path.insert(0, str(ROOT_PATH / "QS"))
 
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -14,9 +21,7 @@ from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.view.base_view.color_manager import ColorManager
 from nn_verification_visualisation.view.base_view.main_window import MainWindow
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from qs_common import GUI_OUT_DIR, ROOT, ensure_output_dir, write_gui_testplan, write_json
+from qs_common import GUI_OUT_DIR, ROOT, ensure_output_dir, write_gui_outputs
 
 
 def _reset_storage() -> None:
@@ -246,8 +251,7 @@ def run_gui_smoke_tests() -> list[dict]:
 def main() -> None:
     ensure_output_dir(GUI_OUT_DIR)
     rows = run_gui_smoke_tests()
-    write_json(GUI_OUT_DIR / "gui_smoke_results.json", rows)
-    write_gui_testplan(rows)
+    write_gui_outputs(rows)
     print({"gui_checks_passed": all(row["passed"] for row in rows), "gui_checks": len(rows)})
 
 
