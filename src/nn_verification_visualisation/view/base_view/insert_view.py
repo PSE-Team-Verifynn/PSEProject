@@ -1,15 +1,13 @@
+import platform
 from typing import List, Callable
-
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout, QMenu, \
-    QGraphicsDropShadowEffect, QSizePolicy
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedLayout, QPushButton, QHBoxLayout
 from PySide6.QtCore import Qt, QRect, QEvent
-from PySide6.QtGui import QIcon, QColor, QCursor
+from PySide6.QtGui import QIcon, QCursor
 
 from nn_verification_visualisation.view.base_view.action_menu import ActionMenu
 from nn_verification_visualisation.view.base_view.tabs import Tabs
 from nn_verification_visualisation.view.dialogs.dialog_base import DialogBase
 from PySide6.QtCore import QSize
-from nn_verification_visualisation.model.data.storage import Storage
 
 
 class InsertView(QWidget):
@@ -131,7 +129,7 @@ class InsertView(QWidget):
         return super().eventFilter(obj, event)
 
     def __action_menu_open_close(self, menu_button: QPushButton):
-        if self._suppress_next_open:
+        if self._suppress_next_open and platform.system() == "Windows":
             self._suppress_next_open = False
             return
         self.action_menu = ActionMenu(self)
