@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import argparse
+import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -27,7 +30,7 @@ NETWORK_CASES = [
     ("simple_3_layer_x10", ROOT / "TestFiles" / "simple_3_layer_net x10.onnx"),
     ("simple_3_layer_x50", ROOT / "TestFiles" / "simple_3_layer_net x50.onnx"),
     ("simple_3_layer_x100", ROOT / "TestFiles" / "simple_3_layer_net x100.onnx"),
-    ("NN1_small", ROOT / "TestFiles" / "NN1.onnx"),
+    ("NN1", ROOT / "TestFiles" / "NN1.onnx"),
 ]
 
 
@@ -79,34 +82,71 @@ def _measure_blank_startup(app: QApplication) -> tuple[MainWindow, float, int, i
     return window, startup_time_ms, baseline_rss_kb, startup_peak_rss_kb, startup_memory_kb
 
 
-def _measure_network_loads(app: QApplication, window: MainWindow) -> list[dict]:
-    rows: list[dict] = []
+def _measure_single_network_load(app: QApplication, window: MainWindow, case_name: str, network_path: Path) -> dict:
     network_view = window.base_view.network_view
+    initial_tab_count = network_view.tabs.count()
+    startup_peak_rss_kb = maxrss_kb()
+    started_at = time.perf_counter()
+    with patch.object(network_view, "open_network_file_picker", return_value=str(network_path)), patch.object(
+        Storage, "request_autosave", lambda self: None
+    ):
+        config = network_view.controller.load_new_network()
+    _pump_events(app, 0.18)
+    elapsed_ms = round((time.perf_counter() - started_at) * 1000, 3)
+    load_peak_rss_kb = maxrss_kb()
 
+    tab_index = network_view.tabs.count() - 1
+    scene_items = _scene_item_count(window, tab_index)
+    return {
+        "case": case_name,
+        "network_path": str(network_path),
+        "load_to_display_ms": elapsed_ms,
+        "tab_count_before": initial_tab_count,
+        "tab_count_after": network_view.tabs.count(),
+        "scene_items": scene_items,
+        "loaded": config is not None,
+        "isolated_process": True,
+        "startup_peak_rss_kb_before_load": startup_peak_rss_kb,
+        "load_peak_rss_kb": load_peak_rss_kb,
+        "load_memory_kb": max(load_peak_rss_kb - startup_peak_rss_kb, 0),
+    }
+
+
+def _close_window(app: QApplication, window: MainWindow) -> None:
+    window.exit_confirmed = True
+    window.close()
+    _pump_events(app, 0.05)
+    app.quit()
+
+
+def _measure_single_network_case(case_name: str, network_path: Path) -> dict:
+    _reset_storage()
+    app = QApplication.instance() or QApplication([])
+    app.setStyle("Fusion")
+
+    window, startup_time_ms, baseline_rss_kb, startup_peak_rss_kb, startup_memory_kb = _measure_blank_startup(app)
+    row = _measure_single_network_load(app, window, case_name, network_path)
+    row["startup_time_ms_before_load"] = startup_time_ms
+    row["startup_memory_kb_before_load"] = startup_memory_kb
+    row["baseline_rss_kb"] = baseline_rss_kb
+    row["startup_peak_rss_kb"] = startup_peak_rss_kb
+
+    _close_window(app, window)
+    return row
+
+
+def _measure_network_loads_isolated() -> list[dict]:
+    rows: list[dict] = []
+    script_path = Path(__file__).resolve()
     for case_name, network_path in NETWORK_CASES:
-        initial_tab_count = network_view.tabs.count()
-        started_at = time.perf_counter()
-        with patch.object(network_view, "open_network_file_picker", return_value=str(network_path)), patch.object(
-            Storage, "request_autosave", lambda self: None
-        ):
-            config = network_view.controller.load_new_network()
-        _pump_events(app, 0.18)
-        elapsed_ms = round((time.perf_counter() - started_at) * 1000, 3)
-
-        tab_index = network_view.tabs.count() - 1
-        scene_items = _scene_item_count(window, tab_index)
-        rows.append(
-            {
-                "case": case_name,
-                "network_path": str(network_path),
-                "load_to_display_ms": elapsed_ms,
-                "tab_count_before": initial_tab_count,
-                "tab_count_after": network_view.tabs.count(),
-                "scene_items": scene_items,
-                "loaded": config is not None,
-            }
+        completed = subprocess.run(
+            [sys.executable, str(script_path), "--measure-case", case_name],
+            check=True,
+            capture_output=True,
+            text=True,
         )
-
+        stdout_lines = [line for line in completed.stdout.splitlines() if line.strip()]
+        rows.append(json.loads(stdout_lines[-1]))
     return rows
 
 
@@ -116,16 +156,13 @@ def measure_gui_performance() -> dict:
     app.setStyle("Fusion")
 
     window, startup_time_ms, baseline_rss_kb, startup_peak_rss_kb, startup_memory_kb = _measure_blank_startup(app)
-    load_rows = _measure_network_loads(app, window)
-
-    window.exit_confirmed = True
-    window.close()
-    _pump_events(app, 0.05)
-    app.quit()
+    _close_window(app, window)
+    load_rows = _measure_network_loads_isolated()
 
     return {
         "mode": "non-headless",
         "startup_target": "main_window_shown_and_initial_events_processed",
+        "network_load_target": "network_loaded_into_fresh_gui_process_and_displayed",
         "startup_time_ms": startup_time_ms,
         "baseline_rss_kb": baseline_rss_kb,
         "startup_peak_rss_kb": startup_peak_rss_kb,
@@ -134,7 +171,19 @@ def measure_gui_performance() -> dict:
     }
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--measure-case", choices=[case_name for case_name, _ in NETWORK_CASES])
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = _parse_args()
+    if args.measure_case:
+        network_path = dict(NETWORK_CASES)[args.measure_case]
+        print(json.dumps(_measure_single_network_case(args.measure_case, network_path)))
+        return
+
     ensure_output_dir(GUI_OUT_DIR)
     payload = measure_gui_performance()
     write_gui_performance_outputs(payload)

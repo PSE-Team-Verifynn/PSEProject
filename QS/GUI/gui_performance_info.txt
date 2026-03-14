@@ -2,8 +2,9 @@ GUI performance runtime information
 
 Mode: non-headless
 Startup target: main_window_shown_and_initial_events_processed
-Startup time (ms): 530.111
-Startup memory delta (kB): 19732
+Network load target: network_loaded_into_fresh_gui_process_and_displayed
+Startup time (ms): 593.408
+Startup memory delta (kB): 19868
 
 What this measures for startup:
 - QApplication creation
@@ -11,11 +12,17 @@ What this measures for startup:
 - MainWindow construction
 - initial show call and first processed GUI events
 
+What this measures for network load:
+- one fresh GUI process per network case
+- ONNX load and validation
+- tab creation and network scene construction
+- GUI event processing until the network can be displayed
+
 Per-network load measurements:
-- simple_3_layer_x10: 499.341 ms, scene items=142
-- simple_3_layer_x50: 1083.98 ms, scene items=605
-- simple_3_layer_x100: 2054.473 ms, scene items=1405
-- NN1_small: 311.096 ms, scene items=2017
+- simple_3_layer_x10: 764.408 ms, load memory delta=21956 kB, scene items=142
+- simple_3_layer_x50: 1691.123 ms, load memory delta=53184 kB, scene items=605
+- simple_3_layer_x100: 3562.04 ms, load memory delta=103120 kB, scene items=1405
+- NN1: 421.838 ms, load memory delta=48500 kB, scene items=2017
 
 Result files:
 - QS/GUI/gui_performance_results.json

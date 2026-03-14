@@ -504,14 +504,14 @@ def write_gui_outputs(rows: list[dict]) -> None:
 def write_gui_performance_plot(payload: dict, output_path: Path) -> None:
     startup_ms = float(payload["startup_time_ms"])
     startup_memory_mb = round(float(payload.get("startup_memory_kb", 0)) / 1024, 3)
-    profiling_rows = json.loads((PROFILING_OUT_DIR / "profiling_results.json").read_text(encoding="utf-8"))
-    labels = ["gui_startup"] + [row["case"] for row in profiling_rows]
-    time_values_ms = [startup_ms] + [row["algorithm_runtime_ms"] for row in profiling_rows]
-    memory_values_mb = [startup_memory_mb] + [round(row["algorithm_memory_kb"] / 1024, 3) for row in profiling_rows]
+    load_rows = payload.get("network_load_results", [])
+    labels = ["gui_startup"] + [row["case"] for row in load_rows]
+    time_values_ms = [startup_ms] + [float(row["load_to_display_ms"]) for row in load_rows]
+    memory_values_mb = [startup_memory_mb] + [round(float(row.get("load_memory_kb", 0)) / 1024, 3) for row in load_rows]
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.8))
 
     time_bars = axes[0].bar(labels, time_values_ms, color="#2563eb", width=0.62)
-    axes[0].set_title("Startup vs Algorithm Runtime")
+    axes[0].set_title("Startup vs Network Load-to-Display")
     axes[0].set_ylabel("ms")
     axes[0].grid(axis="y", alpha=0.15)
     axes[0].tick_params(axis="x", rotation=20)
@@ -519,7 +519,7 @@ def write_gui_performance_plot(payload: dict, output_path: Path) -> None:
         axes[0].text(bar.get_x() + bar.get_width() / 2, value, f"{value:.1f}", ha="center", va="bottom", fontsize=9.5)
 
     memory_bars = axes[1].bar(labels, memory_values_mb, color="#dc2626", width=0.62)
-    axes[1].set_title("Startup vs Algorithm Memory")
+    axes[1].set_title("Startup vs Network Load Memory Delta")
     axes[1].set_ylabel("MB")
     axes[1].tick_params(axis="x", rotation=20)
     axes[1].grid(axis="y", alpha=0.15)
@@ -539,6 +539,7 @@ def write_gui_performance_outputs(payload: dict) -> None:
         "",
         f"Mode: {payload['mode']}",
         f"Startup target: {payload['startup_target']}",
+        f"Network load target: {payload.get('network_load_target', 'network_loaded_and_displayed')}",
         f"Startup time (ms): {payload['startup_time_ms']}",
         f"Startup memory delta (kB): {payload.get('startup_memory_kb', 0)}",
         "",
@@ -548,10 +549,19 @@ def write_gui_performance_outputs(payload: dict) -> None:
         "- MainWindow construction",
         "- initial show call and first processed GUI events",
         "",
+        "What this measures for network load:",
+        "- one fresh GUI process per network case",
+        "- ONNX load and validation",
+        "- tab creation and network scene construction",
+        "- GUI event processing until the network can be displayed",
+        "",
         "Per-network load measurements:",
     ]
     for row in payload["network_load_results"]:
-        lines.append(f"- {row['case']}: {row['load_to_display_ms']} ms, scene items={row['scene_items']}")
+        lines.append(
+            f"- {row['case']}: {row['load_to_display_ms']} ms, load memory delta={row.get('load_memory_kb', 0)} kB, "
+            f"scene items={row['scene_items']}"
+        )
     lines.extend([
         "",
         "Result files:",
