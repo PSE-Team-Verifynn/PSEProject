@@ -1,0 +1,22 @@
+GUI performance runtime information
+
+Mode: non-headless
+Startup target: main_window_shown_and_initial_events_processed
+Startup time (ms): 530.111
+Startup memory delta (kB): 19732
+
+What this measures for startup:
+- QApplication creation
+- style and color manager setup
+- MainWindow construction
+- initial show call and first processed GUI events
+
+Per-network load measurements:
+- simple_3_layer_x10: 499.341 ms, scene items=142
+- simple_3_layer_x50: 1083.98 ms, scene items=605
+- simple_3_layer_x100: 2054.473 ms, scene items=1405
+- NN1_small: 311.096 ms, scene items=2017
+
+Result files:
+- QS/GUI/gui_performance_results.json
+- QS/GUI/gui_performance_diagram.png

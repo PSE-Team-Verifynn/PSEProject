@@ -1,0 +1,5 @@
+{
+  "mode": "non-headless",
+  "startup_target": "main_window_show_event",
+  "startup_time_ms": 342.514
+}

@@ -1,5 +1,5 @@
-case,runtime_ms,maxrss_kb
-simple_3_layer_x10,4.615,107080
-simple_3_layer_x50,27.853,108732
-simple_3_layer_x100,207.455,129616
-NN1_small,219.445,141980
+case,load_runtime_ms,algorithm_runtime_ms,runtime_ms,baseline_rss_kb,loaded_rss_kb,load_memory_kb,algorithm_memory_kb,peak_rss_kb,maxrss_kb
+simple_3_layer_x10,64.897,44.526,109.423,132828,138812,5984,476,139008,139008
+simple_3_layer_x50,21.282,464.034,485.316,132380,139424,7044,7632,147120,147120
+simple_3_layer_x100,26.297,2907.102,2933.399,132648,146792,14144,46588,193160,193160
+NN1_small,33.892,4541.008,4574.9,132636,159304,26668,52964,212188,212188

@@ -317,19 +317,30 @@ def write_quality_summary(rows: list[dict], output_path: Path, suite_name: str) 
 
 def write_profiling_plot(rows: list[dict]) -> None:
     labels = [row["case"] for row in rows]
-    runtime_ms = [row["runtime_ms"] for row in rows]
-    memory_mb = [round(row["maxrss_kb"] / 1024, 3) for row in rows]
+    load_runtime_ms = [row["load_runtime_ms"] for row in rows]
+    algorithm_runtime_ms = [row["algorithm_runtime_ms"] for row in rows]
+    load_memory_mb = [round(row["load_memory_kb"] / 1024, 3) for row in rows]
+    algorithm_memory_mb = [round(row["algorithm_memory_kb"] / 1024, 3) for row in rows]
+    baseline_memory_mb = [round(row["baseline_rss_kb"] / 1024, 3) for row in rows]
+    peak_memory_mb = [round(row["peak_rss_kb"] / 1024, 3) for row in rows]
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
-    axes[0].plot(labels, runtime_ms, marker="o", color="#2563eb")
-    axes[0].set_title("Runtime by network")
+    fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.8))
+    axes[0].bar(labels, load_runtime_ms, color="#60a5fa", label="Load")
+    axes[0].bar(labels, algorithm_runtime_ms, bottom=load_runtime_ms, color="#2563eb", label="Algorithm")
+    axes[0].set_title("Runtime split by network")
     axes[0].set_ylabel("ms")
     axes[0].tick_params(axis="x", rotation=20)
+    axes[0].legend(loc="best")
 
-    axes[1].plot(labels, memory_mb, marker="o", color="#dc2626")
-    axes[1].set_title("Peak memory by network")
+    axes[1].bar(labels, baseline_memory_mb, color="#cbd5e1", label="Program baseline")
+    axes[1].bar(labels, load_memory_mb, bottom=baseline_memory_mb, color="#f59e0b", label="Model load delta")
+    stacked_memory_mb = [baseline + load for baseline, load in zip(baseline_memory_mb, load_memory_mb)]
+    axes[1].bar(labels, algorithm_memory_mb, bottom=stacked_memory_mb, color="#dc2626", label="Algorithm delta")
+    axes[1].plot(labels, peak_memory_mb, marker="o", color="#111827", linewidth=2, label="Peak RSS")
+    axes[1].set_title("Memory split by network")
     axes[1].set_ylabel("MB")
     axes[1].tick_params(axis="x", rotation=20)
+    axes[1].legend(loc="best")
 
     fig.tight_layout()
     fig.savefig(PROFILING_OUT_DIR / "profiling_metrics.png", dpi=160)
@@ -488,3 +499,63 @@ def write_gui_outputs(rows: list[dict]) -> None:
     write_json(GUI_OUT_DIR / "gui_smoke_results.json", rows)
     write_gui_testplan(rows)
     write_gui_status_diagram(rows, GUI_OUT_DIR / "gui_status_diagram.png")
+
+
+def write_gui_performance_plot(payload: dict, output_path: Path) -> None:
+    startup_ms = float(payload["startup_time_ms"])
+    startup_memory_mb = round(float(payload.get("startup_memory_kb", 0)) / 1024, 3)
+    profiling_rows = json.loads((PROFILING_OUT_DIR / "profiling_results.json").read_text(encoding="utf-8"))
+    labels = ["gui_startup"] + [row["case"] for row in profiling_rows]
+    time_values_ms = [startup_ms] + [row["algorithm_runtime_ms"] for row in profiling_rows]
+    memory_values_mb = [startup_memory_mb] + [round(row["algorithm_memory_kb"] / 1024, 3) for row in profiling_rows]
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.8))
+
+    time_bars = axes[0].bar(labels, time_values_ms, color="#2563eb", width=0.62)
+    axes[0].set_title("Startup vs Algorithm Runtime")
+    axes[0].set_ylabel("ms")
+    axes[0].grid(axis="y", alpha=0.15)
+    axes[0].tick_params(axis="x", rotation=20)
+    for bar, value in zip(time_bars, time_values_ms):
+        axes[0].text(bar.get_x() + bar.get_width() / 2, value, f"{value:.1f}", ha="center", va="bottom", fontsize=9.5)
+
+    memory_bars = axes[1].bar(labels, memory_values_mb, color="#dc2626", width=0.62)
+    axes[1].set_title("Startup vs Algorithm Memory")
+    axes[1].set_ylabel("MB")
+    axes[1].tick_params(axis="x", rotation=20)
+    axes[1].grid(axis="y", alpha=0.15)
+    for bar, value in zip(memory_bars, memory_values_mb):
+        axes[1].text(bar.get_x() + bar.get_width() / 2, value, f"{value:.1f}", ha="center", va="bottom", fontsize=9.5)
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
+def write_gui_performance_outputs(payload: dict) -> None:
+    write_json(GUI_OUT_DIR / "gui_performance_results.json", payload)
+    write_gui_performance_plot(payload, GUI_OUT_DIR / "gui_performance_diagram.png")
+    lines = [
+        "GUI performance runtime information",
+        "",
+        f"Mode: {payload['mode']}",
+        f"Startup target: {payload['startup_target']}",
+        f"Startup time (ms): {payload['startup_time_ms']}",
+        f"Startup memory delta (kB): {payload.get('startup_memory_kb', 0)}",
+        "",
+        "What this measures for startup:",
+        "- QApplication creation",
+        "- style and color manager setup",
+        "- MainWindow construction",
+        "- initial show call and first processed GUI events",
+        "",
+        "Per-network load measurements:",
+    ]
+    for row in payload["network_load_results"]:
+        lines.append(f"- {row['case']}: {row['load_to_display_ms']} ms, scene items={row['scene_items']}")
+    lines.extend([
+        "",
+        "Result files:",
+        "- QS/GUI/gui_performance_results.json",
+        "- QS/GUI/gui_performance_diagram.png",
+    ])
+    (GUI_OUT_DIR / "gui_performance_info.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")

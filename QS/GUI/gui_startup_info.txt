@@ -1,0 +1,16 @@
+GUI startup runtime information
+
+Startup mode: non-headless
+Startup target: main_window_show_event
+Startup time (ms): 342.514
+
+What this measures:
+- QApplication creation
+- style and color manager setup
+- MainWindow construction
+- initial show call
+- first visible/show event on the main window
+
+Result files:
+- QS/GUI/gui_startup_results.json
+- QS/GUI/gui_startup_diagram.png

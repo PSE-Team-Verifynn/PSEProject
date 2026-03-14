@@ -4,8 +4,12 @@ Command used:
 mkdir -p /tmp/mpl && MPLCONFIGDIR=/tmp/mpl PYTHONPATH=src QT_QPA_PLATFORM=offscreen .venv/bin/python QS/PROFILING/run_profiling_qs.py
 
 What the script measures:
-- Runtime is measured with time.perf_counter()
-- Peak memory is measured with resource.getrusage(...).ru_maxrss
+- Load runtime is measured with time.perf_counter() around network loading and default-bounds setup
+- Algorithm runtime is measured with time.perf_counter() around AlgorithmExecutor().execute_algorithm(...)
+- Program baseline memory is the worker-process peak RSS before the network is loaded
+- Model load delta is the peak RSS increase caused by the load-only worker
+- Algorithm delta is the additional peak RSS increase caused by the algorithm after the model has already been loaded
+- Peak memory is still recorded with resource.getrusage(...).ru_maxrss
 - The algorithm used is algorithms/box_ibp_numpy.py
 - Default input bounds are (0.0, 1.0) for every input dimension
 
