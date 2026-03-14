@@ -82,19 +82,20 @@ def test_load_new_network_and_remove(monkeypatch, qapp):
     Storage().networks = []
 
     cfg = ctrl.load_new_network()
-    assert cfg is not None
-    assert cfg.layers_dimensions == [4, 3, 2]
+    assert cfg.is_success
+    network = cfg.data
+    assert network.layers_dimensions == [4, 3, 2]
     assert len(Storage().networks) == 1
-    assert v.tabs == [cfg]
+    assert v.tabs == [network]
 
     # remove existing + missing
-    assert ctrl.remove_neural_network(cfg) is True
-    assert ctrl.remove_neural_network(cfg) is False
+    assert ctrl.remove_neural_network(network) is True
+    assert ctrl.remove_neural_network(network) is False
 
     # failure
     monkeypatch.setattr(NeuralNetworkLoader, "load_neural_network",
                         lambda self, p: Failure(RuntimeError("bad")), raising=True)
-    assert mod.NetworkViewController(View("b.onnx")).load_new_network() is None
+    assert not mod.NetworkViewController(View("b.onnx")).load_new_network().is_success
 
 
 def test_bounds_workflow_and_signal(monkeypatch, qapp):
