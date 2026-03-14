@@ -117,7 +117,7 @@ class NetworkModifier:
         offset = 0
         if model.graph.initializer[0].dims.__len__() > 3:                     # adds an offset to the layer iteration if a preprocess layer exists (problem if there are more)
             offset = 1
-        dirty_trick_constant = 10000                                           # this is the constant for fooling relu on bridge neurons
+        dirty_trick_constant = 500                                          # this is the constant for fooling relu on bridge neurons
         for neuron in neurons:
             for layer in range(2 * neuron[0] + offset, model.graph.initializer.__len__() - 1):   # goes through all layers following
                 if model.graph.initializer[layer].dims.__len__() < 3:
