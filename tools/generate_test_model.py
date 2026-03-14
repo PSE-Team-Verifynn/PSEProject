@@ -99,7 +99,6 @@ def build_model(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate a minimal test ONNX model.")
-    parser.add_argument("--out", required=True, help="Output ONNX file path")
     parser.add_argument("--input-dim", type=int, default=4)
     parser.add_argument("--hidden-dim", type=int, default=8)
     parser.add_argument("--output-dim", type=int, default=2)
@@ -119,7 +118,7 @@ def main() -> None:
             hidden_dims.append(args.hidden_dim2)
 
     model = build_model(args.input_dim, hidden_dims, args.output_dim, args.seed)
-    onnx.save(model, args.out)
+    onnx.save_model(model, "Test8", "textproto", save_as_external_data=True)
 
 
 if __name__ == "__main__":
