@@ -14,6 +14,7 @@ class NetworkLayerLine(QGraphicsLineItem):
         super().__init__()
 
         self.setLine(x_pos, top_y, x_pos, bot_y)
+        self.setAcceptedMouseButtons(Qt.NoButton)
 
         # Style the line to look like a "spine" for the nodes
         pen = QPen(QColor(80, 80, 80))
@@ -46,6 +47,8 @@ class NetworkNode(QGraphicsEllipseItem):
         self.layer_index = layer_index
         self.on_click = on_click
         self.selectable = selectable
+
+        self.setAcceptedMouseButtons(Qt.NoButton)
 
         self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
 
