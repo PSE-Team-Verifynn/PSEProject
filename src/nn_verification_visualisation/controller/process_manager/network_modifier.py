@@ -152,11 +152,11 @@ class NetworkModifier:
                             else:
                                 model.graph.initializer[layer].float_data.append(0)
         for neuron_ind in range(0, neurons.__len__()):          # changes the last initializer to match the output
-            if 2 * neurons[neuron_ind][0] == model.graph.initializer.__len__() - 2:
+            if 2 * neurons[neuron_ind][0] + offset == model.graph.initializer.__len__() - 2 :
                 for direction in range(0, directions.__len__()):                    # adds the values of the directions into the last matrix multiplication
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.remove(0)
                     (model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.insert(
-                     model.graph.initializer[model.graph.initializer.__len__() - 2].dims[1] * (neurons[neuron_ind][1] + 1 ),directions[direction][neuron_ind]))
+                     model.graph.initializer[model.graph.initializer.__len__() - 2].dims[1] * (neurons[neuron_ind][1] + 1 ) - 1,directions[direction][neuron_ind]))
             else:
                 for direction in directions:
                     model.graph.initializer[model.graph.initializer.__len__() - 2].float_data.append(direction[neuron_ind])
