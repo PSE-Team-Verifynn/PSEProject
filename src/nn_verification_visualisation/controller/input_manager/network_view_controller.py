@@ -11,6 +11,7 @@ from nn_verification_visualisation.model.data.neural_network import NeuralNetwor
 from nn_verification_visualisation.model.data.storage import Storage
 from nn_verification_visualisation.model.data_loader.input_bounds_loader import InputBoundsLoader
 from nn_verification_visualisation.model.data_loader.neural_network_loader import NeuralNetworkLoader
+from nn_verification_visualisation.utils.result import Result, Failure, Success
 from nn_verification_visualisation.view.dialogs.info_popup import InfoPopup
 from nn_verification_visualisation.view.dialogs.info_type import InfoType
 from nn_verification_visualisation.view.dialogs.network_management_dialog import NetworkManagementDialog
@@ -88,17 +89,17 @@ class NetworkViewController:
         self.current_network_view.open_dialog(InfoPopup(self.current_network_view.close_dialog, text, dialog_type))
         return result.is_success
 
-    def load_new_network(self) -> NetworkVerificationConfig | None:
+    def load_new_network(self) -> Result[NetworkVerificationConfig]:
         '''
         loads a new network from the path that the user picks
         :return: the network that is found at the given path
         '''
         path = self.current_network_view.open_network_file_picker("ONNX-Files (*.onnx);; All Files (*)")
         if path is None:
-            return None
+            return Failure(BaseException(""))
         result = NeuralNetworkLoader().load_neural_network(path)
         if not result.is_success:
-            return None
+            return Failure(result.error)
         layer_dimensions = self.get_layer_dimensions_from_network(result.data)
 
         network = NetworkVerificationConfig(result.data,layer_dimensions)   #layer_dimensions is used for visualization of the network
@@ -112,7 +113,7 @@ class NetworkViewController:
         self.current_network_view.add_network_tab(network)
         self.current_tab = len(storage.networks)
 
-        return network
+        return Success(network)
 
     @staticmethod
     def get_layer_dimensions_from_network(network: NeuralNetwork):

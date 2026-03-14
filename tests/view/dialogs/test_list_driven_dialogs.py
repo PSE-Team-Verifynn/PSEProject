@@ -30,7 +30,7 @@ def _make_plot_controller():
 def test_network_management_dialog_uses_storage_names_and_adds_loaded_network(qapp):
     controller = MagicMock()
     controller.current_network_view.close_dialog = Mock()
-    controller.load_new_network.return_value = _make_network("Gamma")
+    controller.load_new_network.return_value = Success(_make_network("Gamma"))
 
     with patch("nn_verification_visualisation.view.dialogs.network_management_dialog.Storage") as MockStorage:
         MockStorage.return_value.networks = [_make_network("Alpha"), _make_network("Beta")]
