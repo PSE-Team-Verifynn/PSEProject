@@ -69,22 +69,22 @@ class TestVnncompIntegration:
 
         # Resolve algorithm path
         algo_dir = _resolve_algorithm_dir()
-        algo_path = algo_dir / "input_bounds_check.py"
+        algo_path = algo_dir / "box_ibp_autolirpa.py"
         if not algo_path.exists():
-            pytest.skip(f"box_no_autolirpa.py not found at {algo_path}")
+            pytest.skip(f"box_ibp_autolirpa.py not found at {algo_path}")
 
         layer_dims = NetworkViewController.get_layer_dimensions_from_network(nn)
 
         # Guard: need at least 2 neurons in layer 0 to test both nodes
         layer_0_size = layer_dims[0] if layer_dims else 0
         if layer_0_size < 1:
-            pytest.skip(f"Layer 0 has no neurons in {category}")
+            pytest.skip(f"Layer 0 has no neurons")
 
         selected_neurons = [(0, 0)]
         if layer_0_size >= 2:
             selected_neurons.append((0, 1))
         else:
-            pytest.skip(f"Layer 0 has only 1 neuron in {category}")
+            pytest.skip(f"Layer 0 has only 1 neuron")
 
         # Convert bounds_dict -> np.ndarray shape (N, 2)
         n = len(bounds_dict)
@@ -103,7 +103,7 @@ class TestVnncompIntegration:
         )
 
         assert result.is_success, (
-            f"[{category}] simple_zonotope failed on neurons {selected_neurons}: {result.error}"
+            f"[{category}] box_ibp_autolirpa failed on neurons {selected_neurons}: {result.error}"
         )
 
         output_bounds, directions = result.data
