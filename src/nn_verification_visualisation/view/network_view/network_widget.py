@@ -179,7 +179,7 @@ class NetworkWidget(QGraphicsView):
                     index=j,
                     layer_index=i,
                     radius=self.radius,
-                    selectable=False,
+                    selectable=self.nodes_selectable,
                     on_click=self._on_node_clicked
                 )
 
