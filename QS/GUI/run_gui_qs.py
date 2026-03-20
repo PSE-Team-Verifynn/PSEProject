@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,7 +12,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(ROOT_PATH / "src"))
 sys.path.insert(0, str(ROOT_PATH / "QS"))
 
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication, QListWidget, QPushButton, QWidget
 
 from nn_verification_visualisation import resources_rc
 from nn_verification_visualisation.model.data.algorithm import Algorithm
@@ -33,6 +36,26 @@ def _reset_storage() -> None:
     storage.num_directions = 32
 
 
+def _pump_events(app: QApplication, duration_s: float = 0.12) -> None:
+    deadline = time.perf_counter() + duration_s
+    while time.perf_counter() < deadline:
+        app.processEvents()
+        time.sleep(0.005)
+
+
+def _click_button(button: QPushButton, app: QApplication, duration_s: float = 0.08) -> None:
+    button.show()
+    QTest.mouseClick(button, Qt.LeftButton)
+    _pump_events(app, duration_s)
+
+
+def _find_button(parent: QWidget, text: str) -> QPushButton:
+    for button in parent.findChildren(QPushButton):
+        if button.text() == text:
+            return button
+    raise LookupError(f"Button with text {text!r} not found")
+
+
 def run_gui_smoke_tests() -> list[dict]:
     _reset_storage()
     app = QApplication.instance() or QApplication([])
@@ -44,6 +67,10 @@ def run_gui_smoke_tests() -> list[dict]:
         color_manager.main_window = window
         color_manager.set_colors(ColorManager.NETWORK_COLORS)
 
+    window.show()
+    window.raise_()
+    _pump_events(app, 0.2)
+
     results: list[dict] = []
     results.append(
         {
@@ -52,6 +79,7 @@ def run_gui_smoke_tests() -> list[dict]:
             "details": {
                 "title": window.windowTitle(),
                 "stack_index": window.base_view.stack.currentIndex(),
+                "visible": window.isVisible(),
             },
         }
     )
@@ -66,13 +94,16 @@ def run_gui_smoke_tests() -> list[dict]:
                 "has_central_widget": window.centralWidget() is window.base_view,
                 "network_view_type": window.base_view.network_view.__class__.__name__,
                 "plot_view_type": window.base_view.plot_view.__class__.__name__,
+                "network_view_visible": window.base_view.network_view.isVisible(),
             },
         }
     )
 
-    window.base_view.change_active_view()
+    network_switch = window.base_view.network_view.findChildren(QPushButton, "switch-button")[0]
+    _click_button(network_switch, app)
     plot_ok = window.base_view.active_view is window.base_view.plot_view and window.base_view.stack.currentIndex() == 1
-    window.base_view.change_active_view()
+    plot_switch = window.base_view.plot_view.findChildren(QPushButton, "switch-button")[0]
+    _click_button(plot_switch, app)
     back_ok = window.base_view.active_view is window.base_view.network_view and window.base_view.stack.currentIndex() == 0
     results.append(
         {
@@ -97,20 +128,26 @@ def run_gui_smoke_tests() -> list[dict]:
     with patch.object(window.base_view.network_view, "open_network_file_picker", return_value=str(network_path)), patch.object(
         Storage, "request_autosave", lambda self: None
     ):
-        config = window.base_view.network_view.controller.load_new_network()
+        load_result = window.base_view.network_view.controller.load_new_network()
+    config = getattr(load_result, "data", None)
+    _pump_events(app, 0.2)
 
     network_page = window.base_view.network_view.tabs.widget(0)
     results.append(
         {
             "check": "network_load_real_file",
-            "passed": config is not None
+            "passed": getattr(load_result, "is_success", False)
+            and config is not None
             and len(Storage().networks) == 1
             and network_page.__class__.__name__ == "NetworkPage"
-            and getattr(network_page, "title", None) == "NN1",
+            and getattr(network_page, "title", None) == "NN1"
+            and network_page.isVisible(),
             "details": {
+                "load_succeeded": getattr(load_result, "is_success", False),
                 "storage_networks": len(Storage().networks),
                 "tab_type": network_page.__class__.__name__,
                 "tab_title": getattr(network_page, "title", None),
+                "tab_count": window.base_view.network_view.tabs.count(),
             },
         }
     )
@@ -119,6 +156,7 @@ def run_gui_smoke_tests() -> list[dict]:
         Storage, "request_autosave", lambda self: None
     ):
         bounds_loaded = window.base_view.network_view.controller.load_bounds(config)
+    _pump_events(app, 0.15)
 
     loaded_bounds = config.bounds.get_values()
     results.append(
@@ -132,7 +170,8 @@ def run_gui_smoke_tests() -> list[dict]:
         }
     )
 
-    network_page._NetworkPage__on_save_bounds_clicked()
+    save_button = _find_button(network_page, "Save Bounds")
+    _click_button(save_button, app)
     results.append(
         {
             "check": "bounds_save_via_ui",
@@ -149,12 +188,18 @@ def run_gui_smoke_tests() -> list[dict]:
         }
     )
 
-    network_page._NetworkPage__on_add_bounds_clicked()
+    add_button = _find_button(network_page, "Add Bounds")
+    _click_button(add_button, app)
     edit_mode_ok = (
         config.selected_bounds_index == -1
         and all(min_input.isEnabled() and max_input.isEnabled() for min_input, max_input in network_page.bound_inputs)
+        and network_page.edit_group.isVisible()
     )
-    network_page._NetworkPage__on_remove_bounds_clicked()
+    bounds_list = network_page.findChild(QListWidget)
+    bounds_list.setCurrentRow(0)
+    _pump_events(app, 0.08)
+    remove_button = _find_button(network_page, "Remove Selected Bounds")
+    _click_button(remove_button, app)
     remove_ok = len(config.saved_bounds) == 0 and network_page.bounds_list.count() == 0
     results.append(
         {
@@ -204,7 +249,9 @@ def run_gui_smoke_tests() -> list[dict]:
         "nn_verification_visualisation.view.plot_view.plot_page.PlotSettingsWidget", DummyPlotSettingsWidget
     ), patch.object(Storage, "request_autosave", lambda self: None):
         controller = window.base_view.plot_view.controller
+        _click_button(network_switch, app)
         controller.create_diagram_tab(loading_widget)
+        _pump_events(app, 0.15)
 
     replaced_widget = window.base_view.plot_view.tabs.widget(0)
     results.append(
@@ -212,11 +259,13 @@ def run_gui_smoke_tests() -> list[dict]:
             "check": "diagram_tab_creation",
             "passed": len(Storage().diagrams) == 1
             and len(Storage().diagrams[0].polygons) == 1
-            and replaced_widget.__class__.__name__ == "PlotPage",
+            and replaced_widget.__class__.__name__ == "PlotPage"
+            and replaced_widget.isVisible(),
             "details": {
                 "stored_diagrams": len(Storage().diagrams),
                 "remaining_polygons": len(Storage().diagrams[0].polygons),
                 "tab_widget": replaced_widget.__class__.__name__,
+                "plot_tab_count": window.base_view.plot_view.tabs.count(),
             },
         }
     )
@@ -232,6 +281,7 @@ def run_gui_smoke_tests() -> list[dict]:
     )
 
     window.base_view.plot_view.close_tab(0)
+    _pump_events(app, 0.08)
     results.append(
         {
             "check": "plot_tab_close_removes_storage",

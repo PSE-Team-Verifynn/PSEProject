@@ -4,7 +4,8 @@
     "passed": true,
     "details": {
       "title": "PSE Neuron App",
-      "stack_index": 0
+      "stack_index": 0,
+      "visible": true
     }
   },
   {
@@ -13,7 +14,8 @@
     "details": {
       "has_central_widget": true,
       "network_view_type": "NetworkView",
-      "plot_view_type": "PlotView"
+      "plot_view_type": "PlotView",
+      "network_view_visible": true
     }
   },
   {
@@ -35,9 +37,11 @@
     "check": "network_load_real_file",
     "passed": true,
     "details": {
+      "load_succeeded": true,
       "storage_networks": 1,
       "tab_type": "NetworkPage",
-      "tab_title": "NN1"
+      "tab_title": "NN1",
+      "tab_count": 1
     }
   },
   {
@@ -90,7 +94,8 @@
     "details": {
       "stored_diagrams": 1,
       "remaining_polygons": 1,
-      "tab_widget": "PlotPage"
+      "tab_widget": "PlotPage",
+      "plot_tab_count": 1
     }
   },
   {
