@@ -48,7 +48,6 @@ class NetworkNode(QGraphicsEllipseItem):
         self.on_click = on_click
         self.selectable = selectable
 
-        self.setAcceptedMouseButtons(Qt.NoButton)
 
         self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
 
@@ -57,9 +56,8 @@ class NetworkNode(QGraphicsEllipseItem):
         pen.setCosmetic(True)
         self.setPen(pen)
 
-        if self.selectable:
-            self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
-            self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable)
+        if not self.selectable:
+            self.setAcceptedMouseButtons(Qt.NoButton)
 
     def set_lod_mode(self, enabled: bool):
         self.lod_enabled = enabled
