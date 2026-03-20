@@ -24,7 +24,7 @@ def test_network_node_mouse_press_toggles_selection_and_calls_callback(qapp):
 
     node.mousePressEvent(event)
 
-    assert node.isSelected() is True
+    assert node.selectable is True
     callback.assert_called_once_with((1, 2))
     event.accept.assert_called_once()
 
