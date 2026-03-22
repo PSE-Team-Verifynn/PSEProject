@@ -17,6 +17,11 @@ Make sure that you have Python 3.13 (with pip, venv) and Git installed. Commands
 4. Start the program using the newly generated `start.bat` script.
 5. Alternatively you can create the environment as described in the `ìnstaller.bat` manually (i. e. using a different python version).
 
+### MacOS
+1. Download the .dmg file
+2. Install it as a regular MacOS application
+Note: This version doesn't work on Intel-based devices.
+
 ## Run custom algorithms
 The program comes prepackaged with a base set of algorithms and test files. All algorithms stored in the `algorithms` directory will be recognized by the program.
 Every algorithm consists of a single python file and contains a function with the following signature:
