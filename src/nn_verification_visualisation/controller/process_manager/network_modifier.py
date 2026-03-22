@@ -83,7 +83,6 @@ class NetworkModifier:
         model.graph.node.append(new_node)
         model = NetworkModifier.add_bridge_neurons_before_activation(self, model, neurons, directions)
         model.graph.output[0].type.tensor_type.shape.dim[-1].dim_value =  directions.__len__()  #modifies the output dim, so it matches with the initializers
-        onnx.save_model(model, "Test10","textproto", save_as_external_data=True)
 
         return model
     @staticmethod
