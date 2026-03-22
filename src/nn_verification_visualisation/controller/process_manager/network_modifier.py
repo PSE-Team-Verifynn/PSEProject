@@ -86,7 +86,7 @@ class NetworkModifier:
         onnx.save_model(model, "Test10","textproto", save_as_external_data=True)
 
         return model
-
+    @staticmethod
     def change_initialiser_data_format(self, model:ModelProto) -> ModelProto:
         '''
         This method forces the data format to be float data
@@ -193,7 +193,7 @@ class NetworkModifier:
         dirty_trick_constant = 500  # this is the constant for fooling relu on bridge neurons
         for neuron in neurons:
             neuron_layer_id = 2 * (neuron[0] - 1) + offset
-            if neuron_layer_id > 0 :
+            if neuron_layer_id >= 0 :
                 for layer in range(neuron_layer_id,
                                    model.graph.initializer.__len__() - 1):  # goes through all layers following
                     if model.graph.initializer[layer].dims.__len__() < 3:
