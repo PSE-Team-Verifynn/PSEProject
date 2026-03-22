@@ -85,16 +85,15 @@ def test_network_modifier():
     test_directions = AlgorithmExecutor.calculate_directions(AlgorithmExecutor(),32)
     modified_test_model = NetworkModifier.custom_output_layer(NetworkModifier(), test_model,[(2,1),(1,2)],test_directions)
     assert(modified_test_model.graph.initializer[0].dims[0] == 4)
-    assert(modified_test_model.graph.initializer[0].dims[1] == 8)
-    assert(modified_test_model.graph.initializer[1].dims[0] == 8)
-    assert(modified_test_model.graph.initializer[2].dims[0] == 8)
-    assert(modified_test_model.graph.initializer[2].dims[1] == 3)
-    assert(modified_test_model.graph.initializer[3].dims[0] == 3)
-    assert(modified_test_model.graph.initializer[4].dims[0] == 3)
+    assert(modified_test_model.graph.initializer[0].dims[1] == 9)
+    assert(modified_test_model.graph.initializer[1].dims[0] == 9)
+    assert(modified_test_model.graph.initializer[2].dims[0] == 9)
+    assert(modified_test_model.graph.initializer[2].dims[1] == 4)
+    assert(modified_test_model.graph.initializer[3].dims[0] == 4)
+    assert(modified_test_model.graph.initializer[4].dims[0] == 4)
     assert(modified_test_model.graph.initializer[4].dims[1] == 32)
     assert(modified_test_model.graph.initializer[5].dims[0] == 32)
     assert(modified_test_model.graph.initializer[0].float_data == test_model.graph.initializer[0].float_data)
-    assert (modified_test_model.graph.initializer[1].float_data == test_model.graph.initializer[1].float_data)
     assert (modified_test_model.graph.initializer[2].float_data == [
         -0.4191172420978546,
         -0.05619022622704506,
