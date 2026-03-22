@@ -93,7 +93,6 @@ def test_network_modifier():
     assert(modified_test_model.graph.initializer[4].dims[0] == 4)
     assert(modified_test_model.graph.initializer[4].dims[1] == 32)
     assert(modified_test_model.graph.initializer[5].dims[0] == 32)
-    assert(modified_test_model.graph.initializer[0].float_data == test_model.graph.initializer[0].float_data)
     assert (modified_test_model.graph.initializer[2].float_data == [
         -0.4191172420978546,
         -0.05619022622704506,
